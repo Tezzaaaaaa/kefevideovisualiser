@@ -6,7 +6,6 @@ services:
     plan: starter
     autoDeploy: false
     healthCheckPath: /api/v1/health
-    maxShutdownDelaySeconds: 300
     envVars:
       - key: LYRIC_VIS_USERNAME
         value: story
