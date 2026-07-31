@@ -1,0 +1,22 @@
+STORY LYRICS — MILESTONE 3 COMPLETION NOTES
+
+Completed:
+- Enhanced LRC parsing with word-level timestamps.
+- SRT subtitle import with cue durations.
+- Global lyric offset from -5,000 ms to +5,000 ms.
+- Per-line timing editor for text, start time, and duration.
+- 100 ms nudge controls.
+- Tap-to-sync current line against live audio playback.
+- Reset timing edits.
+- Millisecond timeline display.
+- Word-aware karaoke fill, word reveal, and typewriter behaviour.
+- Backend version 0.3.0.
+
+Validation:
+- gofmt
+- go test ./...
+- go vet ./...
+
+Scope:
+- Preview and timing engine only.
+- MP4 rendering is planned for a later export milestone.

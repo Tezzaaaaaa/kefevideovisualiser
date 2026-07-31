@@ -1,0 +1,14 @@
+services:
+  story-lyrics:
+    build: .
+    ports:
+      - "8090:8090"
+    environment:
+      LYRIC_VIS_USERNAME: story
+      LYRIC_VIS_PASSWORD: ${LYRIC_VIS_PASSWORD:?Set LYRIC_VIS_PASSWORD}
+      LYRIC_VIS_MAX_UPLOAD_MB: 512
+    volumes:
+      - story_lyrics_data:/app/data
+    restart: unless-stopped
+volumes:
+  story_lyrics_data:

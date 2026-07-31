@@ -1,0 +1,27 @@
+STORY LYRICS — MILESTONE 8 COMPLETION NOTES
+
+Milestone: Export Accuracy and Instagram-Style Animation Refinement
+Version: 0.8.0
+
+Implemented:
+- Shared eased entrance/hold/exit animation phases in preview and export
+- Enhanced-LRC word timing used by Karaoke, Type and Words effects
+- More accurate character reveal inside partially sung words
+- Refined Stack, Poster, Classic and Words motion
+- Four original typography presets: Rounded, Classic, Condensed and Serif
+- Typography setting saved with each project
+- Export renderer uses the same typography choice as the live preview
+- Background-video export timing locked to the selected trim point
+- Video backgrounds loop deterministically during export
+- PWA cache advanced to v8 to prevent stale iPhone assets
+- Backend health version advanced to 0.8.0
+
+Validation:
+- gofmt
+- go test ./...
+- go vet ./...
+- node --check web/app.js
+- node --check web/mobile.js
+- node --check web/export.js
+- node --check web/sw.js
+- local HTTP health and asset smoke test

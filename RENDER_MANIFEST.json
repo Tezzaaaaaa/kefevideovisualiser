@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "project_id": "example",
+  "canvas": {"width": 1920, "height": 1080, "fps": 30},
+  "audio": {"path": "media/song.wav", "normalize": true},
+  "lyrics": {"path": "lyrics/song.lrc", "mode": "line"},
+  "template": {"id": "minimal", "parameters": {}},
+  "output": {"path": "exports/video.mp4", "codec": "h264", "quality": "1080p"}
+}

@@ -1,0 +1,19 @@
+STORY LYRICS — MILESTONE 4 COMPLETION NOTES
+
+Completed: Story Background and Direct Manipulation Tools
+
+Implemented:
+- Drag lyric layer directly on the Story canvas
+- Two-finger pinch scaling and rotation
+- Mouse-wheel scaling and Shift+wheel rotation
+- Reset and centre controls
+- Instagram Story-style top, bottom, horizontal, and vertical safe guides
+- Toggleable guide overlay
+- Background image and looping video support
+- Background blur and dim controls
+- Five gradient-overlay choices
+- Fill and Fit background modes
+- Video-background start-position control
+- Responsive mobile editor refinements
+
+The effect names, assets, controls, and code remain original. The interaction model is deliberately close to a familiar Story composer without copying Instagram branding or proprietary assets.

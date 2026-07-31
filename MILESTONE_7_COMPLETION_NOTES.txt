@@ -1,0 +1,12 @@
+Story Lyrics — Milestone 7: Real MP4 Export Engine
+
+Implemented:
+- 720x1280 and 1080x1920 canvas rendering
+- Real-time Story recording
+- Synchronized selected audio segment
+- Image/video background capture
+- Stack, Karaoke, Type, Poster, Words and Classic export rendering
+- Mac FFmpeg conversion to H.264/AAC MP4
+- iPhone Share Sheet / download handoff
+- Export progress and cancellation
+- FFmpeg health reporting and actionable errors

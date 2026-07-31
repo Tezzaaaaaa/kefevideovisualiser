@@ -1,0 +1,17 @@
+MILESTONE 5 — IPHONE MOBILE WEB APP AND PWA FOUNDATION
+
+Completed:
+- iPhone-first responsive Story editor layout
+- Touch-safe 9:16 preview and direct manipulation
+- Mobile editing tabs for Style, Timing, Background, and Project
+- Audio import through Files and compatible iOS pickers
+- Lyrics and background import through Files/Photos-compatible inputs
+- Local project saving, reopening, autosave, and reset
+- PWA manifest, Home Screen metadata, app icons, and service worker
+- Standalone display mode and iPhone safe-area support
+- Clear reminder to reselect local media after reopening a saved project
+
+Important limitation at this milestone:
+Browser security prevents permanent storage of arbitrary original audio/photo/video files through ordinary localStorage. Project settings and lyrics persist, but local media must be reselected after reopening. A later persistence milestone can use IndexedDB/File System Access where supported.
+
+The final website roadmap still includes reliable 1080x1920 MP4 rendering and production deployment.
