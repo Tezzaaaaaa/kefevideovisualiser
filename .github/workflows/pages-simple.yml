@@ -27,7 +27,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Apply export-duration and aspect-ratio fixes
+      - name: Apply export, aspect-ratio and lyric-fit fixes
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -53,18 +53,42 @@ jobs:
                   '<label>Aspect ratio<select id="aspect"><option value="9:16">9:16 Story</option><option value="4:5">4:5 Portrait</option><option value="1:1">1:1 Square</option><option value="16:9">16:9 Landscape</option></select></label><label>Export quality<select id="quality"><option value="720">720 base</option><option value="1080">1080 base</option></select></label>',
               ),
               (
+                  '.lyrics{position:absolute;left:8%;right:8%;top:50%;transform:translateY(-50%);text-align:center;font-weight:900;font-size:clamp(30px,7vw,58px);line-height:1.02;text-shadow:0 3px 18px #000b;touch-action:none}',
+                  '.lyrics{position:absolute;left:8%;right:8%;top:50%;transform:translateY(-50%);text-align:center;font-weight:900;font-size:clamp(30px,7vw,58px);line-height:1.08;text-shadow:0 3px 18px #000b;touch-action:none;white-space:normal;overflow-wrap:anywhere;word-break:normal;max-height:76%;overflow:hidden}',
+              ),
+              (
+                  'function current(ms){',
+                  "function fitPreviewLyrics(){const desired=Math.max(18,Number($('#size').value)||54),rect=story.getBoundingClientRect(),maxH=rect.height*.76;lyrics.style.fontSize=desired+'px';lyrics.style.maxHeight=maxH+'px';let fs=desired;while(lyrics.scrollHeight>maxH&&fs>18){fs-=1;lyrics.style.fontSize=fs+'px'}}function current(ms){",
+              ),
+              (
+                  "else lyrics.innerHTML=`<span class=\"current\" style=\"opacity:${Math.min(1,p*5)}\">${esc(l.text)}</span>`}",
+                  "else lyrics.innerHTML=`<span class=\"current\" style=\"opacity:${Math.min(1,p*5)}\">${esc(l.text)}</span>`;requestAnimationFrame(fitPreviewLyrics)}",
+              ),
+              (
+                  "$('#size').oninput=e=>lyrics.style.fontSize=e.target.value+'px';",
+                  "$('#size').oninput=e=>{lyrics.style.fontSize=e.target.value+'px';fitPreviewLyrics()};",
+              ),
+              (
+                  'function mime(){',
+                  "function wrapCanvasText(ctx,text,maxWidth){const words=String(text||'').trim().split(/\\s+/),lines=[];let line='';for(const word of words){const test=line?line+' '+word:word;if(ctx.measureText(test).width<=maxWidth){line=test;continue}if(line)lines.push(line);if(ctx.measureText(word).width<=maxWidth){line=word;continue}let part='';for(const ch of word){const next=part+ch;if(ctx.measureText(next).width>maxWidth&&part){lines.push(part);part=ch}else part=next}line=part}if(line)lines.push(line);return lines.length?lines:['']}function fitCanvasLyrics(ctx,text,desiredPx,maxWidth,maxHeight){let size=Math.max(18,desiredPx),lines=[],lineHeight=0;while(size>=18){ctx.font=`900 ${Math.round(size)}px -apple-system,Helvetica Neue,Arial`;lines=wrapCanvasText(ctx,text,maxWidth);lineHeight=size*1.08;if(lines.length*lineHeight<=maxHeight)break;size-=2}return{size,lines,lineHeight}}function drawFittedLyrics(ctx,text,w,h){const maxWidth=w*.84,maxHeight=h*.76,desired=(Number($('#size').value)||54)/390*w,fit=fitCanvasLyrics(ctx,text,desired,maxWidth,maxHeight),align=$('#align').value;ctx.font=`900 ${Math.round(fit.size)}px -apple-system,Helvetica Neue,Arial`;ctx.textAlign=align;ctx.textBaseline='middle';const x=align==='left'?w*.08:align==='right'?w*.92:w*.5,preferred=(Number($('#position').value)||50)/100*h,total=fit.lines.length*fit.lineHeight,minCenter=h*.12+total/2,maxCenter=h*.88-total/2,center=Math.max(minCenter,Math.min(maxCenter,preferred)),start=center-total/2+fit.lineHeight/2;fit.lines.forEach((line,n)=>ctx.fillText(line,x,start+n*fit.lineHeight))}function mime(){",
+              ),
+              (
                   "function mime(){",
-                  "function aspectDimensions(base,ratio){if(ratio==='4:5')return[base,Math.round(base*5/4)];if(ratio==='1:1')return[base,base];if(ratio==='16:9')return[Math.round(base*16/9),base];return[base,Math.round(base*16/9)]}function applyAspect(){const ratio=$('#aspect').value||'9:16';story.style.aspectRatio=ratio.replace(':',' / ');story.style.width=ratio==='16:9'?'min(100%,620px)':'min(100%,390px)'}$('#aspect').onchange=applyAspect;applyAspect();function mime(){",
+                  "function aspectDimensions(base,ratio){if(ratio==='4:5')return[base,Math.round(base*5/4)];if(ratio==='1:1')return[base,base];if(ratio==='16:9')return[Math.round(base*16/9),base];return[base,Math.round(base*16/9)]}function applyAspect(){const ratio=$('#aspect').value||'9:16';story.style.aspectRatio=ratio.replace(':',' / ');story.style.width=ratio==='16:9'?'min(100%,620px)':'min(100%,390px)';requestAnimationFrame(fitPreviewLyrics)}$('#aspect').onchange=applyAspect;applyAspect();function mime(){",
               ),
               (
                   "const q=+$('#quality').value,w=q,h=Math.round(q*16/9),c=$('#canvas'),ctx=c.getContext('2d');",
                   "const q=+$('#quality').value,[w,h]=aspectDimensions(q,$('#aspect').value||'9:16'),c=$('#canvas'),ctx=c.getContext('2d');",
               ),
+              (
+                  "ctx.fillStyle=accent;ctx.textAlign=$('#align').value;ctx.textBaseline='middle';ctx.font=`900 ${Math.round(($('#size').value/390)*w)}px -apple-system,Helvetica Neue,Arial`;const x=ctx.textAlign==='left'?w*.08:ctx.textAlign==='right'?w*.92:w*.5,y=(+$('#position').value/100)*h;ctx.shadowColor='#000';ctx.shadowBlur=18;ctx.fillText(l.text,x,y,w*.84);",
+                  "ctx.fillStyle=accent;ctx.shadowColor='#000';ctx.shadowBlur=18;drawFittedLyrics(ctx,l.text,w,h);",
+              ),
           ]
 
           for old, new in replacements:
               if old not in text:
-                  raise SystemExit(f'Expected code not found: {old[:80]}')
+                  raise SystemExit(f'Expected code not found: {old[:100]}')
               text = text.replace(old, new, 1)
 
           path.write_text(text, encoding='utf-8')
