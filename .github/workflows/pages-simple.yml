@@ -27,91 +27,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Apply export, aspect-ratio, lyric-fit and effect-layout fixes
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          path = Path('docs/index.html')
-          text = path.read_text(encoding='utf-8')
-
-          replacements = [
-              (
-                  "$('#duration').onchange=e=>{duration=+e.target.value};",
-                  "$('#duration').onchange=e=>{duration=Math.max(1,Number(e.target.value)||15);$('#status').textContent=`Export length set to ${duration} seconds`};",
-              ),
-              (
-                  "const start=performance.now(),seconds=Math.min(duration,audio.duration||duration);",
-                  "const selectedSeconds=Math.max(1,Number($('#duration').value)||15),start=performance.now(),seconds=Math.min(selectedSeconds,audio.duration||selectedSeconds);$('#renderText').textContent=`Preparing ${Math.round(seconds)} second export`;",
-              ),
-              (
-                  "file=new File([blob],`story-lyrics.${ext}`,{type:blob.type});",
-                  "file=new File([blob],`story-lyrics-${Math.round(seconds)}s-${($('#aspect').value||'9:16').replace(':','x')}.${ext}`,{type:blob.type});",
-              ),
-              (
-                  '<label>Export quality<select id="quality"><option value="720">720 × 1280</option><option value="1080">1080 × 1920</option></select></label>',
-                  '<label>Aspect ratio<select id="aspect"><option value="9:16">9:16 Story</option><option value="4:5">4:5 Portrait</option><option value="1:1">1:1 Square</option><option value="16:9">16:9 Landscape</option></select></label><label>Export quality<select id="quality"><option value="720">720 base</option><option value="1080">1080 base</option></select></label>',
-              ),
-              (
-                  '.lyrics{position:absolute;left:8%;right:8%;top:50%;transform:translateY(-50%);text-align:center;font-weight:900;font-size:clamp(30px,7vw,58px);line-height:1.02;text-shadow:0 3px 18px #000b;touch-action:none}',
-                  '.lyrics{position:absolute;left:8%;right:8%;top:50%;transform:translateY(-50%);text-align:center;font-weight:900;font-size:clamp(30px,7vw,58px);line-height:1.08;text-shadow:0 3px 18px #000b;touch-action:none;white-space:normal;overflow-wrap:anywhere;word-break:normal;max-height:76%;overflow:hidden}',
-              ),
-              (
-                  '.word{display:inline-block;animation:pop .25s both}',
-                  '.word{display:inline-block;animation:pop .25s both;margin:0 .06em}.lyrics[data-effect="stack"]{line-height:1.06}.lyrics[data-effect="stack"] .current{display:block;font-size:.92em}.lyrics[data-effect="stack"] .muted{font-size:.48em;line-height:1.15;margin:.48em 0;opacity:.32}.lyrics[data-effect="karaoke"]{line-height:1.04}.lyrics[data-effect="type"]{line-height:1.12;letter-spacing:.01em}.lyrics[data-effect="poster"]{line-height:.96;letter-spacing:-.025em;text-transform:uppercase}.lyrics[data-effect="words"]{line-height:1.16}.lyrics[data-effect="classic"]{line-height:1.1}',
-              ),
-              (
-                  'function current(ms){',
-                  "function fitPreviewLyrics(){const desired=Math.max(18,Number($('#size').value)||54),rect=story.getBoundingClientRect(),maxH=rect.height*.76;lyrics.style.fontSize=desired+'px';lyrics.style.maxHeight=maxH+'px';let fs=desired;while(lyrics.scrollHeight>maxH&&fs>18){fs-=1;lyrics.style.fontSize=fs+'px'}}function current(ms){",
-              ),
-              (
-                  'function render(ms){if(!lines.length)return;const i=current(ms),l=lines[i],p=',
-                  'function render(ms){if(!lines.length)return;lyrics.dataset.effect=effect;const i=current(ms),l=lines[i],p=',
-              ),
-              (
-                  "else if(effect==='poster')lyrics.innerHTML=`<span class=\"current\" style=\"font-size:1.25em\">${esc(l.text)}</span>`;",
-                  "else if(effect==='poster')lyrics.innerHTML=`<span class=\"current\" style=\"font-size:1.14em\">${esc(l.text)}</span>`;",
-              ),
-              (
-                  "else lyrics.innerHTML=`<span class=\"current\" style=\"opacity:${Math.min(1,p*5)}\">${esc(l.text)}</span>`}",
-                  "else lyrics.innerHTML=`<span class=\"current\" style=\"opacity:${Math.min(1,p*5)}\">${esc(l.text)}</span>`;requestAnimationFrame(fitPreviewLyrics)}",
-              ),
-              (
-                  "$('#size').oninput=e=>lyrics.style.fontSize=e.target.value+'px';",
-                  "$('#size').oninput=e=>{lyrics.style.fontSize=e.target.value+'px';fitPreviewLyrics()};",
-              ),
-              (
-                  'function mime(){',
-                  "function wrapCanvasText(ctx,text,maxWidth){const words=String(text||'').trim().split(/\\s+/),lines=[];let line='';for(const word of words){const test=line?line+' '+word:word;if(ctx.measureText(test).width<=maxWidth){line=test;continue}if(line)lines.push(line);if(ctx.measureText(word).width<=maxWidth){line=word;continue}let part='';for(const ch of word){const next=part+ch;if(ctx.measureText(next).width>maxWidth&&part){lines.push(part);part=ch}else part=next}line=part}if(line)lines.push(line);return lines.length?lines:['']}function fitCanvasLyrics(ctx,text,desiredPx,maxWidth,maxHeight){let size=Math.max(18,desiredPx),wrapped=[],lineHeight=0;while(size>=18){ctx.font=`900 ${Math.round(size)}px -apple-system,Helvetica Neue,Arial`;wrapped=wrapCanvasText(ctx,text,maxWidth);lineHeight=size*1.08;if(wrapped.length*lineHeight<=maxHeight)break;size-=2}return{size,lines:wrapped,lineHeight}}function drawFittedLyrics(ctx,text,w,h,scale=1,alpha=1){const maxWidth=w*.84,maxHeight=h*.76,desired=(Number($('#size').value)||54)/390*w*scale,fit=fitCanvasLyrics(ctx,text,desired,maxWidth,maxHeight),align=$('#align').value;ctx.save();ctx.globalAlpha=alpha;ctx.font=`900 ${Math.round(fit.size)}px -apple-system,Helvetica Neue,Arial`;ctx.textAlign=align;ctx.textBaseline='middle';const x=align==='left'?w*.08:align==='right'?w*.92:w*.5,preferred=(Number($('#position').value)||50)/100*h,total=fit.lines.length*fit.lineHeight,minCenter=h*.12+total/2,maxCenter=h*.88-total/2,center=Math.max(minCenter,Math.min(maxCenter,preferred)),start=center-total/2+fit.lineHeight/2;fit.lines.forEach((line,n)=>ctx.fillText(line,x,start+n*fit.lineHeight));ctx.restore()}function drawStackLyrics(ctx,i,w,h){const items=[[lines[i-1]?.text,.48,.32],[lines[i]?.text,.92,1],[lines[i+1]?.text,.48,.32]].filter(x=>x[0]);const align=$('#align').value,x=align==='left'?w*.08:align==='right'?w*.92:w*.5,base=(Number($('#size').value)||54)/390*w,maxWidth=w*.84;const blocks=items.map(([text,scale,alpha])=>{ctx.font=`900 ${Math.round(base*scale)}px -apple-system,Helvetica Neue,Arial`;const wrapped=wrapCanvasText(ctx,text,maxWidth),lh=base*scale*1.08;return{text,scale,alpha,wrapped,lh,height:wrapped.length*lh}});let total=blocks.reduce((s,b)=>s+b.height,0)+Math.max(0,blocks.length-1)*base*.22;const preferred=(Number($('#position').value)||50)/100*h,center=Math.max(h*.12+total/2,Math.min(h*.88-total/2,preferred));let y=center-total/2;ctx.textAlign=align;ctx.textBaseline='middle';for(const b of blocks){ctx.save();ctx.globalAlpha=b.alpha;ctx.font=`900 ${Math.round(base*b.scale)}px -apple-system,Helvetica Neue,Arial`;for(const line of b.wrapped){ctx.fillText(line,x,y+b.lh/2);y+=b.lh}ctx.restore();y+=base*.22}}function drawEffectLyrics(ctx,i,p,w,h){const l=lines[i]||lines[0];if(!l)return;if(effect==='stack'){drawStackLyrics(ctx,i,w,h);return}if(effect==='type'){drawFittedLyrics(ctx,l.text.slice(0,Math.ceil(l.text.length*p)),w,h,1,1);return}if(effect==='poster'){drawFittedLyrics(ctx,l.text,w,h,1.14,1);return}if(effect==='words'){const words=l.text.split(/\\s+/),n=Math.ceil(words.length*p);drawFittedLyrics(ctx,words.slice(0,n).join(' '),w,h,1,1);return}if(effect==='classic'){drawFittedLyrics(ctx,l.text,w,h,1,Math.min(1,p*5));return}drawFittedLyrics(ctx,l.text,w,h,1,1)}function mime(){",
-              ),
-              (
-                  "function mime(){",
-                  "function aspectDimensions(base,ratio){if(ratio==='4:5')return[base,Math.round(base*5/4)];if(ratio==='1:1')return[base,base];if(ratio==='16:9')return[Math.round(base*16/9),base];return[base,Math.round(base*16/9)]}function applyAspect(){const ratio=$('#aspect').value||'9:16';story.style.aspectRatio=ratio.replace(':',' / ');story.style.width=ratio==='16:9'?'min(100%,620px)':'min(100%,390px)';requestAnimationFrame(fitPreviewLyrics)}$('#aspect').onchange=applyAspect;applyAspect();function mime(){",
-              ),
-              (
-                  "const q=+$('#quality').value,w=q,h=Math.round(q*16/9),c=$('#canvas'),ctx=c.getContext('2d');",
-                  "const q=+$('#quality').value,[w,h]=aspectDimensions(q,$('#aspect').value||'9:16'),c=$('#canvas'),ctx=c.getContext('2d');",
-              ),
-              (
-                  "ctx.fillStyle=accent;ctx.textAlign=$('#align').value;ctx.textBaseline='middle';ctx.font=`900 ${Math.round(($('#size').value/390)*w)}px -apple-system,Helvetica Neue,Arial`;const x=ctx.textAlign==='left'?w*.08:ctx.textAlign==='right'?w*.92:w*.5,y=(+$('#position').value/100)*h;ctx.shadowColor='#000';ctx.shadowBlur=18;ctx.fillText(l.text,x,y,w*.84);",
-                  "ctx.fillStyle=accent;ctx.shadowColor='#000';ctx.shadowBlur=18;drawEffectLyrics(ctx,i,p,w,h);",
-              ),
-          ]
-
-          for old, new in replacements:
-              if old not in text:
-                  raise SystemExit(f'Expected code not found: {old[:100]}')
-              text = text.replace(old, new, 1)
-
-          path.write_text(text, encoding='utf-8')
-          PY
-
       - name: Configure Pages
         uses: actions/configure-pages@v5
+
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./docs
+
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
