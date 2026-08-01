@@ -41,12 +41,16 @@ jobs:
                   '<title>Story Lyrics</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Figtree:wght@400;600;700;800;900&family=Fraunces:opsz,wght@9..144,400..900&family=IBM+Plex+Mono:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"><style>',
               ),
               (
+                  '<label>Story length<select id="duration"><option>15</option><option>30</option><option>45</option><option>60</option></select></label>',
+                  '<label>Export length<div class="pill" style="padding:10px 12px">Full track · max 10:00</div></label>',
+              ),
+              (
                   "$('#duration').onchange=e=>{duration=+e.target.value};",
-                  "$('#duration').onchange=e=>{duration=Math.max(1,Number(e.target.value)||15);$('#status').textContent=`Export length set to ${duration} seconds`};",
+                  "duration=600;",
               ),
               (
                   "const start=performance.now(),seconds=Math.min(duration,audio.duration||duration);",
-                  "const selectedSeconds=Math.max(1,Number($('#duration').value)||15),start=performance.now(),seconds=Math.min(selectedSeconds,audio.duration||selectedSeconds);$('#renderText').textContent=`Preparing ${Math.round(seconds)} second export`;",
+                  "const trackSeconds=Math.min(Math.max(1,Number(audio.duration)||1),600),start=performance.now(),seconds=trackSeconds;$('#renderText').textContent=`Preparing ${formatTime(seconds)} full-track export${audio.duration>600?' (10:00 cap)':''}`;",
               ),
               (
                   "file=new File([blob],`story-lyrics.${ext}`,{type:blob.type});",
