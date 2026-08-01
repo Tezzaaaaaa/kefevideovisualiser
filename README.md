@@ -1,55 +1,68 @@
 # Story Lyrics
 
-An iPhone-first, client-side lyric video generator inspired by social Story lyric effects.
+An iPhone-first, client-side lyric video generator for creating social-media lyric videos directly in Safari.
 
 ## Live website
 
 https://tezzaaaaaa.github.io/-story-lyrics-cloud/
 
-## What it does
+## Features
 
 - Imports audio from the iPhone Files app
 - Imports TXT, LRC and SRT lyric files
 - Supports MP3, M4A, AAC, WAV, FLAC, OGG and OPUS audio
 - Imports photo or video backgrounds
-- Provides six lyric styles: Stack, Karaoke, Type, Poster, Words and Classic
-- Shows the full song duration and lets you scrub through the complete track
-- Adjusts lyric size, position, alignment, colour and global timing offset
-- Exports 9:16 video directly on the device
-- Runs without Render, a Mac, a paid server or a credit card
+- Includes Stack, Karaoke, Type, Poster, Words and Classic lyric effects
+- Shows and scrubs through the full song duration
+- Supports 15, 30, 45 and 60-second exports
+- Supports 9:16, 4:5, 1:1 and 16:9 framing
+- Adjusts lyric size, position, alignment, colour and timing offset
+- Processes media locally on the device
+- Requires no Render server, Mac, payment card or account
 
 ## iPhone use
 
 1. Open the live website in Safari.
-2. Tap **Add audio** and select a file from Files.
-3. Tap **Add lyrics** and select TXT, LRC or SRT.
+2. Tap **Add audio** and choose a song stored in Files.
+3. Tap **Add lyrics** and select a TXT, LRC or SRT file.
 4. Add an optional photo or video background.
-5. Choose an effect and adjust timing.
-6. Select 15, 30, 45 or 60 seconds and export.
-7. Use **Share → Add to Home Screen** for app-like access.
+5. Choose a lyric effect and adjust its appearance.
+6. Select an export duration, aspect ratio and quality.
+7. Tap **Export** and keep Safari open while the video renders.
+8. Use **Share → Add to Home Screen** for app-like access.
 
-## Important limitations
+## Repository structure
 
-- Apple Music subscription tracks cannot be imported directly because iOS does not expose protected streaming files to websites.
-- Files must be stored in Files, iCloud Drive, Downloads or another Files provider.
-- Safari determines whether the result is MP4 or WebM.
-- 1080p export uses more memory than 720p and may fail on older devices.
+```text
+-story-lyrics-cloud/
+├── .github/
+│   └── workflows/
+│       └── pages-simple.yml   # Active GitHub Pages deployment
+├── docs/
+│   └── index.html             # Complete client-side application
+├── .gitignore                 # Local and generated-file exclusions
+├── CHANGELOG.md               # Release history
+├── README.md                  # Project overview and instructions
+└── SECURITY.md                # Security and privacy reporting
+```
+
+The project intentionally uses a small structure. The live application is self-contained in `docs/index.html`, and only one workflow deploys it.
+
+## Development
+
+The site has no build-system requirement. To test locally, open `docs/index.html` in a modern browser. GitHub Pages deployment occurs automatically after changes to `docs/` or `.github/workflows/pages-simple.yml` are pushed to `main`.
+
+## Limitations
+
+- Apple Music subscription tracks cannot be imported because iOS does not expose DRM-protected streaming files as ordinary files.
+- Audio must be available through Files, iCloud Drive, Downloads or another Files provider.
+- Safari determines whether an exported recording is delivered as MP4 or WebM.
+- 1080p and long-duration exports require more memory and may fail on older devices.
 - Keep Safari open and the screen awake during export.
-
-## Project structure
-
-- `docs/index.html` — live client-side website
-- `.github/workflows/deploy-pages.yml` — GitHub Pages deployment
-- `backend/` and `web/` — earlier server-hosted edition retained for reference
-- `Dockerfile` and `render.yaml` — optional legacy cloud deployment files
 
 ## Privacy
 
-The GitHub Pages edition processes imported media locally in the browser. Audio, lyrics and backgrounds are not uploaded to this repository or a rendering server.
-
-## Status
-
-The current build is an active iPhone-focused beta. File import, lyric parsing and export behaviour should be tested after each iOS/Safari update.
+Imported audio, lyrics and backgrounds are processed locally in the browser. They are not uploaded to this repository or to a rendering server.
 
 ## Copyright
 
