@@ -27,7 +27,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Apply export-duration fix
+      - name: Apply export-duration and aspect-ratio fixes
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -35,24 +35,36 @@ jobs:
           path = Path('docs/index.html')
           text = path.read_text(encoding='utf-8')
 
-          old_duration = "$('#duration').onchange=e=>{duration=+e.target.value};"
-          new_duration = "$('#duration').onchange=e=>{duration=Math.max(1,Number(e.target.value)||15);$('#status').textContent=`Export length set to ${duration} seconds`};"
-
-          old_export = "const start=performance.now(),seconds=Math.min(duration,audio.duration||duration);"
-          new_export = "const selectedSeconds=Math.max(1,Number($('#duration').value)||15),start=performance.now(),seconds=Math.min(selectedSeconds,audio.duration||selectedSeconds);$('#renderText').textContent=`Preparing ${Math.round(seconds)} second export`;"
-
-          old_filename = "file=new File([blob],`story-lyrics.${ext}`,{type:blob.type});"
-          new_filename = "file=new File([blob],`story-lyrics-${Math.round(seconds)}s.${ext}`,{type:blob.type});"
-
           replacements = [
-              (old_duration, new_duration),
-              (old_export, new_export),
-              (old_filename, new_filename),
+              (
+                  "$('#duration').onchange=e=>{duration=+e.target.value};",
+                  "$('#duration').onchange=e=>{duration=Math.max(1,Number(e.target.value)||15);$('#status').textContent=`Export length set to ${duration} seconds`};",
+              ),
+              (
+                  "const start=performance.now(),seconds=Math.min(duration,audio.duration||duration);",
+                  "const selectedSeconds=Math.max(1,Number($('#duration').value)||15),start=performance.now(),seconds=Math.min(selectedSeconds,audio.duration||selectedSeconds);$('#renderText').textContent=`Preparing ${Math.round(seconds)} second export`;",
+              ),
+              (
+                  "file=new File([blob],`story-lyrics.${ext}`,{type:blob.type});",
+                  "file=new File([blob],`story-lyrics-${Math.round(seconds)}s-${($('#aspect').value||'9:16').replace(':','x')}.${ext}`,{type:blob.type});",
+              ),
+              (
+                  '<label>Export quality<select id="quality"><option value="720">720 × 1280</option><option value="1080">1080 × 1920</option></select></label>',
+                  '<label>Aspect ratio<select id="aspect"><option value="9:16">9:16 Story</option><option value="4:5">4:5 Portrait</option><option value="1:1">1:1 Square</option><option value="16:9">16:9 Landscape</option></select></label><label>Export quality<select id="quality"><option value="720">720 base</option><option value="1080">1080 base</option></select></label>',
+              ),
+              (
+                  "function mime(){",
+                  "function aspectDimensions(base,ratio){if(ratio==='4:5')return[base,Math.round(base*5/4)];if(ratio==='1:1')return[base,base];if(ratio==='16:9')return[Math.round(base*16/9),base];return[base,Math.round(base*16/9)]}function applyAspect(){const ratio=$('#aspect').value||'9:16';story.style.aspectRatio=ratio.replace(':',' / ');story.style.width=ratio==='16:9'?'min(100%,620px)':'min(100%,390px)'}$('#aspect').onchange=applyAspect;applyAspect();function mime(){",
+              ),
+              (
+                  "const q=+$('#quality').value,w=q,h=Math.round(q*16/9),c=$('#canvas'),ctx=c.getContext('2d');",
+                  "const q=+$('#quality').value,[w,h]=aspectDimensions(q,$('#aspect').value||'9:16'),c=$('#canvas'),ctx=c.getContext('2d');",
+              ),
           ]
 
           for old, new in replacements:
               if old not in text:
-                  raise SystemExit(f'Expected export code not found: {old[:60]}')
+                  raise SystemExit(f'Expected code not found: {old[:80]}')
               text = text.replace(old, new, 1)
 
           path.write_text(text, encoding='utf-8')
