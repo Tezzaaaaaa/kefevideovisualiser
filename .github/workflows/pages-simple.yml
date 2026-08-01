@@ -131,6 +131,97 @@ jobs:
                   raise SystemExit(f'Expected code not found: {old[:100]}')
               text = text.replace(old, new, 1)
 
+          click_marker = "$('#export').onclick=exportVideo;"
+          if click_marker not in text:
+              raise SystemExit('Export click marker not found')
+
+          fast_export = r'''async function exportFastVideo(){
+            if(!audioFile||!lines.length){alert('Add audio and lyrics first.');return false}
+            abort=false;
+            const q=+$('#quality').value,[w,h]=aspectDimensions(q,$('#aspect').value||'9:16'),c=$('#canvas'),ctx=c.getContext('2d',{alpha:false}),seconds=Math.min(Number(audio.duration)||0,600),fps=30;
+            if(!seconds)throw new Error('Audio duration is unavailable');
+            c.width=w;c.height=h;
+            const dlg=$('#dlg');dlg.showModal();$('#progress').value=0;$('#renderText').textContent='Starting maximum-speed export…';
+            let output=null,bgInput=null,bgBitmap=null;
+            try{
+              await document.fonts.ready;
+              const mb=await import('https://esm.sh/mediabunny@1.51.0?bundle');
+              const {Output,BufferTarget,Mp4OutputFormat,CanvasSource,AudioBufferSource,QUALITY_HIGH,Input,ALL_FORMATS,BlobSource,VideoSampleSink,getFirstEncodableVideoCodec,getFirstEncodableAudioCodec}=mb;
+              const format=new Mp4OutputFormat(),target=new BufferTarget();
+              const videoCodec=await getFirstEncodableVideoCodec(format.getSupportedVideoCodecs(),{width:w,height:h});
+              if(!videoCodec)throw new Error('No hardware video encoder available');
+              let audioCodec=await getFirstEncodableAudioCodec(format.getSupportedAudioCodecs());
+              if(!audioCodec){
+                const aac=await import('https://esm.sh/@mediabunny/aac-encoder@1.51.0?bundle');
+                aac.registerAacEncoder();
+                audioCodec=await getFirstEncodableAudioCodec(format.getSupportedAudioCodecs());
+              }
+              if(!audioCodec)throw new Error('No audio encoder available');
+              output=new Output({format,target});
+              const videoSource=new CanvasSource(c,{codec:videoCodec,bitrate:q>=1080?7000000:3500000});
+              const audioSource=new AudioBufferSource({codec:audioCodec,bitrate:192000});
+              output.addVideoTrack(videoSource,{frameRate:fps});
+              output.addAudioTrack(audioSource);
+              await output.start();
+
+              $('#renderText').textContent='Encoding audio…';
+              const ac=new AudioContext(),audioBuffer=await ac.decodeAudioData((await audioFile.arrayBuffer()).slice(0));
+              await ac.close();
+              await audioSource.add(audioBuffer);
+
+              let bgSink=null,bgDuration=0;
+              if(bgMedia?.src){
+                const bgBlob=await (await fetch(bgMedia.src)).blob();
+                bgInput=new Input({source:new BlobSource(bgBlob),formats:ALL_FORMATS});
+                bgDuration=await bgInput.computeDuration();
+                const bgTrack=await bgInput.getPrimaryVideoTrack();
+                if(!bgTrack||!(await bgTrack.canDecode()))throw new Error('Background video cannot be decoded by the fast renderer');
+                bgSink=new VideoSampleSink(bgTrack);
+              }else{
+                const css=bg.style.backgroundImage||'',match=css.match(/url\(["']?(.*?)["']?\)/);
+                if(match?.[1]&&match[1].startsWith('blob:')){
+                  const imageBlob=await (await fetch(match[1])).blob();
+                  bgBitmap=await createImageBitmap(imageBlob);
+                }
+              }
+
+              const totalFrames=Math.max(1,Math.ceil(seconds*fps)),frameDuration=1/fps,dim=Math.max(0,Math.min(1,parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--dim'))||.22));
+              for(let frame=0;frame<totalFrames;frame++){
+                if(abort){await output.cancel();if(bgBitmap)bgBitmap.close();if(bgInput)bgInput.dispose();dlg.close();return false}
+                const t=frame/fps;
+                const grad=ctx.createLinearGradient(0,0,w,h);grad.addColorStop(0,'#512da8');grad.addColorStop(.55,'#e91e63');grad.addColorStop(1,'#ff9800');ctx.fillStyle=grad;ctx.fillRect(0,0,w,h);
+                if(bgBitmap)drawCover(ctx,bgBitmap,w,h);
+                if(bgSink&&bgDuration>0){const sample=await bgSink.getSample(t%bgDuration);if(sample){sample.drawWithFit(ctx,{fit:'cover'});sample.close()}}
+                ctx.fillStyle=`rgba(0,0,0,${dim})`;ctx.fillRect(0,0,w,h);
+                const i=current(t*1000),l=lines[i]||lines[0],p=Math.max(0,Math.min(1,(t*1000-(l.start+offset))/Math.max(100,l.duration)));
+                ctx.fillStyle=accent;ctx.shadowColor='#000';ctx.shadowBlur=18;drawEffectLyrics(ctx,i,p,w,h);
+                await videoSource.add(t,Math.min(frameDuration,Math.max(.001,seconds-t)),{keyFrame:frame%(fps*2)===0});
+                if(frame%5===0||frame===totalFrames-1){const pct=((frame+1)/totalFrames)*100;$('#progress').value=pct;$('#renderText').textContent=`Fast export ${Math.round(pct)}% · ${formatTime(seconds)} video`}
+              }
+              await output.finalize();
+              if(bgBitmap)bgBitmap.close();if(bgInput)bgInput.dispose();
+              const blob=new Blob([target.buffer],{type:'video/mp4'}),file=new File([blob],`story-lyrics-${Math.round(seconds)}s-${($('#aspect').value||'9:16').replace(':','x')}.mp4`,{type:'video/mp4'});
+              dlg.close();
+              if(navigator.canShare?.({files:[file]}))try{await navigator.share({files:[file],title:'Story Lyrics'});return true}catch(e){if(e?.name==='AbortError')return true}
+              const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),60000);return true;
+            }catch(err){
+              try{if(output&&output.state==='started')await output.cancel()}catch{}
+              try{if(bgBitmap)bgBitmap.close()}catch{}
+              try{if(bgInput)bgInput.dispose()}catch{}
+              if(dlg.open)dlg.close();
+              throw err;
+            }
+          }
+          async function exportPreferred(){
+            try{return await exportFastVideo()}
+            catch(err){console.warn('Fast export failed; using compatibility recorder.',err);$('#status').textContent='Fast export is unavailable on this device/file. Using compatibility export.';return exportVideo()}
+          }
+          $('#export').onclick=exportPreferred;'''
+
+          text = text.replace(click_marker, fast_export, 1)
+          text = text.replace('const sw=m.videoWidth||m.naturalWidth,sh=m.videoHeight||m.naturalHeight;', 'const sw=m.videoWidth||m.naturalWidth||m.width,sh=m.videoHeight||m.naturalHeight||m.height;', 1)
+          text = text.replace('Safari records MP4 where supported. Other browsers may save WebM. Keep this page open during export.', 'Fast Export renders offline at maximum device speed. Compatibility recording is used only if fast encoding is unavailable.', 1)
+
           path.write_text(text, encoding='utf-8')
           PY
 
