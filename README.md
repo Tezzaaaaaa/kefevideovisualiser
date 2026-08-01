@@ -36,17 +36,17 @@ https://tezzaaaaaa.github.io/-story-lyrics-cloud/
 ```text
 -story-lyrics-cloud/
 ├── .github/
+│   ├── SECURITY.md            # Security and privacy policy
 │   └── workflows/
 │       └── pages-simple.yml   # Active GitHub Pages deployment
 ├── docs/
+│   ├── CHANGELOG.md           # Release history
 │   └── index.html             # Complete client-side application
 ├── .gitignore                 # Local and generated-file exclusions
-├── CHANGELOG.md               # Release history
-├── README.md                  # Project overview and instructions
-└── SECURITY.md                # Security and privacy reporting
+└── README.md                  # Project overview and instructions
 ```
 
-The project intentionally uses a small structure. The live application is self-contained in `docs/index.html`, and only one workflow deploys it.
+Only the conventional `README.md` and hidden `.gitignore` remain at the repository root. Project files are organised into `docs/` and `.github/`.
 
 ## Development
 
