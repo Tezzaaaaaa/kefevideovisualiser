@@ -1,0 +1,14 @@
+/* Apple Music-inspired lyric motion polish */
+.lyrics-layer{will-change:transform,opacity;contain:layout paint style}
+.lyrics-layer .current-line,.lyrics-layer .lyric-line,.lyrics-layer .timed-word,.lyrics-layer .word{will-change:transform,opacity,filter;background-attachment:local}
+.effect-stack .lyrics-layer{gap:.32em;align-content:center}
+.effect-stack .lyric-line{opacity:.22;font-size:.56em;transform:translateY(10px) scale(.965);filter:blur(.35px);transition:transform 420ms cubic-bezier(.22,.61,.36,1),opacity 420ms cubic-bezier(.22,.61,.36,1),filter 420ms cubic-bezier(.22,.61,.36,1),font-size 420ms cubic-bezier(.22,.61,.36,1)}
+.effect-stack .lyric-line.current{opacity:1;font-size:1em;transform:translateY(0) scale(1);filter:blur(0)}
+.effect-stack .lyric-line.next{opacity:.38;font-size:.6em;transform:translateY(-4px) scale(.985);filter:blur(.2px)}
+.effect-karaoke .current-line,.word-karaoke .timed-word{background-size:100% 100%;background-repeat:no-repeat;transition:filter 120ms linear;filter:saturate(1.04)}
+.effect-type .current-line,.effect-poster .current-line,.effect-classic .current-line,.effect-words .current-line{opacity:calc(.34 + var(--am-enter,1)*.66);transform:translateY(calc((1 - var(--am-enter,1))*14px)) scale(calc(.985 + var(--am-enter,1)*.015));transition:none}
+.effect-words .word{opacity:var(--word-opacity,1);transform:translateY(calc((1 - var(--word-enter,1))*12px)) scale(calc(.975 + var(--word-enter,1)*.025));transition:none;margin:.08em}
+.case-upper .current-line,.case-upper .lyric-line,.case-upper .timed-word,.case-upper .word{text-transform:uppercase}
+.case-lower .current-line,.case-lower .lyric-line,.case-lower .timed-word,.case-lower .word{text-transform:lowercase}
+.case-title .current-line,.case-title .lyric-line,.case-title .timed-word,.case-title .word{text-transform:capitalize}
+@media (prefers-reduced-motion: reduce){.effect-stack .lyric-line{transition:none!important}.effect-type .current-line,.effect-poster .current-line,.effect-classic .current-line,.effect-words .current-line,.effect-words .word{transform:none!important}}
