@@ -1,15 +1,105 @@
-// Local lyric-file parser for static hosting. Removes dependency on /api/v1/lyrics/parse.
+// LINA — reliable local LRC/SRT/TXT importer. No backend required.
 (function(){
 'use strict';
 const input=document.getElementById('lyricsFile');
 if(!input)return;
-function notify(msg){if(typeof window.notify==='function')try{return window.notify(msg)}catch{}const t=document.getElementById('toast');if(t){t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)}else alert(msg)}
-function timeToMs(min,sec){return Math.round((Number(min)*60+Number(sec))*1000)}
-function parseEnhancedWords(text,lineStart){const words=[];const rx=/<(\d{1,3}):(\d{1,2}(?:\.\d{1,3})?)>([^<]*)/g;let m;while((m=rx.exec(text))){const raw=m[3]||'';const clean=raw.trim();if(!clean)continue;words.push({text:clean,start_ms:timeToMs(m[1],m[2])})}for(let i=0;i<words.length;i++){const next=words[i+1]?.start_ms;words[i].duration_ms=Math.max(80,(next??lineStart+2600)-words[i].start_ms)}return words}
-function parseLRC(text){const lines=[];let globalOffset=0;const rawLines=String(text||'').replace(/^\uFEFF/,'').replace(/\r/g,'').split('\n');for(const raw of rawLines){const offsetTag=raw.match(/^\s*\[offset\s*:\s*([+-]?\d+)\s*\]\s*$/i);if(offsetTag){globalOffset=Number(offsetTag[1])||0;continue}if(/^\s*\[(ar|ti|al|by|re|ve|length|id):/i.test(raw))continue;const stamps=[...raw.matchAll(/\[(\d{1,3}):(\d{1,2}(?:\.\d{1,3})?)\]/g)];if(!stamps.length)continue;let content=raw.replace(/\[(\d{1,3}):(\d{1,2}(?:\.\d{1,3})?)\]/g,'').trim();if(!content)continue;for(const s of stamps){const start=Math.max(0,timeToMs(s[1],s[2])+globalOffset);const words=parseEnhancedWords(content,start);const plain=content.replace(/<\d{1,3}:\d{1,2}(?:\.\d{1,3})?>/g,'').replace(/\s+/g,' ').trim();if(!plain)continue;lines.push({text:plain,start_ms:start,duration_ms:2600,...(words.length?{words}: {})})}}
-lines.sort((a,b)=>a.start_ms-b.start_ms);for(let i=0;i<lines.length;i++){const next=lines[i+1]?.start_ms;lines[i].duration_ms=Math.max(100,(next??lines[i].start_ms+2600)-lines[i].start_ms);if(lines[i].words?.length){for(let w=0;w<lines[i].words.length;w++){const n=lines[i].words[w+1]?.start_ms;lines[i].words[w].duration_ms=Math.max(80,(n??lines[i].start_ms+lines[i].duration_ms)-lines[i].words[w].start_ms)}}}return {format:lines.some(l=>l.words?.length)?'enhanced_lrc':'lrc',lines}}
-function parseSRT(text){const blocks=String(text||'').replace(/^\uFEFF/,'').replace(/\r/g,'').trim().split(/\n{2,}/);const lines=[];const t=s=>{const m=s.match(/(\d{1,2}):(\d{2}):(\d{2})[,\.](\d{1,3})/);if(!m)return null;return (+m[1]*3600+ +m[2]*60+ +m[3])*1000+Number(String(m[4]).padEnd(3,'0').slice(0,3))};for(const b of blocks){const a=b.split('\n');const idx=a.findIndex(x=>x.includes('-->'));if(idx<0)continue;const parts=a[idx].split('-->');const start=t(parts[0]),end=t(parts[1]);const copy=a.slice(idx+1).join(' ').replace(/<[^>]+>/g,'').trim();if(start==null||end==null||!copy)continue;lines.push({text:copy,start_ms:start,duration_ms:Math.max(100,end-start)})}return {format:'srt',lines}}
-function parseTXT(text){const rows=String(text||'').replace(/^\uFEFF/,'').replace(/\r/g,'').split('\n').map(x=>x.trim()).filter(Boolean);return {format:'txt',lines:rows.map((text,i)=>({text,start_ms:i*2600,duration_ms:2600}))}}
-function parseByName(name,text){const ext=(name.split('.').pop()||'').toLowerCase();if(ext==='lrc')return parseLRC(text);if(ext==='srt')return parseSRT(text);if(ext==='txt')return parseTXT(text);if(/\[\d{1,3}:\d{1,2}(?:\.\d+)?\]/.test(text))return parseLRC(text);if(/-->/.test(text))return parseSRT(text);return parseTXT(text)}
-input.onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const text=await f.text();const data=parseByName(f.name,text);if(!data.lines.length)throw new Error('No readable lyric lines were found in this file.');original=clone(data);doc=clone(data);offset=0;const off=document.getElementById('offset');if(off)off.value=0;const offLabel=document.getElementById('offsetLabel');if(offLabel)offLabel.textContent='0 ms';const badge=document.getElementById('formatBadge');if(badge)badge.textContent=data.format.replace('_',' ').toUpperCase();renderTimeline();renderAt(audio.currentTime*1000||0);window.__LV_GUARD__?.checkpoint?.('lyrics-file-opened');notify(`${f.name} opened — ${data.lines.length} lyric lines loaded.`)}catch(err){console.error('Local lyric import failed',err);window.__LV_GUARD__?.checkpoint?.('lyrics-import-failed');notify(`Could not open this lyric file: ${err.message||err}`)}};
+if(input.dataset.linaImporter==='1')return;
+input.dataset.linaImporter='1';
+input.accept='.lrc,.srt,.txt,.vtt,text/plain,application/x-subrip,text/vtt,application/octet-stream';
+
+function say(msg){
+  try{if(typeof notify==='function')return notify(msg)}catch{}
+  const t=document.getElementById('toast');
+  if(t){t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);return}
+  console.log(msg);
+}
+function readFile(file){
+  if(file?.text)return file.text().catch(()=>new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result||''));r.onerror=()=>reject(r.error||new Error('File read failed'));r.readAsText(file)}));
+  return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result||''));r.onerror=()=>reject(r.error||new Error('File read failed'));r.readAsText(file)});
+}
+function msFromStamp(min,sec){return Math.round((Number(min)*60+Number(sec))*1000)}
+function parseEnhancedWords(body,lineStart,lineEnd){
+  const out=[]; const rx=/<(\d{1,3}):(\d{1,2}(?:[.:]\d{1,3})?)>([^<]*)/g; let m;
+  while((m=rx.exec(body))){const text=(m[3]||'').trim();if(!text)continue;out.push({text,start_ms:msFromStamp(m[1],String(m[2]).replace(':','.'))})}
+  for(let i=0;i<out.length;i++){const next=out[i+1]?.start_ms??lineEnd??(lineStart+2600);out[i].duration_ms=Math.max(40,next-out[i].start_ms)}
+  return out;
+}
+function parseLRC(text){
+  const rows=[]; let globalOffset=0;
+  const source=String(text||'').replace(/^\uFEFF/,'').replace(/\r/g,'');
+  for(const raw of source.split('\n')){
+    const off=raw.match(/^\s*\[offset\s*:\s*([+-]?\d+)\s*\]\s*$/i);if(off){globalOffset=Number(off[1])||0;continue}
+    if(/^\s*\[(ar|ti|al|by|re|ve|length|id):/i.test(raw))continue;
+    const stamps=[...raw.matchAll(/\[(\d{1,3}):(\d{1,2}(?:[.:]\d{1,3})?)\]/g)]; if(!stamps.length)continue;
+    const body=raw.replace(/\[(\d{1,3}):(\d{1,2}(?:[.:]\d{1,3})?)\]/g,'').trim();
+    const plain=body.replace(/<\d{1,3}:\d{1,2}(?:[.:]\d{1,3})?>/g,'').replace(/\s+/g,' ').trim();if(!plain)continue;
+    for(const s of stamps){rows.push({text:plain,start_ms:Math.max(0,msFromStamp(s[1],String(s[2]).replace(':','.'))+globalOffset),duration_ms:2600,_body:body})}
+  }
+  rows.sort((a,b)=>a.start_ms-b.start_ms);
+  for(let i=0;i<rows.length;i++){
+    const end=rows[i+1]?.start_ms??rows[i].start_ms+2600;
+    rows[i].duration_ms=Math.max(80,end-rows[i].start_ms);
+    const words=parseEnhancedWords(rows[i]._body,rows[i].start_ms,end);delete rows[i]._body;
+    if(words.length)rows[i].words=words;
+  }
+  if(!rows.length)throw new Error('No timestamped LRC lines were found');
+  return {format:rows.some(x=>x.words?.length)?'enhanced_lrc':'lrc',lines:rows};
+}
+function srtMs(v){
+  const m=String(v).trim().match(/(?:(\d{1,2}):)?(\d{1,2}):(\d{2})[,.](\d{1,3})/);if(!m)return null;
+  return ((Number(m[1]||0)*3600+Number(m[2])*60+Number(m[3]))*1000)+Number(String(m[4]).padEnd(3,'0').slice(0,3));
+}
+function parseSRT(text){
+  const src=String(text||'').replace(/^\uFEFF/,'').replace(/\r/g,'').replace(/^WEBVTT[^\n]*\n+/i,'');
+  const blocks=src.split(/\n\s*\n/);const lines=[];
+  for(const block of blocks){
+    const a=block.split('\n');const ti=a.findIndex(x=>x.includes('-->'));if(ti<0)continue;
+    const pair=a[ti].split('-->');const start=srtMs(pair[0]),end=srtMs(pair[1]);
+    const copy=a.slice(ti+1).join(' ').replace(/<[^>]+>/g,'').replace(/\{\\[^}]+\}/g,'').trim();
+    if(start==null||end==null||!copy)continue;lines.push({text:copy,start_ms:start,duration_ms:Math.max(80,end-start)});
+  }
+  if(!lines.length)throw new Error('No readable SRT/VTT cues were found');
+  return {format:'srt',lines};
+}
+function parseTXT(text){
+  const rows=String(text||'').replace(/^\uFEFF/,'').replace(/\r/g,'').split('\n').map(x=>x.trim()).filter(Boolean);
+  if(!rows.length)throw new Error('The lyric file is empty');
+  return {format:'txt',lines:rows.map((text,i)=>({text,start_ms:i*2600,duration_ms:2600}))};
+}
+function parseAny(name,text){
+  const ext=(String(name).split('.').pop()||'').toLowerCase();
+  if(ext==='lrc')return parseLRC(text);
+  if(ext==='srt'||ext==='vtt')return parseSRT(text);
+  if(ext==='txt')return parseTXT(text);
+  if(/\[\d{1,3}:\d{1,2}(?:[.:]\d+)?\]/.test(text))return parseLRC(text);
+  if(/-->/.test(text))return parseSRT(text);
+  return parseTXT(text);
+}
+function commitLyrics(data,file){
+  if(typeof clone!=='function'||typeof renderTimeline!=='function'||typeof renderAt!=='function')throw new Error('Editor is not ready yet. Reload the page and try again.');
+  original=clone(data);doc=clone(data);offset=0;selected=0;
+  const off=document.getElementById('offset');if(off)off.value=0;
+  const ol=document.getElementById('offsetLabel');if(ol)ol.textContent='0 ms';
+  const badge=document.getElementById('formatBadge');if(badge)badge.textContent=data.format.replace('_',' ').toUpperCase();
+  renderTimeline();renderAt((audio?.currentTime||0)*1000);
+  window.__LV_GUARD__?.checkpoint?.('lyrics-file-opened');
+  document.dispatchEvent(new CustomEvent('lina:lyrics-imported',{detail:{name:file.name,format:data.format,count:data.lines.length}}));
+}
+async function handle(file){
+  if(!file)return;
+  const before={doc:typeof clone==='function'?clone(doc):null,original:typeof clone==='function'?clone(original):null,offset:typeof window.offset==='number'?offset:0};
+  try{
+    const text=await readFile(file);if(!text.trim())throw new Error('The selected file is empty');
+    const data=parseAny(file.name,text);commitLyrics(data,file);say(`${file.name} opened — ${data.lines.length} lyric lines loaded`);
+  }catch(err){
+    console.error('LINA lyric import failed',err);
+    try{if(before.doc){doc=before.doc;original=before.original;offset=before.offset;renderTimeline();renderAt((audio?.currentTime||0)*1000)}}catch{}
+    window.__LV_GUARD__?.checkpoint?.('lyrics-import-failed');say(`Could not open lyric file: ${err.message||err}`);
+  }
+}
+// iOS can refuse to fire change when the exact same file is picked twice; clear first.
+input.addEventListener('click',()=>{input.value=''});
+// Capture phase prevents the old backend /api parser from stealing the event.
+input.addEventListener('change',e=>{e.stopImmediatePropagation();handle(e.target.files?.[0])},{capture:true});
+window.LINA_IMPORT_LYRICS=file=>handle(file);
 })();
