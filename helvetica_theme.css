@@ -1,41 +1,72 @@
-/* Lyric Video Visualier — official Helvetica visual system */
+/* Lyric Video Visualier — official Helvetica editorial system
+   Reference language: stark black/white studio layouts, oversized Helvetica,
+   thin rules, tight grids, minimal motion, squared details. */
 :root{
   --lv-font:"Helvetica Neue",Helvetica,Arial,sans-serif;
   --lv-black:#050505;
-  --lv-black-2:#0a0a0a;
-  --lv-panel:#101010;
-  --lv-panel-2:#151515;
-  --lv-rule:rgba(255,255,255,.10);
-  --lv-copy:#f5f5f5;
-  --lv-muted:#8d8d8d;
+  --lv-black-2:#080808;
+  --lv-panel:#0b0b0b;
+  --lv-panel-2:#111;
+  --lv-rule:rgba(255,255,255,.22);
+  --lv-rule-soft:rgba(255,255,255,.10);
+  --lv-copy:#f4f4f2;
+  --lv-muted:#9b9b98;
+  --lv-inverse:#050505;
+  --lv-paper:#f4f4f0;
 }
+*{box-sizing:border-box}
 html,body,.app,button,input,select,textarea,dialog{font-family:var(--lv-font)!important}
-body{background:var(--lv-black);color:var(--lv-copy)}
-.app{background:linear-gradient(180deg,#0a0a0a 0%,#050505 48%,#000 100%)!important}
-header{background:#050505e8!important;border-bottom:1px solid var(--lv-rule)!important;backdrop-filter:blur(22px) saturate(115%)}
-.brand{font-family:var(--lv-font)!important;font-weight:800!important;letter-spacing:-.025em!important;text-transform:none!important}.brand small{font-weight:500!important;letter-spacing:.01em!important;color:#777!important}
-.controls{background:#0b0b0b!important;border-color:var(--lv-rule)!important;box-shadow:0 24px 80px #0008!important}
-.controls h2,.collector-section h3{font-family:var(--lv-font)!important;font-weight:800!important;letter-spacing:.04em!important;color:#aaa!important}
-.effect-card,.pill,.segments button,.tool-row button,.project-tools button,.timing-tools button,.nudge button,.save,.install{background:#111!important;border:1px solid var(--lv-rule)!important;color:#f3f3f3!important;box-shadow:none!important}
-.effect-card.active,.segments button.active,.tool-row button.active{background:#f3f3f3!important;color:#050505!important;border-color:#f3f3f3!important}
-.done,.collector-primary{background:#f4f4f4!important;color:#050505!important;font-weight:800!important;box-shadow:none!important}
-.grid select,.grid input,.project-tools input,dialog input,dialog textarea,.collector-section input,.collector-section textarea{background:#0d0d0d!important;border-color:var(--lv-rule)!important;color:#f5f5f5!important}
-.story{background:#090909!important;box-shadow:0 28px 90px #000d!important}
-.timeline .line{background:#0d0d0d!important;border:1px solid transparent!important}.timeline .line.active{background:#171717!important;border-color:#ffffff18!important}.time{color:#b6b6b6!important}
-.music-tag{font-family:var(--lv-font)!important}.music-tag strong{font-weight:800!important}.music-tag small{color:#8f8f8f!important}
+body{background:#000!important;color:var(--lv-copy);font-feature-settings:"kern" 1,"liga" 1;text-rendering:geometricPrecision}
+.app{background:#050505!important;min-height:100vh}
 
-/* Helvetica lyric preset — distinct restrained editorial motion */
-.font-helvetica .lyrics-layer,.font-helvetica .current-line,.font-helvetica .lyric-line,.font-helvetica .timed-word,.font-helvetica .word{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif!important;letter-spacing:-.035em!important}
-.font-helvetica .lyrics-layer{font-weight:760!important;line-height:.98!important;text-shadow:0 2px 18px rgba(0,0,0,.42)!important}
-.font-helvetica.effect-stack .lyric-line{transition:opacity .42s cubic-bezier(.22,.61,.36,1),transform .48s cubic-bezier(.22,.61,.36,1),filter .42s ease!important;filter:blur(.45px)}
-.font-helvetica.effect-stack .lyric-line.current{font-size:1em!important;font-weight:800!important;opacity:1!important;transform:translateY(0) scale(1)!important;filter:blur(0)}
-.font-helvetica.effect-stack .lyric-line:not(.current){font-size:.62em!important;font-weight:620!important;opacity:.26!important;transform:translateY(calc((1 - var(--line-local,1))*8px)) scale(.985)!important}
-.font-helvetica.effect-stack .lyric-line.next{opacity:.36!important}
-.font-helvetica.effect-karaoke .timed-word{font-weight:800!important;background-image:linear-gradient(90deg,var(--accent) var(--word-progress),rgba(255,255,255,.30) var(--word-progress))!important}
-.font-helvetica.effect-classic .current-line,.font-helvetica.effect-poster .current-line{animation:none!important;opacity:var(--am-exit,1);transform:translateY(calc((1 - var(--am-enter,1))*10px)) scale(calc(.985 + var(--am-enter,1)*.015));transition:none!important}
-.font-helvetica.effect-words .word{animation:none!important;opacity:var(--word-opacity,1)!important;transform:translateY(calc((1 - var(--word-enter,1))*11px)) scale(calc(.985 + var(--word-enter,1)*.015))!important;transition:none!important}
-.font-helvetica.effect-type .current-line{border-right-width:2px!important;font-weight:760!important}
+/* Site shell: black editorial board, not glossy app chrome */
+header{height:58px!important;padding:0 18px!important;background:#050505!important;border-bottom:1px solid var(--lv-rule)!important;backdrop-filter:none!important;box-shadow:none!important}
+.brand{font-family:var(--lv-font)!important;font-weight:800!important;font-size:14px!important;letter-spacing:-.035em!important;text-transform:uppercase!important;line-height:.92}.brand small{margin-top:3px;font-size:9px!important;font-weight:500!important;letter-spacing:.015em!important;text-transform:none!important;color:#888!important}
+.header-actions{gap:6px!important}
+.flow-status{background:#050505!important;border-bottom:1px solid var(--lv-rule-soft)!important;padding:8px 18px!important;gap:18px!important;text-transform:uppercase!important;letter-spacing:.04em!important;font-size:10px!important}
+main{max-width:1440px!important;gap:18px!important;padding:18px!important}
+.editor{gap:10px!important}
+.toptools{border-bottom:1px solid var(--lv-rule)!important;padding-bottom:10px!important}
 
-/* Deliberately minimal site motion */
-.effect-card,.pill,.tool-row button,.segments button,.timeline .line,.done,.save,.install{transition:background-color .16s ease,color .16s ease,border-color .16s ease,opacity .16s ease!important}
+/* Strong rectangular control language from the references */
+.controls{background:#070707!important;border:1px solid var(--lv-rule)!important;border-radius:2px!important;padding:16px!important;box-shadow:none!important}
+section+section{margin-top:20px!important;padding-top:18px!important;border-top:1px solid var(--lv-rule-soft)}
+.controls h2,.collector-section h3,.project-subsection h3{margin:0 0 12px!important;font-family:var(--lv-font)!important;font-size:11px!important;font-weight:800!important;letter-spacing:.035em!important;text-transform:uppercase!important;color:#f2f2ef!important}
+.controls h2::before,.collector-section h3::before{content:"• ";font-weight:900}
+.grid label,.project-tools label,.collector-section label{font-size:10px!important;letter-spacing:.01em!important;color:#9c9c99!important}
+
+.effect-card,.pill,.segments button,.tool-row button,.project-tools button,.timing-tools button,.nudge button,.save,.install,.icon{background:#090909!important;border:1px solid var(--lv-rule-soft)!important;color:#f3f3f1!important;border-radius:2px!important;box-shadow:none!important}
+.effect-card{min-height:70px!important;padding:10px!important}.effect-card strong{font-size:13px!important;letter-spacing:-.02em!important}.effect-card span{font-size:9px!important}
+.effect-card.active,.segments button.active,.tool-row button.active{background:#f3f3ef!important;color:#050505!important;border-color:#f3f3ef!important}
+.done,.collector-primary{background:#f3f3ef!important;color:#050505!important;border:1px solid #f3f3ef!important;border-radius:2px!important;font-weight:800!important;box-shadow:none!important}
+.grid select,.grid input,.project-tools input,dialog input,dialog textarea,.collector-section input,.collector-section textarea{background:#090909!important;border:0!important;border-bottom:1px solid var(--lv-rule)!important;border-radius:0!important;color:#f5f5f2!important;padding:9px 2px!important}
+.grid select:focus,.grid input:focus,.project-tools input:focus,dialog input:focus,dialog textarea:focus{outline:none!important;border-bottom-color:#fff!important}
+
+/* Preview becomes the hero black canvas */
+.story{background:#050505!important;border-radius:2px!important;border:1px solid var(--lv-rule)!important;box-shadow:none!important}
+.transport{border-top:1px solid var(--lv-rule)!important;padding-top:8px!important}
+.transport button{border-radius:2px!important}
+.timeline{gap:0!important;border-top:1px solid var(--lv-rule-soft)!important}.timeline .line{background:#050505!important;border:0!important;border-bottom:1px solid var(--lv-rule-soft)!important;border-radius:0!important;padding:9px 2px!important}.timeline .line.active{background:#111!important;border-bottom-color:#fff!important}.time{color:#bcbcb8!important;font-variant-numeric:tabular-nums}.line-copy b{font-weight:700!important;letter-spacing:-.015em!important}
+.music-tag{font-family:var(--lv-font)!important}.music-tag strong{font-weight:800!important;letter-spacing:-.02em!important}.music-tag small{color:#8f8f8b!important}
+
+/* Dialogs/sub-tools share the same editorial language */
+dialog,.collector-dialog{background:#070707!important;color:#f4f4f2!important;border:1px solid var(--lv-rule)!important;border-radius:2px!important;box-shadow:0 30px 90px #000!important}
+.collector-shell>header{background:#070707!important;border-bottom:1px solid var(--lv-rule)!important;backdrop-filter:none!important}.collector-shell h2{font-size:28px!important;font-weight:800!important;letter-spacing:-.045em!important}.collector-eyebrow{font-weight:700!important;letter-spacing:.03em!important}.collector-backups a{background:#090909!important;border-radius:2px!important;border-color:var(--lv-rule-soft)!important}.collector-status,.tap-card{border-radius:2px!important}
+
+/* Helvetica lyric preset — its own restrained Swiss/editorial motion */
+.font-helvetica .lyrics-layer,.font-helvetica .current-line,.font-helvetica .lyric-line,.font-helvetica .timed-word,.font-helvetica .word{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif!important;letter-spacing:-.045em!important}
+.font-helvetica .lyrics-layer{font-weight:760!important;line-height:.94!important;text-shadow:0 2px 16px rgba(0,0,0,.35)!important}
+.font-helvetica.effect-stack .lyric-line{transition:opacity .34s cubic-bezier(.22,.61,.36,1),transform .38s cubic-bezier(.22,.61,.36,1)!important;filter:none!important}
+.font-helvetica.effect-stack .lyric-line.current{font-size:1em!important;font-weight:820!important;opacity:1!important;transform:translateY(0) scale(1)!important}
+.font-helvetica.effect-stack .lyric-line:not(.current){font-size:.58em!important;font-weight:560!important;opacity:.22!important;transform:translateY(calc((1 - var(--line-local,1))*7px))!important}
+.font-helvetica.effect-stack .lyric-line.next{opacity:.34!important}
+.font-helvetica.effect-karaoke .current-line{font-weight:820!important}.font-helvetica.effect-karaoke .timed-word{font-weight:820!important;background-image:linear-gradient(90deg,var(--accent) var(--word-progress),rgba(255,255,255,.28) var(--word-progress))!important}
+.font-helvetica.effect-classic .current-line,.font-helvetica.effect-poster .current-line{animation:none!important;opacity:var(--am-exit,1);transform:translateY(calc((1 - var(--am-enter,1))*8px));transition:none!important}
+.font-helvetica.effect-poster .current-line{font-weight:850!important;letter-spacing:-.055em!important;line-height:.9!important}
+.font-helvetica.effect-words .word{animation:none!important;opacity:var(--word-opacity,1)!important;transform:translateY(calc((1 - var(--word-enter,1))*8px))!important;transition:none!important}
+.font-helvetica.effect-type .current-line{border-right-width:1px!important;font-weight:760!important}
+
+/* Deliberately minimal motion */
+.effect-card,.pill,.tool-row button,.segments button,.timeline .line,.done,.save,.install,.icon{transition:background-color .12s linear,color .12s linear,border-color .12s linear,opacity .12s linear!important}
+@media(max-width:900px){header{padding:0 12px!important}main{padding:10px!important}.controls{border-left:0!important;border-right:0!important}.brand{font-size:12px!important}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}}
