@@ -3,7 +3,9 @@
 'use strict';
 const q=s=>document.querySelector(s);
 function jump(sel){const el=q(sel);if(!el)return;el.scrollIntoView({behavior:'smooth',block:'start'});}
-function installLocalLyricImporter(){if(document.querySelector('script[data-lv-lrc-fix]'))return;const s=document.createElement('script');s.src='lrc_import_fix.js';s.defer=true;s.dataset.lvLrcFix='1';s.onerror=()=>console.error('Lyric Video Visualier: local LRC importer failed to load');document.head.appendChild(s)}
+function installScript(src,marker){if(document.querySelector(`script[data-${marker}]`))return;const s=document.createElement('script');s.src=src;s.defer=true;s.setAttribute(`data-${marker}`,'1');s.onerror=()=>console.error(`Lyric Video Visualier: ${src} failed to load`);document.head.appendChild(s)}
+function installLocalLyricImporter(){installScript('lrc_import_fix.js','lv-lrc-fix')}
+function installControlFixes(){installScript('control_fixes.js','lv-control-fixes')}
 function installStyles(){if(document.getElementById('lv-site-chrome-style'))return;const style=document.createElement('style');style.id='lv-site-chrome-style';style.textContent=`
 .lv-site-nav,.lv-site-intro,.lv-site-footer{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif}
 .lv-site-nav{display:grid;grid-template-columns:minmax(260px,1.2fr) 2fr;gap:24px;align-items:end;padding:16px 22px;border-bottom:1px solid rgba(255,255,255,.22);background:#050505;color:#fff;position:relative;z-index:20}
@@ -17,6 +19,7 @@ function installStyles(){if(document.getElementById('lv-site-chrome-style'))retu
 function build(){
  if(document.querySelector('.lv-site-nav'))return;
  installLocalLyricImporter();
+ installControlFixes();
  installStyles();
  const app=q('.app'); if(!app)return;
  document.documentElement.classList.add('lv-site-shell');
@@ -38,37 +41,15 @@ function build(){
      <a href="https://github.com/Tezzaaaaaa/lyricvideovisualiser" target="_blank" rel="noopener noreferrer">GITHUB ↗</a>
    </div>`;
  app.insertBefore(nav,app.firstChild);
-
  const info=document.createElement('section');
  info.className='lv-site-intro';
- info.innerHTML=`
-   <p class="lv-kicker">LYRIC VIDEO VISUALIER / WEB STUDIO</p>
-   <h1>BUILD. SYNC.<br>VISUALISE LYRICS.</h1>
-   <div class="lv-intro-meta">
-     <p>Browser-based lyric video studio for importing or generating timed lyrics, styling motion, and exporting social-ready video.</p>
-     <p>LOCAL-FIRST MEDIA PROCESSING<br>APPLE MUSIC LINK + METADATA SUPPORT<br>LRC / ENHANCED LRC / SRT / TXT</p>
-   </div>`;
+ info.innerHTML=`<p class="lv-kicker">LYRIC VIDEO VISUALIER / WEB STUDIO</p><h1>BUILD. SYNC.<br>VISUALISE LYRICS.</h1><div class="lv-intro-meta"><p>Browser-based lyric video studio for importing or generating timed lyrics, styling motion, and exporting social-ready video.</p><p>LOCAL-FIRST MEDIA PROCESSING<br>APPLE MUSIC LINK + METADATA SUPPORT<br>LRC / ENHANCED LRC / SRT / TXT</p></div>`;
  nav.insertAdjacentElement('afterend',info);
-
  const footer=document.createElement('footer');
  footer.className='lv-site-footer';
- footer.innerHTML=`
-   <div class="lv-footer-title">LYRIC VIDEO<br>VISUALIER</div>
-   <div class="lv-footer-grid">
-     <section><p class="lv-footer-label">NAVIGATION</p><a href="#" data-jump=".editor">Create</a><a href="#" data-open-lrc>Lyrics / LRC Collector</a><a href="#" data-jump="[data-panel-content='style']">Style</a><a href="#" data-jump="[data-panel-content='timing']">Timing</a><a href="#" data-jump="[data-panel-content='project']">Projects</a><a href="#" data-export>Export</a></section>
-     <section><p class="lv-footer-label">PROJECT / CONTACT</p><a href="https://github.com/Tezzaaaaaa/lyricvideovisualiser" target="_blank" rel="noopener noreferrer">GitHub Repository ↗</a><a href="https://github.com/Tezzaaaaaa" target="_blank" rel="noopener noreferrer">Developer Profile ↗</a><a href="https://github.com/Tezzaaaaaa/lyricvideovisualiser/issues" target="_blank" rel="noopener noreferrer">Contact / Feedback ↗</a><span>Lyric Video Visualier</span><span>Independent web application</span></section>
-     <section><p class="lv-footer-label">WORKFLOW</p><span>Apple Music track-link identification</span><span>Synced LRC collection + local generator</span><span>Helvetica-first lyric system</span><span>Metadata-heavy export workflow</span><span>Fail-safe project recovery</span></section>
-     <section><p class="lv-footer-label">INFORMATION</p><span>Audio and project media are processed locally where supported.</span><span>Apple Music is used for track identification, metadata and sharing links only.</span><span>This project does not bypass DRM or provide protected Apple Music audio.</span></section>
-   </div>
-   <div class="lv-footer-bottom"><span>© ${new Date().getFullYear()} LYRIC VIDEO VISUALIER</span><span>HELVETICA / BLACK / WHITE / SYSTEM 01</span><button type="button" data-top>BACK TO TOP ↑</button></div>`;
+ footer.innerHTML=`<div class="lv-footer-title">LYRIC VIDEO<br>VISUALIER</div><div class="lv-footer-grid"><section><p class="lv-footer-label">NAVIGATION</p><a href="#" data-jump=".editor">Create</a><a href="#" data-open-lrc>Lyrics / LRC Collector</a><a href="#" data-jump="[data-panel-content='style']">Style</a><a href="#" data-jump="[data-panel-content='timing']">Timing</a><a href="#" data-jump="[data-panel-content='project']">Projects</a><a href="#" data-export>Export</a></section><section><p class="lv-footer-label">PROJECT / CONTACT</p><a href="https://github.com/Tezzaaaaaa/lyricvideovisualiser" target="_blank" rel="noopener noreferrer">GitHub Repository ↗</a><a href="https://github.com/Tezzaaaaaa" target="_blank" rel="noopener noreferrer">Developer Profile ↗</a><a href="https://github.com/Tezzaaaaaa/lyricvideovisualiser/issues" target="_blank" rel="noopener noreferrer">Contact / Feedback ↗</a><span>Lyric Video Visualier</span><span>Independent web application</span></section><section><p class="lv-footer-label">WORKFLOW</p><span>Apple Music track-link identification</span><span>Synced LRC collection + local generator</span><span>Helvetica-first lyric system</span><span>Metadata-heavy export workflow</span><span>Fail-safe project recovery</span></section><section><p class="lv-footer-label">INFORMATION</p><span>Audio and project media are processed locally where supported.</span><span>Apple Music is used for track identification, metadata and sharing links only.</span><span>This project does not bypass DRM or provide protected Apple Music audio.</span></section></div><div class="lv-footer-bottom"><span>© ${new Date().getFullYear()} LYRIC VIDEO VISUALIER</span><span>HELVETICA / BLACK / WHITE / SYSTEM 01</span><button type="button" data-top>BACK TO TOP ↑</button></div>`;
  app.insertAdjacentElement('afterend',footer);
-
- document.addEventListener('click',e=>{
-   const j=e.target.closest('[data-jump]'); if(j){e.preventDefault();jump(j.dataset.jump);return;}
-   const lrc=e.target.closest('[data-open-lrc]'); if(lrc){e.preventDefault();q('#openCollector')?.click();return;}
-   const ex=e.target.closest('[data-export]'); if(ex){e.preventDefault();q('#exportBtn')?.click();return;}
-   if(e.target.closest('[data-top]'))window.scrollTo({top:0,behavior:'smooth'});
- });
+ document.addEventListener('click',e=>{const j=e.target.closest('[data-jump]');if(j){e.preventDefault();jump(j.dataset.jump);return}const lrc=e.target.closest('[data-open-lrc]');if(lrc){e.preventDefault();q('#openCollector')?.click();return}const ex=e.target.closest('[data-export]');if(ex){e.preventDefault();q('#exportBtn')?.click();return}if(e.target.closest('[data-top]'))window.scrollTo({top:0,behavior:'smooth'})});
  nav.querySelector('.lv-nav-wordmark')?.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();jump('.editor')}});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',build,{once:true});else build();
