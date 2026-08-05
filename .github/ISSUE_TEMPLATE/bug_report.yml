@@ -1,0 +1,70 @@
+name: Bug report
+description: Something in LINA is not working correctly.
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## LINA / BUG REPORT
+        Keep it specific. Sync, import, font, export, iPhone Safari, and recovery issues are especially important.
+  - type: input
+    id: device
+    attributes:
+      label: Device / browser
+      placeholder: e.g. iPhone 14, Safari, iOS 27
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - LRC / SRT / VTT / TXT import
+        - Apple Music identification
+        - Karaoke / lyric motion
+        - Timing / sync
+        - Typography / font rendering
+        - Background / composition
+        - Export
+        - Project save / recovery
+        - Navigation / interface
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      placeholder: Describe the exact failure.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should have happened?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open...
+        2. Tap...
+        3. Import...
+        4. See...
+    validations:
+      required: true
+  - type: textarea
+    id: file
+    attributes:
+      label: Relevant file details
+      description: File type, lyric format, export settings, song duration, or anything else relevant. Do not upload copyrighted media you do not have permission to share.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Quick checks
+      options:
+        - label: I refreshed/reopened the app and the issue still happens.
+        - label: I can reproduce this issue more than once.
