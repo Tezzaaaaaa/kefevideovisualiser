@@ -3,6 +3,7 @@
 'use strict';
 const q=s=>document.querySelector(s);
 function jump(sel){const el=q(sel);if(!el)return;el.scrollIntoView({behavior:'smooth',block:'start'});}
+function installLocalLyricImporter(){if(document.querySelector('script[data-lv-lrc-fix]'))return;const s=document.createElement('script');s.src='lrc_import_fix.js';s.defer=true;s.dataset.lvLrcFix='1';s.onerror=()=>console.error('Lyric Video Visualier: local LRC importer failed to load');document.head.appendChild(s)}
 function installStyles(){if(document.getElementById('lv-site-chrome-style'))return;const style=document.createElement('style');style.id='lv-site-chrome-style';style.textContent=`
 .lv-site-nav,.lv-site-intro,.lv-site-footer{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif}
 .lv-site-nav{display:grid;grid-template-columns:minmax(260px,1.2fr) 2fr;gap:24px;align-items:end;padding:16px 22px;border-bottom:1px solid rgba(255,255,255,.22);background:#050505;color:#fff;position:relative;z-index:20}
@@ -15,6 +16,7 @@ function installStyles(){if(document.getElementById('lv-site-chrome-style'))retu
 `;document.head.append(style)}
 function build(){
  if(document.querySelector('.lv-site-nav'))return;
+ installLocalLyricImporter();
  installStyles();
  const app=q('.app'); if(!app)return;
  document.documentElement.classList.add('lv-site-shell');
