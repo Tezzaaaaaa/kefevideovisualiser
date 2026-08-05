@@ -1,3 +1,4 @@
+@import url("helvetica_theme.css");
 /* Apple Music-inspired lyric motion polish */
 .lyrics-layer{will-change:transform,opacity;contain:layout paint style}
 .lyrics-layer .current-line,.lyrics-layer .lyric-line,.lyrics-layer .timed-word,.lyrics-layer .word{will-change:transform,opacity,filter;background-attachment:local}
