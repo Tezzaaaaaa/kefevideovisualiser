@@ -12,4 +12,14 @@
 .case-upper .current-line,.case-upper .lyric-line,.case-upper .timed-word,.case-upper .word{text-transform:uppercase}
 .case-lower .current-line,.case-lower .lyric-line,.case-lower .timed-word,.case-lower .word{text-transform:lowercase}
 .case-title .current-line,.case-title .lyric-line,.case-title .timed-word,.case-title .word{text-transform:capitalize}
+
+/* LINA master masthead — clear, Helvetica-dominant identity */
+.lv-nav-wordmark strong{font-size:0!important;color:transparent!important;line-height:1!important;white-space:normal!important}
+.lv-nav-wordmark strong::before{content:"LINA: Lyric Video Visualiser";display:block;color:#fff;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-size:clamp(30px,4.4vw,68px);font-weight:850;line-height:.88;letter-spacing:-.065em;text-transform:none}
+.lv-nav-wordmark span{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif!important;font-weight:700!important;letter-spacing:.10em!important;text-transform:uppercase}
+header .brand{font-size:0!important;color:transparent!important}
+header .brand::before{content:"LINA: Lyric Video Visualiser";display:block;color:#fff;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-size:14px;font-weight:800;line-height:.96;letter-spacing:-.035em}
+header .brand small{display:block!important;color:#8b8b8b!important;font-size:9px!important;letter-spacing:.08em!important;text-transform:uppercase!important}
+@media(max-width:700px){.lv-nav-wordmark strong::before{font-size:clamp(27px,8.5vw,44px);line-height:.9}header .brand::before{font-size:12px}}
+
 @media (prefers-reduced-motion: reduce){.effect-stack .lyric-line{transition:none!important}.effect-type .current-line,.effect-poster .current-line,.effect-classic .current-line,.effect-words .current-line,.effect-words .word{transform:none!important}}
