@@ -27,6 +27,26 @@ function lyricMotionAnchor(ms){
   const u=clamp((t-begin)/Math.max(1,b-begin),0,1),p=smoother(u);
   return{anchor:i+p,from:i,to:next,p};
 }
+function sceneEnvelope(ms){
+  if(!lines.length)return{alpha:0,rise:0,scale:1};
+  const ent=entranceMs(),first=lines[0].start+offset,lastLine=lines.at(-1),lastEnd=lastLine.start+offset+Math.max(280,lastLine.duration||0);
+  const inStart=Math.min(ent,first),inEnd=Math.max(inStart+180,Math.min(first+160,inStart+520));
+  const enter=smoother(clamp((ms-inStart)/Math.max(1,inEnd-inStart),0,1));
+  const outStart=lastEnd+420,outEnd=outStart+760,leave=1-smoother(clamp((ms-outStart)/Math.max(1,outEnd-outStart),0,1));
+  const alpha=clamp(enter*leave,0,1),rise=(1-enter)*18-leave<1?(1-leave)*-10:(1-enter)*18;
+  return{alpha,rise:(1-enter)*18-(1-leave)*10,scale:.985+.015*enter-.008*(1-leave)};
+}
+function silencePresence(i,ms){
+  if(!lines[i])return 0;
+  const t=ms-offset,line=lines[i],start=line.start,end=start+Math.max(240,line.duration||0),next=lines[i+1];
+  if(!next)return 1;
+  const gap=next.start-end;
+  if(gap<1500||t<=end)return 1;
+  const travel=travelWindowFor(i),travelStart=next.start-travel;
+  if(t>=travelStart)return mix(.58,1,smoother(clamp((t-travelStart)/Math.max(1,travel),0,1)));
+  const settle=Math.max(400,Math.min(1200,gap*.28)),fade=smoother(clamp((t-end)/settle,0,1));
+  return mix(1,.58,fade);
+}
 function lineVisual(distance){
   const d=Math.abs(distance),near=smoother(clamp(d,0,1)),far=smoother(clamp((d-1)/2.8,0,1));
   const alpha=clamp(mix(1,.50,near)*(1-.84*far),.04,1);
@@ -68,12 +88,17 @@ function updateMotionWords(ms,state){
 }
 function updateMotionLayout(ms){
   if(!linaMotionRoot)return null;
-  const state=lyricMotionAnchor(ms),els=[...linaMotionRoot.children],from=els[state.from],to=els[state.to]||from;if(!from)return state;
+  const state=lyricMotionAnchor(ms),env=sceneEnvelope(ms),els=[...linaMotionRoot.children],from=els[state.from],to=els[state.to]||from;if(!from)return state;
   const fromC=from.offsetTop+from.offsetHeight/2,toC=to.offsetTop+to.offsetHeight/2,anchorY=mix(fromC,toC,state.p);
-  linaMotionRoot.style.transform=`translate3d(0,${(-anchorY).toFixed(3)}px,0)`;
+  linaMotionRoot.style.opacity=env.alpha.toFixed(4);
+  linaMotionRoot.style.transform=`translate3d(0,${(-anchorY+env.rise).toFixed(3)}px,0) scale(${env.scale.toFixed(4)})`;
+  const lo=Math.max(0,Math.floor(state.anchor)-6),hi=Math.min(lines.length-1,Math.ceil(state.anchor)+6);
   for(let idx=0;idx<els.length;idx++){
-    const el=els[idx],v=lineVisual(idx-state.anchor);
-    el.style.opacity=v.alpha.toFixed(4);
+    const el=els[idx];
+    if(idx<lo||idx>hi){el.style.visibility='hidden';continue}
+    el.style.visibility='visible';
+    const v=lineVisual(idx-state.anchor),quiet=silencePresence(idx,ms),alpha=v.alpha*(idx===state.from?quiet:1);
+    el.style.opacity=alpha.toFixed(4);
     el.style.transform=`translate3d(0,0,0) scale(${v.scale.toFixed(4)})`;
     el.style.filter=`blur(${v.blur.toFixed(3)}px) saturate(${v.saturation.toFixed(3)})`;
     el.style.zIndex=String(Math.max(1,20-Math.round(Math.abs(idx-state.anchor)*3)));
@@ -82,9 +107,12 @@ function updateMotionLayout(ms){
 }
 function transitionProgress(ms,i){const state=lyricMotionAnchor(ms);return state.from===i&&state.to===i+1?state.p:0}
 function render(ms){
-  updateIntro(ms);if(!lines.length){linaMotionRoot=null;linaMotionCount=-1;lyricsEl.textContent='Add lyrics to begin';$('#activeMeta').textContent='No lyrics loaded';return}
-  if(ms<entranceMs()){lyricsEl.innerHTML='';linaMotionRoot=null;linaMotionCount=-1;$('#activeMeta').textContent='Waiting for lyrics entrance';return}
-  buildMotionDOM();const i=ci(ms),cw=contextWindow(),state=updateMotionLayout(ms);updateMotionWords(ms,state||lyricMotionAnchor(ms));selected=i;$('#activeMeta').textContent=`Lyric ${i+1} of ${lines.length} · ${cw.total} on screen`;$$('.line').forEach((x,n)=>x.classList.toggle('active',n===i));if(linaMotionEditor!==i){linaMotionEditor=i;fillEditor(i)}
+  updateIntro(ms);
+  if(!lines.length){linaMotionRoot=null;linaMotionCount=-1;lyricsEl.textContent='Add lyrics to begin';$('#activeMeta').textContent='No lyrics loaded';return}
+  buildMotionDOM();
+  const i=ci(ms),cw=contextWindow(),state=updateMotionLayout(ms);updateMotionWords(ms,state||lyricMotionAnchor(ms));selected=i;
+  $('#activeMeta').textContent=ms<entranceMs()?'Waiting for lyrics entrance':`Lyric ${i+1} of ${lines.length} · ${cw.total} on screen`;
+  $$('.line').forEach((x,n)=>x.classList.toggle('active',n===i));if(linaMotionEditor!==i){linaMotionEditor=i;fillEditor(i)}
 }
 function canvasRows(ctx,line,maxW){
   const us=units(line),space=ctx.measureText(' ').width,rows=[];let row=[],rw=0;
@@ -132,10 +160,13 @@ function canvasLine(ctx,line,ms,w,h,y,scale,alpha,focus=1){
   ctx.restore();
 }
 function drawApple(ctx,line,ms,w,h){
-  const state=lyricMotionAnchor(ms),centerY=h*(+$('#yPos').value/100),cw=contextWindow(),radius=Math.max(cw.before,cw.after)+3,{centers}=canvasCenters(ctx,w,h);
+  const state=lyricMotionAnchor(ms),env=sceneEnvelope(ms);if(env.alpha<=.001)return;
+  const centerY=h*(+$('#yPos').value/100),cw=contextWindow(),radius=Math.max(cw.before,cw.after)+3,{centers}=canvasCenters(ctx,w,h);
   const fromC=centers[state.from]??0,toC=centers[state.to]??fromC,anchorC=mix(fromC,toC,state.p);
+  ctx.save();ctx.globalAlpha=env.alpha;ctx.translate(w/2,centerY+env.rise);ctx.scale(env.scale,env.scale);ctx.translate(-w/2,-(centerY+env.rise));
   for(let idx=Math.max(0,Math.floor(state.anchor)-radius);idx<=Math.min(lines.length-1,Math.ceil(state.anchor)+radius);idx++){
-    const dist=idx-state.anchor,v=lineVisual(dist),y=centerY+(centers[idx]-anchorC);
-    canvasLine(ctx,lines[idx],ms,w,h,y,v.scale,v.alpha,v.alpha);
+    const dist=idx-state.anchor,v=lineVisual(dist),quiet=idx===state.from?silencePresence(idx,ms):1,y=centerY+(centers[idx]-anchorC)+env.rise;
+    canvasLine(ctx,lines[idx],ms,w,h,y,v.scale,v.alpha*quiet,v.alpha);
   }
+  ctx.restore();
 }
