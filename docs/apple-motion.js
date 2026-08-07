@@ -1,4 +1,6 @@
-let linaMotionRoot=null,linaMotionEditor=-1,linaMotionCount=-1,linaMotionTextSig='';
+let linaMotionRoot=null,linaMotionEditor=-1,linaMotionCount=-1,linaMotionTextSig='',linaMotionLinesRef=null,linaMotionEls=[],linaMotionSpans=[],linaMotionUnits=[],linaMotionRoles=[],linaMotionCenters=[],linaMotionGeomSig='',linaVisibleLo=0,linaVisibleHi=-1,linaHotLo=0,linaHotHi=-1,linaMotionRevision=0;
+const linaWordCharacterCache=new WeakMap(),linaCanvasLayoutCache=new WeakMap();
+let linaCanvasGeometryCache={sig:'',centers:[]};
 function smoother(x){x=clamp(x,0,1);return x*x*x*(x*(x*6-15)+10)}
 function mix(a,b,t){return a+(b-a)*t}
 function phraseWeight(line){const us=units(line),chars=us.reduce((n,w)=>n+String(w.text||'').length,0);return clamp(chars/38,.45,1.45)}
@@ -35,9 +37,9 @@ function lyricMotionAnchor(ms){
   const t=ms-offset,last=lines.length-1;
   if(t<=lines[0].start)return{anchor:0,from:0,to:0,p:0};
   if(t>=lines[last].start)return{anchor:last,from:last,to:last,p:0};
-  let i=0;
-  while(i<last-1&&lines[i+1].start<=t)i++;
-  const next=i+1,b=lines[next].start,travel=travelWindowFor(i),begin=Math.max(lines[i].start,b-travel);
+  let lo=0,hi=last;
+  while(lo+1<hi){const mid=(lo+hi)>>1;if(lines[mid].start<=t)lo=mid;else hi=mid}
+  const i=lo,next=i+1,b=lines[next].start,travel=travelWindowFor(i),begin=Math.max(lines[i].start,b-travel);
   if(t<=begin)return{anchor:i,from:i,to:i,p:0};
   const u=clamp((t-begin)/Math.max(1,b-begin),0,1),p=smoother(u);
   return{anchor:i+p,from:i,to:next,p};
@@ -71,12 +73,13 @@ function lineVisual(distance){
   return{alpha,scale,blur,saturation};
 }
 function wordTimingCharacter(line,w){
+  const cached=linaWordCharacterCache.get(w);if(cached)return cached;
   const us=units(line),idx=Math.max(0,us.indexOf(w)),dur=Math.max(60,Number(w.duration)||0),durations=us.map(x=>Math.max(60,Number(x.duration)||0)).sort((a,b)=>a-b),median=durations[Math.floor(durations.length/2)]||dur;
   const text=String(w.text||'').trim(),letters=text.replace(/[^\p{L}\p{N}]/gu,''),punct=/[,.!?;:…—-]$/.test(text),breathOnly=!letters&&!!text,paren=/^[\(（\[\{]|[\)）\]\}]$/.test(text);
   const prev=us[idx-1],next=us[idx+1],prevDur=Math.max(60,Number(prev?.duration)||median),nextDur=Math.max(60,Number(next?.duration)||median),ratio=dur/Math.max(1,median);
   const held=ratio>=1.55||dur>=900,quick=dur<=Math.min(260,median*.62),run=quick&&(prevDur<=Math.max(330,median*.78)||nextDur<=Math.max(330,median*.78));
-  const adlib=paren||/^(oh+|ooh+|ah+|aah+|yeah+|hey+|woo+|woah+|uh+|mm+|mmm+)$/i.test(letters);
-  return{dur,median,ratio,held,quick,run,punct,breathOnly,adlib};
+  const adlib=paren||/^(oh+|ooh+|ah+|aah+|yeah+|hey+|woo+|woah+|uh+|mm+|mmm+)$/i.test(letters),result={dur,median,ratio,held,quick,run,punct,breathOnly,adlib};
+  linaWordCharacterCache.set(w,result);return result;
 }
 function wordMotion(line,w,ms){
   const c=wordTimingCharacter(line,w),hold=Math.max(.25,w.hold||1),duration=Math.max(90,c.dur*hold),raw=clamp((ms-(w.start+offset))/duration,0,1);
@@ -87,8 +90,7 @@ function wordMotion(line,w,ms){
   if(c.punct){release=Math.min(.38,release+.08);plateau=Math.max(.42,plateau-.06)}
   if(c.breathOnly){attack=.34;release=.38;plateau=.28;depthMul=.38;glowMul=.26;riseMul=.25}
   const a=smoother(clamp(raw/Math.max(.05,attack),0,1)),r=smoother(clamp((1-raw)/Math.max(.05,release),0,1));
-  let presence=Math.min(a,r);
-  if(raw>attack&&raw<1-release)presence=1;
+  let presence=Math.min(a,r);if(raw>attack&&raw<1-release)presence=1;
   const singStart=attack*.38,singEnd=1-release*.35,progress=smoother(clamp((raw-singStart)/Math.max(.05,singEnd-singStart),0,1));
   const strength=wordTimingEmphasis(line,w),depth=(.052+Math.max(0,strength-1)*.080)*depthMul;
   const scale=1+presence*depth,bright=1+presence*(.14+Math.max(0,strength-1)*.17)*glowMul,glow=presence*(.66+Math.max(0,strength-1)*.46)*glowMul,rise=-presence*(1.45+Math.max(0,strength-1)*1.55)*riseMul;
@@ -96,88 +98,96 @@ function wordMotion(line,w,ms){
 }
 function wordMarkup(line){return units(line).map((w,i)=>`<span class="apple-word" data-w="${i}">${esc(w.text)}</span>`).join(' ')}
 function motionTextSignature(){return lines.length+'|'+lines.map(x=>x.text).join('\u0001')+'|'+lines.map((x,i)=>temporalGapAfter(i).toFixed(3)+'/'+JSON.stringify(vocalRole(x,i))).join(',')}
+function invalidateLinaMotion(hard=false){
+  linaMotionUnits=[];linaCanvasGeometryCache={sig:'',centers:[]};linaCanvasLayoutCache=new WeakMap();linaMotionGeomSig='';linaMotionRevision++;
+  if(hard){linaMotionLinesRef=null;linaMotionTextSig='';linaMotionCount=-1}
+}
+window.invalidateLinaMotion=invalidateLinaMotion;
 function buildMotionDOM(){
-  const sig=motionTextSignature();if(linaMotionRoot&&linaMotionCount===lines.length&&linaMotionTextSig===sig)return;
-  linaMotionCount=lines.length;linaMotionTextSig=sig;
-  lyricsEl.innerHTML='<div class="apple-flow">'+lines.map((l,i)=>{const r=vocalRole(l,i),cls=r.backing?' vocal-backing':r.duet?' vocal-duet':'';return`<div class="apple-line${cls}" data-line="${i}" data-vocal-side="${r.side}" style="--line-gap-after:${temporalGapAfter(i).toFixed(3)}em">${wordMarkup(l)}</div>`}).join('')+'</div>';
-  linaMotionRoot=lyricsEl.querySelector('.apple-flow');
+  if(linaMotionRoot&&linaMotionLinesRef===lines&&linaMotionCount===lines.length)return;
+  const sig=motionTextSignature();
+  linaMotionCount=lines.length;linaMotionTextSig=sig;linaMotionLinesRef=lines;linaMotionRevision++;
+  lyricsEl.innerHTML='<div class="apple-flow">'+lines.map((l,i)=>{const r=vocalRole(l,i),cls=r.backing?' vocal-backing':r.duet?' vocal-duet':'';return`<div class="apple-line${cls}" data-line="${i}" data-vocal-side="${r.side}" style="--line-gap-after:${temporalGapAfter(i).toFixed(3)}em;visibility:hidden">${wordMarkup(l)}</div>`}).join('')+'</div>';
+  linaMotionRoot=lyricsEl.querySelector('.apple-flow');linaMotionEls=Array.from(linaMotionRoot.children);linaMotionSpans=new Array(lines.length);linaMotionUnits=new Array(lines.length);linaMotionRoles=lines.map((l,i)=>vocalRole(l,i));
+  for(let i=0;i<linaMotionEls.length;i++)linaMotionSpans[i]=Array.from(linaMotionEls[i].children);
+  linaMotionCenters=[];linaMotionGeomSig='';linaVisibleLo=0;linaVisibleHi=-1;linaHotLo=0;linaHotHi=-1;linaCanvasGeometryCache={sig:'',centers:[]};
+}
+function lineUnits(i){return linaMotionUnits[i]||(linaMotionUnits[i]=units(lines[i]))}
+function updateVisibleRange(lo,hi){
+  if(linaVisibleHi>=linaVisibleLo){for(let i=linaVisibleLo;i<=linaVisibleHi;i++)if((i<lo||i>hi)&&linaMotionEls[i])linaMotionEls[i].style.visibility='hidden'}
+  for(let i=lo;i<=hi;i++)if((i<linaVisibleLo||i>linaVisibleHi)&&linaMotionEls[i])linaMotionEls[i].style.visibility='visible';
+  linaVisibleLo=lo;linaVisibleHi=hi;
+}
+function updateHotRange(lo,hi){
+  if(lo===linaHotLo&&hi===linaHotHi)return;
+  if(linaHotHi>=linaHotLo)for(let i=linaHotLo;i<=linaHotHi;i++)linaMotionEls[i]?.classList.remove('motion-hot');
+  for(let i=lo;i<=hi;i++)linaMotionEls[i]?.classList.add('motion-hot');
+  linaHotLo=lo;linaHotHi=hi;
+}
+function geometrySignature(){return[linaMotionRevision,story?.clientWidth||0,$('#size').value,$('#lineHeight').value,$('#fontWeight').value,$('#letterSpacing').value].join('|')}
+function ensureMotionGeometry(){
+  const sig=geometrySignature();if(sig===linaMotionGeomSig&&linaMotionCenters.length===linaMotionEls.length)return;
+  linaMotionGeomSig=sig;linaMotionCenters=new Array(linaMotionEls.length);
+  for(let i=0;i<linaMotionEls.length;i++){const el=linaMotionEls[i];linaMotionCenters[i]=el.offsetTop+el.offsetHeight/2}
 }
 function updateMotionWords(ms,state){
   if(!linaMotionRoot)return;
-  const els=[...linaMotionRoot.children],lo=Math.max(0,Math.floor(state.anchor)-4),hi=Math.min(lines.length-1,Math.ceil(state.anchor)+4),glowSetting=+$('#glow').value/100;
+  const lo=Math.max(0,Math.floor(state.anchor)-3),hi=Math.min(lines.length-1,Math.ceil(state.anchor)+3),glowSetting=+$('#glow').value/100;
   for(let i=lo;i<=hi;i++){
-    const line=lines[i],el=els[i];if(!line||!el)continue;
-    const role=vocalRole(line,i),focus=lineVisual(i-state.anchor),us=units(line),spans=[...el.querySelectorAll('.apple-word')];
-    spans.forEach((span,n)=>{
-      const w=us[n];if(!w)return;const m=wordMotion(line,w,ms),fill=m.progress*100;
+    const line=lines[i],role=linaMotionRoles[i]||vocalRole(line,i),focus=lineVisual(i-state.anchor),us=lineUnits(i),spans=linaMotionSpans[i];if(!line||!spans)continue;
+    for(let n=0;n<spans.length;n++){
+      const span=spans[n],w=us[n];if(!w)continue;const m=wordMotion(line,w,ms),fill=m.progress*100;
       const feather=m.run?3.1:m.held?5.5:clamp(3.8+2.8*m.pulse,3.8,6.6),fa=clamp(fill-feather,0,100),fb=clamp(fill+feather,0,100),roleFocus=focus.alpha*role.word;
-      const halo1=(.8+6.2*m.glow)*glowSetting,halo2=(2+12.8*m.glow)*glowSetting,ha=clamp(.02+.31*m.glow,0,.36),ha2=clamp(.006+.08*m.glow,0,.10);
-      span.dataset.motion=m.held?'held':m.run?'run':m.adlib?'adlib':m.breath?'breath':'normal';
-      span.style.setProperty('--fill',fill.toFixed(2)+'%');span.style.setProperty('--fill-a',fa.toFixed(2)+'%');span.style.setProperty('--fill-b',fb.toFixed(2)+'%');
-      span.style.setProperty('--word-scale',(1+(m.scale-1)*roleFocus).toFixed(4));span.style.setProperty('--word-rise',(m.rise*roleFocus).toFixed(2)+'px');span.style.setProperty('--word-bright',(1+(m.bright-1)*roleFocus).toFixed(3));
-      span.style.setProperty('--halo1',halo1.toFixed(2)+'px');span.style.setProperty('--halo2',halo2.toFixed(2)+'px');span.style.setProperty('--halo-alpha',(ha*roleFocus).toFixed(3));span.style.setProperty('--halo-alpha2',(ha2*roleFocus).toFixed(3));
-    });
+      const halo1=(.8+6.2*m.glow)*glowSetting,halo2=(2+12.8*m.glow)*glowSetting,ha=clamp(.02+.31*m.glow,0,.36),ha2=clamp(.006+.08*m.glow,0,.10),motion=m.held?'held':m.run?'run':m.adlib?'adlib':m.breath?'breath':'normal';
+      if(span.dataset.motion!==motion)span.dataset.motion=motion;
+      span.style.cssText=`--fill:${fill.toFixed(2)}%;--fill-a:${fa.toFixed(2)}%;--fill-b:${fb.toFixed(2)}%;--word-scale:${(1+(m.scale-1)*roleFocus).toFixed(4)};--word-rise:${(m.rise*roleFocus).toFixed(2)}px;--word-bright:${(1+(m.bright-1)*roleFocus).toFixed(3)};--halo1:${halo1.toFixed(2)}px;--halo2:${halo2.toFixed(2)}px;--halo-alpha:${(ha*roleFocus).toFixed(3)};--halo-alpha2:${(ha2*roleFocus).toFixed(3)};`;
+    }
   }
 }
 function updateMotionLayout(ms){
   if(!linaMotionRoot)return null;
-  const state=lyricMotionAnchor(ms),env=sceneEnvelope(ms),els=[...linaMotionRoot.children],from=els[state.from],to=els[state.to]||from;if(!from)return state;
-  const fromC=from.offsetTop+from.offsetHeight/2,toC=to.offsetTop+to.offsetHeight/2,anchorY=mix(fromC,toC,state.p);
-  linaMotionRoot.style.opacity=env.alpha.toFixed(4);
-  linaMotionRoot.style.transform=`translate3d(0,${(-anchorY+env.rise).toFixed(3)}px,0) scale(${env.scale.toFixed(4)})`;
-  const lo=Math.max(0,Math.floor(state.anchor)-6),hi=Math.min(lines.length-1,Math.ceil(state.anchor)+6),stageW=story?.clientWidth||620;
-  for(let idx=0;idx<els.length;idx++){
-    const el=els[idx];if(idx<lo||idx>hi){el.style.visibility='hidden';continue}el.style.visibility='visible';
-    const role=vocalRole(lines[idx],idx),v=lineVisual(idx-state.anchor),quiet=silencePresence(idx,ms),alpha=v.alpha*(idx===state.from?quiet:1)*role.alpha,shift=role.shift*stageW;
-    el.style.opacity=alpha.toFixed(4);
-    el.style.transform=`translate3d(${shift.toFixed(2)}px,0,0) scale(${(v.scale*role.scale).toFixed(4)})`;
-    el.style.filter=`blur(${(v.blur+role.blur).toFixed(3)}px) saturate(${v.saturation.toFixed(3)})`;
-    el.style.zIndex=String(Math.max(1,20-Math.round(Math.abs(idx-state.anchor)*3)+(role.duet?1:0)));
+  const state=lyricMotionAnchor(ms),env=sceneEnvelope(ms);ensureMotionGeometry();const fromC=linaMotionCenters[state.from]??0,toC=linaMotionCenters[state.to]??fromC,anchorY=mix(fromC,toC,state.p);
+  linaMotionRoot.style.opacity=env.alpha.toFixed(4);linaMotionRoot.style.transform=`translate3d(0,${(-anchorY+env.rise).toFixed(3)}px,0) scale(${env.scale.toFixed(4)})`;
+  const lo=Math.max(0,Math.floor(state.anchor)-5),hi=Math.min(lines.length-1,Math.ceil(state.anchor)+5),hotLo=Math.max(0,Math.floor(state.anchor)-2),hotHi=Math.min(lines.length-1,Math.ceil(state.anchor)+2),stageW=story?.clientWidth||620;
+  updateVisibleRange(lo,hi);updateHotRange(hotLo,hotHi);
+  for(let idx=lo;idx<=hi;idx++){
+    const el=linaMotionEls[idx],role=linaMotionRoles[idx],v=lineVisual(idx-state.anchor),quiet=silencePresence(idx,ms),alpha=v.alpha*(idx===state.from?quiet:1)*role.alpha,shift=role.shift*stageW;
+    const blur=v.blur+role.blur,filter=blur<.055&&Math.abs(v.saturation-1)<.015?'none':`blur(${blur.toFixed(3)}px) saturate(${v.saturation.toFixed(3)})`;
+    el.style.opacity=alpha.toFixed(4);el.style.transform=`translate3d(${shift.toFixed(2)}px,0,0) scale(${(v.scale*role.scale).toFixed(4)})`;el.style.filter=filter;el.style.zIndex=String(Math.max(1,20-Math.round(Math.abs(idx-state.anchor)*3)+(role.duet?1:0)));
   }
   return state;
 }
 function transitionProgress(ms,i){const state=lyricMotionAnchor(ms);return state.from===i&&state.to===i+1?state.p:0}
 function render(ms){
   updateIntro(ms);
-  if(!lines.length){linaMotionRoot=null;linaMotionCount=-1;lyricsEl.textContent='Add lyrics to begin';$('#activeMeta').textContent='No lyrics loaded';return}
+  if(!lines.length){linaMotionRoot=null;linaMotionCount=-1;linaMotionLinesRef=null;lyricsEl.textContent='Add lyrics to begin';$('#activeMeta').textContent='No lyrics loaded';return}
   buildMotionDOM();
   const i=ci(ms),cw=contextWindow(),state=updateMotionLayout(ms);updateMotionWords(ms,state||lyricMotionAnchor(ms));selected=i;
   $('#activeMeta').textContent=ms<entranceMs()?'Waiting for lyrics entrance':`Lyric ${i+1} of ${lines.length} · ${cw.total} on screen`;
   $$('.line').forEach((x,n)=>x.classList.toggle('active',n===i));if(linaMotionEditor!==i){linaMotionEditor=i;fillEditor(i)}
 }
-function canvasRows(ctx,line,maxW){
-  const us=units(line),space=ctx.measureText(' ').width,rows=[];let row=[],rw=0;
-  for(const u of us){const ww=ctx.measureText(u.text).width,add=(row.length?space:0)+ww;if(row.length&&rw+add>maxW){rows.push({items:row,w:rw});row=[];rw=0}row.push({...u,x:rw+(row.length?space:0),w:ww});rw+=add}
-  if(row.length)rows.push({items:row,w:rw});return rows;
-}
-function canvasLineHeight(ctx,line,w,h){
-  const size=(+$('#size').value/620)*Math.min(w,h*.9),lh=size*(+$('#lineHeight').value);ctx.save();ctx.font=`${$('#fontWeight').value} ${Math.round(size)}px -apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",sans-serif`;const rows=canvasRows(ctx,line,w*.84);ctx.restore();return Math.max(lh,rows.length*lh);
+function canvasLayoutSignature(w,h){return[linaMotionRevision,w,h,$('#size').value,$('#lineHeight').value,$('#fontWeight').value].join('|')}
+function canvasLineLayout(ctx,line,w,h){
+  const sig=canvasLayoutSignature(w,h),cached=linaCanvasLayoutCache.get(line);if(cached?.sig===sig)return cached;
+  const us=units(line),size=(+$('#size').value/620)*Math.min(w,h*.9),lh=size*(+$('#lineHeight').value),maxW=w*.84,weight=$('#fontWeight').value;
+  ctx.save();ctx.font=`${weight} ${Math.round(size)}px -apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",sans-serif`;const space=ctx.measureText(' ').width,rows=[];let row=[],rw=0;
+  for(const u of us){const ww=ctx.measureText(u.text).width,add=(row.length?space:0)+ww;if(row.length&&rw+add>maxW){rows.push({items:row,w:rw});row=[];rw=0}row.push({...u,x:rw+(row.length?space:0),w:ww});rw+=add}if(row.length)rows.push({items:row,w:rw});ctx.restore();
+  const result={sig,size,lh,maxW,weight,rows,height:Math.max(lh,rows.length*lh)};linaCanvasLayoutCache.set(line,result);return result;
 }
 function canvasCenters(ctx,w,h){
-  const centers=new Array(lines.length).fill(0),heights=lines.map(l=>canvasLineHeight(ctx,l,w,h)),baseGap=(+$('#size').value/620)*Math.min(w,h*.9)*.22;centers[0]=heights[0]/2;
-  for(let i=1;i<lines.length;i++){const gap=baseGap*(1+temporalGapAfter(i-1));centers[i]=centers[i-1]+heights[i-1]/2+gap+heights[i]/2}return{centers,heights};
+  const sig=canvasLayoutSignature(w,h)+'|'+lines.length;if(linaCanvasGeometryCache.sig===sig)return linaCanvasGeometryCache;
+  const centers=new Array(lines.length),heights=new Array(lines.length),baseGap=(+$('#size').value/620)*Math.min(w,h*.9)*.22;for(let i=0;i<lines.length;i++)heights[i]=canvasLineLayout(ctx,lines[i],w,h).height;centers[0]=(heights[0]||0)/2;
+  for(let i=1;i<lines.length;i++){const gap=baseGap*(1+temporalGapAfter(i-1));centers[i]=centers[i-1]+heights[i-1]/2+gap+heights[i]/2}linaCanvasGeometryCache={sig,centers,heights};return linaCanvasGeometryCache;
 }
 function canvasLine(ctx,line,ms,w,h,y,scale,alpha,focus=1,role={shift:0,word:1}){
-  if(!line||alpha<=0)return;
-  const size=(+$('#size').value/620)*Math.min(w,h*.9),lh=size*(+$('#lineHeight').value),maxW=w*.84,align=$('#textAlign').value,weight=$('#fontWeight').value,shift=(role.shift||0)*w;
-  ctx.save();ctx.globalAlpha=clamp(alpha,0,1);ctx.translate(w/2+shift,y);ctx.scale(scale,scale);ctx.translate(-(w/2+shift),-y);ctx.translate(shift,0);ctx.font=`${weight} ${Math.round(size)}px -apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",sans-serif`;ctx.textBaseline='middle';
-  const rows=canvasRows(ctx,line,maxW);let yy=y-(rows.length-1)*lh/2;
-  for(const rr of rows){
-    let left=w*.08;if(align==='center')left=(w-rr.w)/2;if(align==='right')left=w*.92-rr.w;
-    for(const u of rr.items){
-      const x=left+u.x,m=wordMotion(line,u,ms),cx=x+u.w/2,wordFocus=focus*(role.word??1);ctx.save();ctx.translate(cx,yy+m.rise*wordFocus*(w/620));ctx.scale(1+(m.scale-1)*wordFocus,1+(m.scale-1)*wordFocus);ctx.translate(-cx,-yy);
-      ctx.fillStyle='rgba(255,255,255,.235)';ctx.shadowBlur=0;ctx.fillText(u.text,x,yy);
-      if(m.progress>0){const glowSetting=+$('#glow').value/100;ctx.save();ctx.beginPath();ctx.rect(x-size*.07,yy-lh*.72,u.w*m.progress+size*.14,lh*1.44);ctx.clip();ctx.fillStyle=$('#textColor').value;ctx.shadowColor=`rgba(255,255,255,${clamp(.045+.28*m.glow*wordFocus,.045,.34)})`;ctx.shadowBlur=(2.5+12.8*m.glow*wordFocus)*glowSetting*(w/620);ctx.fillText(u.text,x,yy);ctx.shadowBlur=(.8+5.8*m.glow*wordFocus)*glowSetting*(w/620);ctx.fillText(u.text,x,yy);ctx.restore()}ctx.restore();
-    }yy+=lh;
-  }ctx.restore();
+  if(!line||alpha<=0)return;const layout=canvasLineLayout(ctx,line,w,h),{size,lh,maxW,weight,rows}=layout,align=$('#textAlign').value,shift=(role.shift||0)*w;
+  ctx.save();ctx.globalAlpha=clamp(alpha,0,1);ctx.translate(w/2+shift,y);ctx.scale(scale,scale);ctx.translate(-(w/2+shift),-y);ctx.translate(shift,0);ctx.font=`${weight} ${Math.round(size)}px -apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",sans-serif`;ctx.textBaseline='middle';let yy=y-(rows.length-1)*lh/2;
+  for(const rr of rows){let left=w*.08;if(align==='center')left=(w-rr.w)/2;if(align==='right')left=w*.92-rr.w;for(const u of rr.items){const x=left+u.x,m=wordMotion(line,u,ms),cx=x+u.w/2,wordFocus=focus*(role.word??1);ctx.save();ctx.translate(cx,yy+m.rise*wordFocus*(w/620));ctx.scale(1+(m.scale-1)*wordFocus,1+(m.scale-1)*wordFocus);ctx.translate(-cx,-yy);ctx.fillStyle='rgba(255,255,255,.235)';ctx.shadowBlur=0;ctx.fillText(u.text,x,yy);if(m.progress>0){const glowSetting=+$('#glow').value/100;ctx.save();ctx.beginPath();ctx.rect(x-size*.07,yy-lh*.72,u.w*m.progress+size*.14,lh*1.44);ctx.clip();ctx.fillStyle=$('#textColor').value;ctx.shadowColor=`rgba(255,255,255,${clamp(.045+.28*m.glow*wordFocus,.045,.34)})`;ctx.shadowBlur=(2.5+12.8*m.glow*wordFocus)*glowSetting*(w/620);ctx.fillText(u.text,x,yy);ctx.shadowBlur=(.8+5.8*m.glow*wordFocus)*glowSetting*(w/620);ctx.fillText(u.text,x,yy);ctx.restore()}ctx.restore()}yy+=lh}ctx.restore();
 }
 function drawApple(ctx,line,ms,w,h){
   const state=lyricMotionAnchor(ms),env=sceneEnvelope(ms);if(env.alpha<=.001)return;
   const centerY=h*(+$('#yPos').value/100),cw=contextWindow(),radius=Math.max(cw.before,cw.after)+3,{centers}=canvasCenters(ctx,w,h),fromC=centers[state.from]??0,toC=centers[state.to]??fromC,anchorC=mix(fromC,toC,state.p);
   ctx.save();ctx.globalAlpha=env.alpha;ctx.translate(w/2,centerY+env.rise);ctx.scale(env.scale,env.scale);ctx.translate(-w/2,-(centerY+env.rise));
-  for(let idx=Math.max(0,Math.floor(state.anchor)-radius);idx<=Math.min(lines.length-1,Math.ceil(state.anchor)+radius);idx++){
-    const role=vocalRole(lines[idx],idx),dist=idx-state.anchor,v=lineVisual(dist),quiet=idx===state.from?silencePresence(idx,ms):1,y=centerY+(centers[idx]-anchorC)+env.rise;
-    canvasLine(ctx,lines[idx],ms,w,h,y,v.scale*role.scale,v.alpha*quiet*role.alpha,v.alpha,role);
-  }
-  ctx.restore();
+  for(let idx=Math.max(0,Math.floor(state.anchor)-radius);idx<=Math.min(lines.length-1,Math.ceil(state.anchor)+radius);idx++){const role=linaMotionRoles[idx]||vocalRole(lines[idx],idx),dist=idx-state.anchor,v=lineVisual(dist),quiet=idx===state.from?silencePresence(idx,ms):1,y=centerY+(centers[idx]-anchorC)+env.rise;canvasLine(ctx,lines[idx],ms,w,h,y,v.scale*role.scale,v.alpha*quiet*role.alpha,v.alpha,role)}ctx.restore();
 }
+for(const [id,hard] of [['applyLine',true],['applyWords',false]])document.getElementById(id)?.addEventListener('click',()=>queueMicrotask(()=>{invalidateLinaMotion(hard);render(audio.currentTime*1000)}));
