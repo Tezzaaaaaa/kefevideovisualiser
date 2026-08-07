@@ -11,7 +11,7 @@
     const title=document.querySelector('#titleInput')?.value.trim()||'';
     if(!title)return;
     const artist=document.querySelector('#artistInput')?.value.trim()||'';
-    const album=window.selectedSong?.collectionName||'';
+    const album=typeof selectedSong!=='undefined'&&selectedSong?.collectionName?selectedSong.collectionName:'';
     const art=document.querySelector('#showArtworkIntro')?.checked?document.querySelector('#introArt'):null;
     const landscape=w/h>1.2;
     ctx.save();
