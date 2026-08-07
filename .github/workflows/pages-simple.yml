@@ -44,6 +44,7 @@ jobs:
             docs/apple-motion.js
             docs/apple-subword.js
             docs/preview-runtime.js
+            docs/preview-recovery.js
             docs/apple-motion.css
             docs/ui-solid.css
             docs/panel-nav.js
@@ -67,6 +68,7 @@ jobs:
           grep -q 'apple-motion.js' docs/app-events.js || { echo 'bootstrap does not load Apple motion engine'; exit 1; }
           grep -q 'apple-subword.js' docs/app-events.js || { echo 'bootstrap does not load sub-word motion layer'; exit 1; }
           grep -q 'preview-runtime.js' docs/app-events.js || { echo 'bootstrap does not load hardened preview runtime'; exit 1; }
+          grep -q 'preview-recovery.js' docs/app-events.js || { echo 'bootstrap does not load preview recovery runtime'; exit 1; }
           grep -q 'panel-nav.js' docs/app-events.js || { echo 'bootstrap does not load stable panel navigation'; exit 1; }
           grep -q 'intro-layout.js' docs/app-events.js || { echo 'bootstrap does not load adaptive intro layout'; exit 1; }
           grep -q 'intro-layout.css' docs/app-events.js || { echo 'bootstrap does not load adaptive intro styling'; exit 1; }
