@@ -1,9 +1,6 @@
 'use strict';
 (()=>{
-  const originalSetBgSource=window.setBgSource;
-  const originalSetBgFile=window.setBgFile;
-  const originalArtworkToggle=window.artworkToggle;
-  if(typeof originalSetBgSource!=='function')return;
+  if(typeof window.setBgSource!=='function')return;
 
   function retireMedia(node){
     if(!node)return;
@@ -21,6 +18,10 @@
     retireMedia(current);
     if(bg)bg.replaceChildren();
     bgMedia=null;
+  }
+
+  function revokeBlob(value){
+    if(typeof value==='string'&&value.startsWith('blob:'))try{URL.revokeObjectURL(value)}catch{}
   }
 
   window.setBgSource=function(src,label,kind='image'){
@@ -53,7 +54,7 @@
   window.setBgFile=function(f,type){
     if(!f)return;
     manualBgFile=f;
-    if(bgURL){try{URL.revokeObjectURL(bgURL)}catch{}bgURL=null}
+    revokeBlob(bgURL);bgURL=null;
     bgURL=URL.createObjectURL(f);
     syncArtworkChecks(false);
     setBgSource(bgURL,`${type==='video'?'Video':'Image'}: ${f.name}`,type);
@@ -65,7 +66,7 @@
     if(v&&artworkObjectURL){
       setBgSource(artworkObjectURL,'Selected artwork','image');
     }else if(manualBgFile){
-      if(bgURL){try{URL.revokeObjectURL(bgURL)}catch{}bgURL=null}
+      revokeBlob(bgURL);bgURL=null;
       bgURL=URL.createObjectURL(manualBgFile);
       setBgSource(bgURL,manualBgFile.name,manualBgFile.type.startsWith('video')?'video':'image');
     }else if(!v){
@@ -85,16 +86,13 @@
   }
 
   document.addEventListener('visibilitychange',()=>document.hidden?suspendBackground():resumeBackground());
-  window.addEventListener('pagehide',()=>{
+  window.addEventListener('pagehide',e=>{
     suspendBackground();
+    if(e.persisted)return;
     retireCurrentBackground();
-    for(const key of ['audioURL','bgURL','artworkObjectURL']){
-      try{
-        const value=eval(key);
-        if(typeof value==='string'&&value.startsWith('blob:'))URL.revokeObjectURL(value);
-      }catch{}
-    }
-  },{once:true});
+    revokeBlob(audioURL);revokeBlob(bgURL);revokeBlob(artworkObjectURL);
+  });
+  window.addEventListener('pageshow',e=>{if(e.persisted)resumeBackground()});
 
   window.linaMediaLifecycle={retireMedia,retireCurrentBackground,suspendBackground,resumeBackground};
 })();
