@@ -41,6 +41,8 @@ jobs:
             docs/app-events-safe.js
             docs/apple-motion.js
             docs/apple-motion.css
+            docs/ui-solid.css
+            docs/ui-flow.js
             docs/runtime-guard.js
           )
           for f in "${required[@]}"; do
@@ -54,6 +56,7 @@ jobs:
           grep -q 'app-core-safe.js' docs/app-events.js || { echo 'bootstrap does not load canonical core'; exit 1; }
           grep -q 'app-media-safe.js' docs/app-events.js || { echo 'bootstrap does not load canonical media'; exit 1; }
           grep -q 'app-export-safe.js' docs/app-events.js || { echo 'bootstrap does not load export runtime'; exit 1; }
+          grep -q 'ui-flow.js' docs/app-events.js || { echo 'bootstrap does not load workflow UI'; exit 1; }
           grep -q 'runtime-guard.js' docs/app-events.js || { echo 'bootstrap does not load runtime guard'; exit 1; }
 
       - name: Configure Pages
