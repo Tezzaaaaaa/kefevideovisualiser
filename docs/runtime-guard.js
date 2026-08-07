@@ -13,10 +13,12 @@
   if(typeof play?.onclick!=='function')handlerFailures.push('playback');
   if(typeof exportTop?.onclick!=='function'||typeof exportBottom?.onclick!=='function')handlerFailures.push('export');
   const navButtons=[...document.querySelectorAll('.navbtn')];if(navButtons.length!==4)handlerFailures.push('panel-count');
+  if(!window.linaTiming)handlerFailures.push('timing-layer');
+  if(!window.linaPerformance)handlerFailures.push('performance-layer');
   if(missing.length||missingFns.length||handlerFailures.length){
     console.error('LINA startup check failed',{missing,missingFns,handlerFailures});setStatus('LINA failed its startup check.');return;
   }
   const audio=document.querySelector('#audio');if(audio){audio.muted=false;if(audio.volume===0)audio.volume=1;}
   document.documentElement.dataset.linaReady='true';
-  console.info('LINA startup check passed',{panels:navButtons.length,audioReady:!!audio,exportReady:true});
+  console.info('LINA startup check passed',{panels:navButtons.length,audioReady:!!audio,exportReady:true,adaptivePerformance:true});
 })();
