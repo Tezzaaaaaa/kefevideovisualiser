@@ -27,6 +27,35 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate LINA runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(
+            docs/index.html
+            docs/style.css
+            docs/app-events.js
+            docs/app-core-safe.js
+            docs/app-media-safe.js
+            docs/app-export-safe.js
+            docs/app-events-safe.js
+            docs/apple-motion.js
+            docs/apple-motion.css
+            docs/runtime-guard.js
+          )
+          for f in "${required[@]}"; do
+            test -s "$f" || { echo "Missing required runtime file: $f"; exit 1; }
+          done
+          for f in docs/*.js; do
+            echo "Syntax checking $f"
+            node --check "$f"
+          done
+          grep -q 'app-events.js' docs/index.html || { echo 'index.html does not load the LINA bootstrap'; exit 1; }
+          grep -q 'app-core-safe.js' docs/app-events.js || { echo 'bootstrap does not load canonical core'; exit 1; }
+          grep -q 'app-media-safe.js' docs/app-events.js || { echo 'bootstrap does not load canonical media'; exit 1; }
+          grep -q 'app-export-safe.js' docs/app-events.js || { echo 'bootstrap does not load export runtime'; exit 1; }
+          grep -q 'runtime-guard.js' docs/app-events.js || { echo 'bootstrap does not load runtime guard'; exit 1; }
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
