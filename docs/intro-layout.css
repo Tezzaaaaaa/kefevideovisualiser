@@ -1,5 +1,6 @@
 #story[data-aspect="16:9"] .title-card{display:none;place-items:center;padding:5% 7%}
 #story[data-aspect="16:9"] .title-card.on{display:grid}
+.title-card[hidden]{display:none!important}
 #story[data-aspect="16:9"] .share-card{width:min(82%,900px);display:grid;grid-template-columns:minmax(150px,32%) minmax(0,1fr);grid-template-rows:auto auto auto;column-gap:clamp(18px,3vw,42px);row-gap:8px;align-items:center;text-align:left;padding:clamp(18px,3vw,34px);border-radius:clamp(18px,2.4vw,30px)}
 #story[data-aspect="16:9"] .intro-art{grid-column:1;grid-row:1/4;width:100%;height:auto;aspect-ratio:1/1;object-fit:cover;margin:0;align-self:center;border-radius:clamp(14px,1.8vw,24px)}
 #story[data-aspect="16:9"] .title-name,#story[data-aspect="16:9"] .title-artist,#story[data-aspect="16:9"] .title-album{grid-column:2;min-width:0;text-align:left;margin:0}
