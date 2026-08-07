@@ -70,12 +70,29 @@ function lineVisual(distance){
   const saturation=mix(1,.96,near)*(1-.09*far);
   return{alpha,scale,blur,saturation};
 }
+function wordTimingCharacter(line,w){
+  const us=units(line),idx=Math.max(0,us.indexOf(w)),dur=Math.max(60,Number(w.duration)||0),durations=us.map(x=>Math.max(60,Number(x.duration)||0)).sort((a,b)=>a-b),median=durations[Math.floor(durations.length/2)]||dur;
+  const text=String(w.text||'').trim(),letters=text.replace(/[^\p{L}\p{N}]/gu,''),punct=/[,.!?;:…—-]$/.test(text),breathOnly=!letters&&!!text,paren=/^[\(（\[\{]|[\)）\]\}]$/.test(text);
+  const prev=us[idx-1],next=us[idx+1],prevDur=Math.max(60,Number(prev?.duration)||median),nextDur=Math.max(60,Number(next?.duration)||median),ratio=dur/Math.max(1,median);
+  const held=ratio>=1.55||dur>=900,quick=dur<=Math.min(260,median*.62),run=quick&&(prevDur<=Math.max(330,median*.78)||nextDur<=Math.max(330,median*.78));
+  const adlib=paren||/^(oh+|ooh+|ah+|aah+|yeah+|hey+|woo+|woah+|uh+|mm+|mmm+)$/i.test(letters);
+  return{dur,median,ratio,held,quick,run,punct,breathOnly,adlib};
+}
 function wordMotion(line,w,ms){
-  const hold=Math.max(.25,w.hold||1),duration=Math.max(90,w.duration*hold),raw=clamp((ms-(w.start+offset))/duration,0,1),progress=smoother(raw);
-  const attack=smoother(clamp(raw/.20,0,1)),release=smoother(clamp((1-raw)/.24,0,1)),presence=Math.min(attack,release);
-  const strength=wordTimingEmphasis(line,w),depth=.052+Math.max(0,strength-1)*.080;
-  const scale=1+presence*depth,bright=1+presence*(.14+Math.max(0,strength-1)*.17),glow=presence*(.66+Math.max(0,strength-1)*.46),rise=-presence*(1.45+Math.max(0,strength-1)*1.55);
-  return{raw,progress,pulse:presence,strength,scale,bright,glow,rise};
+  const c=wordTimingCharacter(line,w),hold=Math.max(.25,w.hold||1),duration=Math.max(90,c.dur*hold),raw=clamp((ms-(w.start+offset))/duration,0,1);
+  let attack=.20,release=.24,plateau=.56,depthMul=1,glowMul=1,riseMul=1;
+  if(c.held){attack=.13;release=.17;plateau=.70;depthMul=1.08;glowMul=.92;riseMul=.92}
+  if(c.run){attack=.28;release=.31;plateau=.41;depthMul=.78;glowMul=.72;riseMul=.70}
+  if(c.adlib){attack=.17;release=.20;plateau=.63;depthMul=.94;glowMul=.88;riseMul=.84}
+  if(c.punct){release=Math.min(.38,release+.08);plateau=Math.max(.42,plateau-.06)}
+  if(c.breathOnly){attack=.34;release=.38;plateau=.28;depthMul=.38;glowMul=.26;riseMul=.25}
+  const a=smoother(clamp(raw/Math.max(.05,attack),0,1)),r=smoother(clamp((1-raw)/Math.max(.05,release),0,1));
+  let presence=Math.min(a,r);
+  if(raw>attack&&raw<1-release)presence=1;
+  const singStart=attack*.38,singEnd=1-release*.35,progress=smoother(clamp((raw-singStart)/Math.max(.05,singEnd-singStart),0,1));
+  const strength=wordTimingEmphasis(line,w),depth=(.052+Math.max(0,strength-1)*.080)*depthMul;
+  const scale=1+presence*depth,bright=1+presence*(.14+Math.max(0,strength-1)*.17)*glowMul,glow=presence*(.66+Math.max(0,strength-1)*.46)*glowMul,rise=-presence*(1.45+Math.max(0,strength-1)*1.55)*riseMul;
+  return{raw,progress,pulse:presence,presence,strength,scale,bright,glow,rise,held:c.held,quick:c.quick,run:c.run,adlib:c.adlib,breath:c.breathOnly,plateau};
 }
 function wordMarkup(line){return units(line).map((w,i)=>`<span class="apple-word" data-w="${i}">${esc(w.text)}</span>`).join(' ')}
 function motionTextSignature(){return lines.length+'|'+lines.map(x=>x.text).join('\u0001')+'|'+lines.map((x,i)=>temporalGapAfter(i).toFixed(3)+'/'+JSON.stringify(vocalRole(x,i))).join(',')}
@@ -93,8 +110,9 @@ function updateMotionWords(ms,state){
     const role=vocalRole(line,i),focus=lineVisual(i-state.anchor),us=units(line),spans=[...el.querySelectorAll('.apple-word')];
     spans.forEach((span,n)=>{
       const w=us[n];if(!w)return;const m=wordMotion(line,w,ms),fill=m.progress*100;
-      const feather=clamp(3.8+2.8*m.pulse,3.8,6.6),fa=clamp(fill-feather,0,100),fb=clamp(fill+feather,0,100),roleFocus=focus.alpha*role.word;
+      const feather=m.run?3.1:m.held?5.5:clamp(3.8+2.8*m.pulse,3.8,6.6),fa=clamp(fill-feather,0,100),fb=clamp(fill+feather,0,100),roleFocus=focus.alpha*role.word;
       const halo1=(.8+6.2*m.glow)*glowSetting,halo2=(2+12.8*m.glow)*glowSetting,ha=clamp(.02+.31*m.glow,0,.36),ha2=clamp(.006+.08*m.glow,0,.10);
+      span.dataset.motion=m.held?'held':m.run?'run':m.adlib?'adlib':m.breath?'breath':'normal';
       span.style.setProperty('--fill',fill.toFixed(2)+'%');span.style.setProperty('--fill-a',fa.toFixed(2)+'%');span.style.setProperty('--fill-b',fb.toFixed(2)+'%');
       span.style.setProperty('--word-scale',(1+(m.scale-1)*roleFocus).toFixed(4));span.style.setProperty('--word-rise',(m.rise*roleFocus).toFixed(2)+'px');span.style.setProperty('--word-bright',(1+(m.bright-1)*roleFocus).toFixed(3));
       span.style.setProperty('--halo1',halo1.toFixed(2)+'px');span.style.setProperty('--halo2',halo2.toFixed(2)+'px');span.style.setProperty('--halo-alpha',(ha*roleFocus).toFixed(3));span.style.setProperty('--halo-alpha2',(ha2*roleFocus).toFixed(3));
