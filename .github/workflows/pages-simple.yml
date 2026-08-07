@@ -43,7 +43,6 @@ jobs:
             docs/apple-timing.js
             docs/apple-motion.js
             docs/apple-subword.js
-            docs/apple-performance.js
             docs/apple-motion.css
             docs/ui-solid.css
             docs/panel-nav.js
@@ -66,7 +65,6 @@ jobs:
           grep -q 'apple-timing.js' docs/app-events.js || { echo 'bootstrap does not load timing repair layer'; exit 1; }
           grep -q 'apple-motion.js' docs/app-events.js || { echo 'bootstrap does not load Apple motion engine'; exit 1; }
           grep -q 'apple-subword.js' docs/app-events.js || { echo 'bootstrap does not load sub-word motion layer'; exit 1; }
-          grep -q 'apple-performance.js' docs/app-events.js || { echo 'bootstrap does not load adaptive performance layer'; exit 1; }
           grep -q 'panel-nav.js' docs/app-events.js || { echo 'bootstrap does not load stable panel navigation'; exit 1; }
           grep -q 'intro-layout.js' docs/app-events.js || { echo 'bootstrap does not load adaptive intro layout'; exit 1; }
           grep -q 'intro-layout.css' docs/app-events.js || { echo 'bootstrap does not load adaptive intro styling'; exit 1; }
