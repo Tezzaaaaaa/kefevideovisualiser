@@ -15,11 +15,12 @@
   const navButtons=[...document.querySelectorAll('.navbtn')];if(navButtons.length!==4)handlerFailures.push('panel-count');
   if(!window.linaTiming)handlerFailures.push('timing-layer');
   if(!window.linaMediaLifecycle)handlerFailures.push('media-lifecycle');
+  if(!window.linaPreviewRuntime)handlerFailures.push('preview-runtime');
   if(typeof window.linaExportState!=='function')handlerFailures.push('export-lifecycle');
   if(missing.length||missingFns.length||handlerFailures.length){
     console.error('LINA startup check failed',{missing,missingFns,handlerFailures});setStatus('LINA failed its startup check.');return;
   }
   const audio=document.querySelector('#audio');if(audio){audio.muted=false;if(audio.volume===0)audio.volume=1;}
   document.documentElement.dataset.linaReady='true';
-  console.info('LINA startup check passed',{panels:navButtons.length,audioReady:!!audio,exportReady:true,exportLifecycle:true,mediaLifecycle:true});
+  console.info('LINA startup check passed',{panels:navButtons.length,audioReady:!!audio,exportReady:true,exportLifecycle:true,mediaLifecycle:true,previewRuntime:true});
 })();
