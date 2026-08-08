@@ -62,7 +62,7 @@ function renderAdaptive(ms){
       const isPast=raw>=1,isActive=raw>0&&raw<1;
       s.classList.toggle('lina-past',isPast);s.classList.toggle('lina-active',isActive);s.classList.toggle('lina-future',!isPast&&!isActive);
       const energy=isActive?Math.sin(raw*Math.PI):0;
-      s.style.setProperty('--word-opacity',isPast?'.96':isActive:String(.76+energy*.24):'.54');
+      s.style.setProperty('--word-opacity',isPast?'.96':isActive?String(.76+energy*.24):'.54');
       s.style.setProperty('--word-scale',String(1+energy*.006));
       s.style.setProperty('--word-y',`${(-energy*0.45).toFixed(3)}px`);
       s.style.setProperty('--word-blur',isActive?'0px':isPast?'0px':'.12px');
