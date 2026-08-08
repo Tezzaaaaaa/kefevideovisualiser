@@ -18,28 +18,36 @@ function readFile(file){
   return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result||''));r.onerror=()=>reject(r.error||new Error('File read failed'));r.readAsText(file)});
 }
 function msFromStamp(min,sec){return Math.round((Number(min)*60+Number(sec))*1000)}
-function parseEnhancedWords(body,lineStart,lineEnd){
-  const out=[]; const rx=/<(\d{1,3}):(\d{1,2}(?:[.:]\d{1,3})?)>([^<]*)/g; let m;
-  while((m=rx.exec(body))){const text=(m[3]||'').trim();if(!text)continue;out.push({text,start_ms:msFromStamp(m[1],String(m[2]).replace(':','.'))})}
-  for(let i=0;i<out.length;i++){const next=out[i+1]?.start_ms??lineEnd??(lineStart+2600);out[i].duration_ms=Math.max(40,next-out[i].start_ms)}
+function parseEnhancedWords(body,lineStart,lineEnd,globalOffset=0){
+  const out=[];const rx=/<(\d{1,3}):(\d{1,2}(?:[.:]\d{1,3})?)>([^<]*)/g;let m;
+  while((m=rx.exec(body))){
+    const text=(m[3]||'').trim();if(!text)continue;
+    const raw=msFromStamp(m[1],String(m[2]).replace(':','.'))+globalOffset;
+    out.push({text,start_ms:Math.max(0,raw)});
+  }
+  out.sort((a,b)=>a.start_ms-b.start_ms);
+  for(let i=0;i<out.length;i++){
+    const next=out[i+1]?.start_ms??lineEnd??(lineStart+2600);
+    out[i].duration_ms=Math.max(40,next-out[i].start_ms);
+  }
   return out;
 }
 function parseLRC(text){
-  const rows=[]; let globalOffset=0;
+  const rows=[];let globalOffset=0;
   const source=String(text||'').replace(/^\uFEFF/,'').replace(/\r/g,'');
   for(const raw of source.split('\n')){
     const off=raw.match(/^\s*\[offset\s*:\s*([+-]?\d+)\s*\]\s*$/i);if(off){globalOffset=Number(off[1])||0;continue}
     if(/^\s*\[(ar|ti|al|by|re|ve|length|id):/i.test(raw))continue;
-    const stamps=[...raw.matchAll(/\[(\d{1,3}):(\d{1,2}(?:[.:]\d{1,3})?)\]/g)]; if(!stamps.length)continue;
+    const stamps=[...raw.matchAll(/\[(\d{1,3}):(\d{1,2}(?:[.:]\d{1,3})?)\]/g)];if(!stamps.length)continue;
     const body=raw.replace(/\[(\d{1,3}):(\d{1,2}(?:[.:]\d{1,3})?)\]/g,'').trim();
     const plain=body.replace(/<\d{1,3}:\d{1,2}(?:[.:]\d{1,3})?>/g,'').replace(/\s+/g,' ').trim();if(!plain)continue;
-    for(const s of stamps){rows.push({text:plain,start_ms:Math.max(0,msFromStamp(s[1],String(s[2]).replace(':','.'))+globalOffset),duration_ms:2600,_body:body})}
+    for(const s of stamps){rows.push({text:plain,start_ms:Math.max(0,msFromStamp(s[1],String(s[2]).replace(':','.'))+globalOffset),duration_ms:2600,_body:body,_offset:globalOffset})}
   }
   rows.sort((a,b)=>a.start_ms-b.start_ms);
   for(let i=0;i<rows.length;i++){
     const end=rows[i+1]?.start_ms??rows[i].start_ms+2600;
     rows[i].duration_ms=Math.max(80,end-rows[i].start_ms);
-    const words=parseEnhancedWords(rows[i]._body,rows[i].start_ms,end);delete rows[i]._body;
+    const words=parseEnhancedWords(rows[i]._body,rows[i].start_ms,end,rows[i]._offset||0);delete rows[i]._body;delete rows[i]._offset;
     if(words.length)rows[i].words=words;
   }
   if(!rows.length)throw new Error('No timestamped LRC lines were found');
@@ -97,9 +105,7 @@ async function handle(file){
     window.__LV_GUARD__?.checkpoint?.('lyrics-import-failed');say(`Could not open lyric file: ${err.message||err}`);
   }
 }
-// iOS can refuse to fire change when the exact same file is picked twice; clear first.
 input.addEventListener('click',()=>{input.value=''});
-// Capture phase prevents the old backend /api parser from stealing the event.
 input.addEventListener('change',e=>{e.stopImmediatePropagation();handle(e.target.files?.[0])},{capture:true});
 window.LINA_IMPORT_LYRICS=file=>handle(file);
 })();
