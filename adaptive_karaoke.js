@@ -21,7 +21,7 @@ document.head.appendChild(style);
 
 if(typeof renderAt!=='function')return;
 const fallbackRenderAt=renderAt;
-let cache={lineIndex:-1,lineStart:-1,spans:[],progress:[],lastMs:null,lastWall:performance.now()};
+let cache={lineIndex:-1,lineStart:-1,spans:[],progress:[],lastMs:null,lastWall:performance.now(),snapNext:false};
 const clamp=(n,a=0,b=1)=>Math.max(a,Math.min(b,n));
 const smooth=t=>{t=clamp(t);return t*t*(3-2*t)};
 function adaptiveAlpha(dt,duration){
@@ -30,13 +30,14 @@ function adaptiveAlpha(dt,duration){
   const response=14+(650/d)*6;
   return 1-Math.exp(-Math.max(1,dt)/1000*response);
 }
-function rebuildTimedLine(layer,line,i){
+function resetClock({snap=true}={}){cache.lastMs=null;cache.lastWall=performance.now();cache.progress=[];cache.snapNext=!!snap}
+function rebuildTimedLine(layer,line,i,{animate=true}={}){
   const container=document.createElement('div');container.className='current-line word-karaoke';
   const frag=document.createDocumentFragment();const spans=[];
   line.words.forEach((w,n)=>{if(n){frag.appendChild(document.createTextNode(' '))}const s=document.createElement('span');s.className='timed-word lina-future';s.textContent=displayText(w.text);s.dataset.word=String(n);s.style.setProperty('--word-progress','0%');frag.appendChild(s);spans.push(s)});
   container.appendChild(frag);layer.replaceChildren(container);
   cache.lineIndex=i;cache.lineStart=line.start_ms;cache.spans=spans;cache.progress=new Array(spans.length).fill(0);
-  container.animate([{opacity:.72,transform:'translate3d(0,7px,0) scale(.992)'},{opacity:1,transform:'translate3d(0,0,0) scale(1)'}],{duration:260,easing:'cubic-bezier(.16,1,.3,1)',fill:'both'});
+  if(animate)container.animate([{opacity:.72,transform:'translate3d(0,7px,0) scale(.992)'},{opacity:1,transform:'translate3d(0,0,0) scale(1)'}],{duration:260,easing:'cubic-bezier(.16,1,.3,1)',fill:'both'});
 }
 function renderAdaptive(ms){
   if(effect!=='karaoke'||!doc?.lines?.length)return fallbackRenderAt(ms);
@@ -44,11 +45,11 @@ function renderAdaptive(ms){
   const i=currentIndex(ms),line=doc.lines[i],span=lineSpan(i);selected=i;
   document.querySelectorAll('.timeline .line').forEach((x,n)=>x.classList.toggle('active',n===i));
   const now=performance.now();const dt=Math.max(1,Math.min(80,now-cache.lastWall||16));cache.lastWall=now;
-  const seekJump=cache.lastMs==null||Math.abs(ms-cache.lastMs)>260;cache.lastMs=ms;
+  const seekJump=cache.snapNext||cache.lastMs==null||Math.abs(ms-cache.lastMs)>260;cache.snapNext=false;cache.lastMs=ms;
   const adjusted=ms-offset;
 
   if(line.words?.length){
-    if(cache.lineIndex!==i||cache.lineStart!==line.start_ms||cache.spans.length!==line.words.length)rebuildTimedLine(layer,line,i);
+    if(cache.lineIndex!==i||cache.lineStart!==line.start_ms||cache.spans.length!==line.words.length)rebuildTimedLine(layer,line,i,{animate:!seekJump});
     for(let n=0;n<line.words.length;n++){
       const w=line.words[n];const start=w.start_ms;const end=start+Math.max(40,w.duration_ms||500);
       const raw=clamp((adjusted-start)/Math.max(1,end-start));
@@ -76,7 +77,7 @@ function renderAdaptive(ms){
 }
 renderAt=renderAdaptive;
 
-// Keep renderer exact after seeking/resuming; no accumulated visual lag.
-['seeking','seeked','ratechange','loadedmetadata'].forEach(ev=>audio?.addEventListener(ev,()=>{cache.lastMs=null;cache.progress=[]}));
-document.addEventListener('visibilitychange',()=>{cache.lastMs=null;cache.progress=[]});
+// Keep renderer exact after seeking, pausing/resuming, rate changes and returning from the background.
+['seeking','seeked','ratechange','loadedmetadata','play','pause','ended'].forEach(ev=>audio?.addEventListener(ev,()=>resetClock({snap:true})));
+document.addEventListener('visibilitychange',()=>resetClock({snap:true}));
 })();
