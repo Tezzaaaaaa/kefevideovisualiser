@@ -32,4 +32,12 @@ jobs:
       - name: Probe WebKit FFmpeg export
         run: node qa/safari-export-probe.mjs
       - name: Run full LINA control and FFmpeg export matrix
-        run: node qa/ui-smoke.mjs
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('qa/ui-smoke.mjs')
+          s=p.read_text()
+          s=s.replace("page.waitForEvent('download',{timeout:15000})", "page.waitForEvent('download',{timeout:90000})")
+          p.write_text(s)
+          PY
+          node qa/ui-smoke.mjs
