@@ -31,5 +31,7 @@ jobs:
           exit 1
       - name: Diagnose WebKit MediaRecorder tracks
         run: node qa/webkit-recorder-matrix.mjs
+      - name: Probe Safari export fallback
+        run: node qa/safari-export-probe.mjs
       - name: Run full LINA control and export matrix
         run: node qa/ui-smoke.mjs
