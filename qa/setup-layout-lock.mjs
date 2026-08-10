@@ -9,7 +9,7 @@ const viewports=[
   ['tablet',{width:820,height:1000}],
   ['mobile',{width:430,height:850}],
 ];
-const controls=['#songSearch','#titleInput','#artistInput','#titleDuration'];
+const controls=['#albumInput','#titleInput','#artistInput','label[for="userArtworkFile"]','label.upload:has(#audioFile)'];
 
 async function assertUsable(page,name,viewport,selector){
   const el=page.locator(selector);
@@ -46,8 +46,8 @@ for(const [name,type] of browsers){
 
     for(const selector of controls)await assertUsable(page,name,vpName,selector);
 
-    const searchPosition=await page.locator('#songResults').evaluate(el=>getComputedStyle(el).position);
-    assert.notEqual(searchPosition,'absolute',`${name}/${vpName}: song results overlay Setup controls`);
+    const retiredSearch=await page.locator('.legacy-lookup-retired').count();
+    assert.ok(retiredSearch>=1,`${name}/${vpName}: retired lookup unexpectedly returned to active Setup`);
 
     if(viewport.width<=900){
       const shell=await page.locator('.workspace').evaluate(el=>({display:getComputedStyle(el).display,direction:getComputedStyle(el).flexDirection}));
