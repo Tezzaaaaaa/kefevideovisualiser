@@ -32,6 +32,10 @@ await page.click('.effect-option[data-effect="apple"]');
 
 const start=Date.now();
 const downloadPromise=page.waitForEvent('download',{timeout:90000});
+const failedPromise=page.waitForFunction(()=>/Export failed/i.test(document.querySelector('#topStatus')?.textContent||''),null,{timeout:90000}).then(async()=>{
+  const state=await page.evaluate(()=>({state:window.linaExportState?.(),status:document.querySelector('#topStatus')?.textContent||'',render:document.querySelector('#renderText')?.textContent||''}));
+  throw new Error(`Safari export reported failure: ${JSON.stringify(state)}`);
+});
 await page.click('#exportBottomBtn');
 const phaseTicker=setInterval(async()=>{
   try{
@@ -40,7 +44,7 @@ const phaseTicker=setInterval(async()=>{
   }catch{}
 },5000);
 let download;
-try{download=await downloadPromise}
+try{download=await Promise.race([downloadPromise,failedPromise])}
 catch(err){
   const state=await page.evaluate(()=>({state:window.linaExportState?.(),status:document.querySelector('#topStatus')?.textContent||'',render:document.querySelector('#renderText')?.textContent||''}));
   console.log('SAFARI EXPORT FINAL STATE',JSON.stringify(state));
