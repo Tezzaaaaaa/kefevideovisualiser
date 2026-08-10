@@ -37,7 +37,6 @@ for(const [name,type] of browsers){
     await page.waitForFunction(()=>document.documentElement.dataset.linaReady==='true',null,{timeout:20000});
     await page.click('#nav [data-tool="setup"]');
 
-    /* Force the legacy floating state: the CSS lock must still keep it in flow. */
     await page.locator('.flow-controls').evaluate(el=>el.classList.add('workflow-floating'));
     const position=await page.locator('.flow-controls').evaluate(el=>getComputedStyle(el).position);
     assert.notEqual(position,'fixed',`${name}/${vpName}: workflow controls became a fixed overlay`);
@@ -51,8 +50,9 @@ for(const [name,type] of browsers){
     assert.notEqual(searchPosition,'absolute',`${name}/${vpName}: song results overlay Setup controls`);
 
     if(viewport.width<=900){
-      const display=await page.locator('.workspace').evaluate(el=>getComputedStyle(el).display);
-      assert.equal(display,'block',`${name}/${vpName}: narrow Setup did not collapse to one column`);
+      const shell=await page.locator('.workspace').evaluate(el=>({display:getComputedStyle(el).display,direction:getComputedStyle(el).flexDirection}));
+      assert.equal(shell.display,'flex',`${name}/${vpName}: narrow workspace is not the locked single-column flex shell`);
+      assert.equal(shell.direction,'column',`${name}/${vpName}: narrow workspace is not column ordered`);
       const leftWidth=await page.locator('.left').evaluate(el=>el.getBoundingClientRect().width);
       assert.ok(leftWidth>=viewport.width-30,`${name}/${vpName}: Setup column is still squeezed (${leftWidth}px)`);
     }else{
