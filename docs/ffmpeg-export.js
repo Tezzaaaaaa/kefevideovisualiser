@@ -1,9 +1,5 @@
 'use strict';
 (()=>{
-  if(typeof window.exportVideo!=='function')return;
-
-  const nativeCancel=window.linaRequestExportCancel;
-  const nativeState=window.linaExportState;
   let active=false,phase='idle',cancelled=false,ffmpeg=null,loadPromise=null,classWorkerBlobURL='',coreBlobURL='',wasmBlobURL='';
   const $=s=>document.querySelector(s);
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -16,8 +12,8 @@
   function openDialog(){const d=$('#dlg');if(d&&!d.open)try{d.showModal()}catch{};if($('#progress'))$('#progress').value=0}
   function requestCancel(){if(!active)return;cancelled=true;phase='cancelling';status('Stopping export…');closeDialog();try{ffmpeg?.terminate?.()}catch{};ffmpeg=null;loadPromise=null}
   $('#cancel')?.addEventListener('click',requestCancel);
-  window.linaRequestExportCancel=()=>active?requestCancel():nativeCancel?.();
-  window.linaExportState=()=>active?exportState():(nativeState?.()||{active:false});
+  window.linaRequestExportCancel=requestCancel;
+  window.linaExportState=exportState;
 
   async function loadScript(url){
     if(window.FFmpegWASM?.FFmpeg)return;
