@@ -33,10 +33,94 @@
   .preview-control-grid .field:nth-child(6){grid-column:3/5!important;grid-row:2}
   .preview-control-grid .wide{grid-column:auto!important}
 }
-@media(max-width:900px){
-  .preview-controls{padding:8px!important;min-height:0!important;height:auto!important;max-height:none!important;overflow:visible!important}
-  .preview-controls-head{margin-bottom:6px!important}
-  .preview-control-grid{gap:7px!important}
-  .preview-control-grid .field{min-height:52px!important}
-  .preview-control-grid .field>span{font-size:9px!important}
+
+/* Tablet: keep controls dense like a real editor toolbar. */
+@media(min-width:601px) and (max-width:900px){
+  .preview-controls{
+    padding:8px 10px!important;
+    min-height:0!important;
+    height:auto!important;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+  .preview-controls-head{
+    margin:0 0 6px!important;
+    min-height:18px!important;
+  }
+  .preview-control-grid{
+    display:grid!important;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    grid-template-rows:40px 40px!important;
+    grid-auto-rows:40px!important;
+    gap:6px 9px!important;
+    align-items:center!important;
+  }
+  .preview-control-grid .field{
+    display:grid!important;
+    grid-template-columns:auto minmax(0,1fr)!important;
+    align-items:center!important;
+    gap:6px!important;
+    height:40px!important;
+    min-height:0!important;
+    margin:0!important;
+  }
+  .preview-control-grid .field>span{
+    margin:0!important;
+    white-space:nowrap!important;
+    line-height:1!important;
+    font-size:9px!important;
+  }
+  .preview-control-grid .field input[type=range]{
+    width:100%!important;
+    min-width:0!important;
+    height:16px!important;
+    margin:0!important;
+  }
+  .preview-control-grid .field input[type=color]{
+    width:36px!important;
+    height:30px!important;
+    min-height:30px!important;
+    margin:0!important;
+  }
+  .preview-control-grid .field select{
+    height:32px!important;
+    min-height:32px!important;
+    padding:5px 7px!important;
+    margin:0!important;
+  }
+  .preview-control-grid .field:nth-child(1){grid-column:1;grid-row:1}
+  .preview-control-grid .field:nth-child(2){grid-column:2;grid-row:1}
+  .preview-control-grid .field:nth-child(3){grid-column:3;grid-row:1}
+  .preview-control-grid .field:nth-child(4){grid-column:1;grid-row:2}
+  .preview-control-grid .field:nth-child(5){grid-column:2;grid-row:2}
+  .preview-control-grid .field:nth-child(6){grid-column:3;grid-row:2}
+  .preview-control-grid .wide{grid-column:auto!important}
+}
+
+/* Phone: touch-friendly but still compact. */
+@media(max-width:600px){
+  .preview-controls{
+    padding:8px!important;
+    min-height:0!important;
+    height:auto!important;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+  .preview-controls-head{margin:0 0 6px!important}
+  .preview-control-grid{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:6px 8px!important;
+  }
+  .preview-control-grid .field{
+    min-height:44px!important;
+    height:auto!important;
+    margin:0!important;
+    gap:4px!important;
+  }
+  .preview-control-grid .field>span{
+    font-size:9px!important;
+    line-height:1!important;
+  }
+  .preview-control-grid .wide{grid-column:1/-1!important}
 }
