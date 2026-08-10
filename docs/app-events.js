@@ -11,6 +11,7 @@
       await load('app-export-safe.js');
       await load('webkit-export-canvas.js');
       await load('safari-wasm-export.js');
+      await load('safari-export-bridge.js');
       await load('production-controls.js');
       await load('consolidated-studio.js');
       await load('app-events-safe.js');
