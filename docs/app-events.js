@@ -1,8 +1,8 @@
 'use strict';
 (()=>{
-  const BUILD='p12-20260811-editor-shell-release';
+  const BUILD='p13-20260811-setup-bar-fix';
   const load=src=>new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=`${src}?v=${BUILD}`;s.onload=resolve;s.onerror=()=>reject(new Error(`Failed to load ${src}`));document.body.append(s)});
-  for(const href of ['apple-motion.css','ui-solid.css','intro-layout.css','production-consolidated.css','consolidated-studio.css','setup-layout-fix.css','editor-shell.css','editor-shell-mobile-safety.css','editor-shell-density-fix.css']){const css=document.createElement('link');css.rel='stylesheet';css.href=`${href}?v=${BUILD}`;document.head.append(css)}
+  for(const href of ['apple-motion.css','ui-solid.css','intro-layout.css','production-consolidated.css','consolidated-studio.css','setup-layout-fix.css','editor-shell.css','editor-shell-mobile-safety.css','editor-shell-density-fix.css','setup-bar-fix.css']){const css=document.createElement('link');css.rel='stylesheet';css.href=`${href}?v=${BUILD}`;document.head.append(css)}
   (async()=>{
     try{
       await load('app-core-safe.js');
