@@ -49,6 +49,7 @@
   }
 
   caseSelect?.addEventListener('change',()=>applyLyricCase(true));
+  if(caseSelect)caseSelect.dataset.linaBound='production-controls';
   ['loadedmetadata','durationchange','timeupdate','seeked','ended'].forEach(type=>audio.addEventListener(type,updateRemainingClock));
 
   $('#stop')?.addEventListener('click',()=>{
@@ -74,6 +75,7 @@
       $('#currentText')?.scrollIntoView({behavior:'smooth',block:'center'});
     }
   });
+  ['stop','transportPrevLine','transportNextLine','transportSync','transportEdit'].forEach(id=>{const el=$('#'+id);if(el)el.dataset.linaBound='production-controls'});
 
   $('#confirmReview')?.addEventListener('click',()=>queueMicrotask(()=>{
     if(reviewMode!=='manual'||!sourceLines.length)return;
@@ -105,6 +107,7 @@
     status(manualIndex<sourceLines.length?`Stamped line ${i+1}.`:'Manual lyric timing complete.');
     markDirty();
   });
+  if($('#stampLine'))$('#stampLine').dataset.linaBound='production-controls';
 
   $('#clearLyrics')?.addEventListener('click',()=>{
     manualIndex=0;
