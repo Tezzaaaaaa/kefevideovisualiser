@@ -18,7 +18,13 @@ await page.evaluate(()=>{
       const ctx=canvas.getContext('2d');let tick=0;
       const paint=()=>{tick++;ctx.fillStyle=tick%2?'#ff0055':'#0055ff';ctx.fillRect(0,0,320,180);ctx.fillStyle='#fff';ctx.font='40px sans-serif';ctx.fillText(String(tick),120,105)};
       paint();
-      const canvasStream=canvas.captureStream(30),videoTrack=canvasStream.getVideoTracks()[0];
+      let canvasStream=null,videoTrack=null,generator=null,writer=null,writeChain=Promise.resolve();
+      if(variant==='generator'){
+        if(typeof VideoTrackGenerator!=='function'||typeof VideoFrame!=='function')throw new Error(`generated-video APIs unavailable: VideoTrackGenerator=${typeof VideoTrackGenerator} VideoFrame=${typeof VideoFrame}`);
+        generator=new VideoTrackGenerator();writer=generator.writable.getWriter();videoTrack=generator.track;
+      }else{
+        canvasStream=canvas.captureStream(30);videoTrack=canvasStream.getVideoTracks()[0];
+      }
       let ac=null,osc=null,dest=null,audioTrack=null;
       if(variant!=='video-only'){
         ac=new (window.AudioContext||window.webkitAudioContext)();await ac.resume();dest=ac.createMediaStreamDestination();osc=ac.createOscillator();osc.frequency.value=440;osc.connect(dest);osc.start();audioTrack=dest.stream.getAudioTracks()[0];
@@ -30,22 +36,30 @@ await page.evaluate(()=>{
       else stream=new MediaStream([videoTrack,audioTrack]);
       const explicit=variant==='explicit';
       const mime=explicit?'video/mp4;codecs=avc1.42E01E,mp4a.40.2':'video/mp4';
-      console.log('probe start',variant,{video:stream.getVideoTracks().length,audio:stream.getAudioTracks().length,mime,supported:MediaRecorder.isTypeSupported(mime),vState:videoTrack?.readyState,vMuted:videoTrack?.muted});
+      console.log('probe start',variant,{video:stream.getVideoTracks().length,audio:stream.getAudioTracks().length,mime,supported:MediaRecorder.isTypeSupported(mime),vState:videoTrack?.readyState,vMuted:videoTrack?.muted,generator:!!generator});
       const rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:1500000,audioBitsPerSecond:128000});
       const chunks=[];rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
       const stopped=new Promise((resolve,reject)=>{rec.onstop=resolve;rec.onerror=e=>reject(e.error||new Error('recorder'))});
       rec.start(250);
-      const timer=setInterval(()=>{paint();try{videoTrack.requestFrame?.()}catch{}},33);
+      const pushGeneratedFrame=()=>{
+        if(!writer)return;
+        const frame=new VideoFrame(canvas,{timestamp:Math.max(0,(tick-1)*33333),duration:33333});
+        writeChain=writeChain.then(()=>writer.write(frame)).finally(()=>frame.close());
+      };
+      if(writer)pushGeneratedFrame();
+      const timer=setInterval(()=>{paint();if(writer)pushGeneratedFrame();else try{videoTrack.requestFrame?.()}catch{}},33);
       await new Promise(r=>setTimeout(r,1400));
-      clearInterval(timer);rec.stop();await stopped;
-      try{osc?.stop()}catch{};try{await ac?.close()}catch{}
+      clearInterval(timer);
+      if(writer){await Promise.race([writeChain,new Promise((_,reject)=>setTimeout(()=>reject(new Error('generated frame writes timed out')),3000))]);try{await writer.close()}catch{}writer=null}
+      rec.stop();await stopped;
+      try{osc?.stop()}catch{};try{await ac?.close()}catch{};try{videoTrack?.stop?.()}catch{};
       const blob=new Blob(chunks,{type:rec.mimeType||mime}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`probe-${variant}.mp4`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),20000);canvas.remove();
       console.log('probe done',variant,{size:blob.size,type:blob.type,chunks:chunks.length});
     }catch(e){window.__probeError=String(e?.stack||e);console.error('probe failed',window.__probeVariant,e)}
   };
 });
 
-for(const variant of ['video-only','combined','audio-first','mutated','explicit']){
+for(const variant of ['video-only','combined','audio-first','mutated','explicit','generator']){
   await page.evaluate(v=>{window.__probeVariant=v;window.__probeError=''},variant);
   const downloadPromise=page.waitForEvent('download',{timeout:10000});
   await page.click('#recorderProbe');
