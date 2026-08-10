@@ -30,8 +30,13 @@ function verifyRenderedFile(path,name,effect){
   const streams=execFileSync('ffprobe',['-v','error','-show_entries','stream=codec_type','-of','csv=p=0',path],{encoding:'utf8'}).trim().split(/\s+/).filter(Boolean);
   assert.ok(streams.includes('video'),`${name}: ${effect} export has no video stream`);
   assert.ok(streams.includes('audio'),`${name}: ${effect} export has no audio stream`);
-  const duration=Number(execFileSync('ffprobe',['-v','error','-show_entries','format=duration','-of','default=noprint_wrappers=1:nokey=1',path],{encoding:'utf8'}).trim());
-  assert.ok(Number.isFinite(duration)&&duration>1.5,`${name}: ${effect} export duration invalid (${duration})`);
+  let duration=Number(execFileSync('ffprobe',['-v','error','-show_entries','format=duration','-of','default=noprint_wrappers=1:nokey=1',path],{encoding:'utf8'}).trim());
+  if(!Number.isFinite(duration)){
+    const rows=execFileSync('ffprobe',['-v','error','-select_streams','v:0','-show_entries','packet=pts_time,duration_time','-of','csv=p=0',path],{encoding:'utf8'}).trim().split(/\n+/).filter(Boolean);
+    duration=rows.reduce((end,row)=>{const [ptsRaw,durRaw]=row.split(','),pts=Number(ptsRaw),dur=Number(durRaw);return Number.isFinite(pts)?Math.max(end,pts+(Number.isFinite(dur)?dur:0)):end},0);
+  }
+  assert.ok(Number.isFinite(duration)&&duration>1.5,`${name}: ${effect} export playable duration invalid (${duration})`);
+  execFileSync('ffmpeg',['-v','error','-i',path,'-t','1.5','-f','null','-']);
 }
 async function ensureLyrics(page){
   await page.click('#nav [data-tool="lyrics"]');
