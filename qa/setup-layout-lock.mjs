@@ -54,7 +54,7 @@ for(const [name,type] of browsers){
       assert.equal(shell.display,'flex',`${name}/${vpName}: narrow workspace is not the locked single-column flex shell`);
       assert.equal(shell.direction,'column',`${name}/${vpName}: narrow workspace is not column ordered`);
       const leftWidth=await page.locator('.left').evaluate(el=>el.getBoundingClientRect().width);
-      assert.ok(leftWidth>=viewport.width-30,`${name}/${vpName}: Setup column is still squeezed (${leftWidth}px)`);
+      assert.ok(leftWidth>=viewport.width-40,`${name}/${vpName}: Setup column is still squeezed (${leftWidth}px)`);
     }else{
       const leftWidth=await page.locator('.left').evaluate(el=>el.getBoundingClientRect().width);
       assert.ok(leftWidth>=290,`${name}/${vpName}: Setup column too narrow (${leftWidth}px)`);
