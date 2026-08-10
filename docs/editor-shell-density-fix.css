@@ -231,3 +231,8 @@
     flex:0 1 auto!important;
   }
 }
+
+/* Narrow shell: reclaim the scrollbar gutter so active tools stay truly full-width. */
+@media(max-width:900px){
+  .workspace{padding-left:6px!important;padding-right:6px!important}
+}
