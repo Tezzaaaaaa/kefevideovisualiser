@@ -37,7 +37,7 @@
     const mode=caseSelect.value;
     lyricsEl.style.textTransform=mode==='upper'?'uppercase':mode==='lower'?'lowercase':'none';
     window.invalidateLinaMotion?.(true);
-    render((Number(audio.currentTime)||0)*1000);
+    try{render((Number(audio.currentTime)||0)*1000)}catch(e){console.error('LINA case redraw failed',e)}
     if(dirty)markDirty();
   }
 
@@ -53,15 +53,15 @@
   ['loadedmetadata','durationchange','timeupdate','seeked','ended'].forEach(type=>audio.addEventListener(type,updateRemainingClock));
 
   $('#stop')?.addEventListener('click',()=>{
-    audio.pause();
+    try{audio.pause()}catch(e){console.warn('LINA stop audio pause failed',e)}
     try{audio.currentTime=0}catch{}
     if($('#seek'))$('#seek').value=0;
     if(bgMedia?.tagName==='VIDEO'){
       try{bgMedia.pause()}catch{}
-      syncBgVideo(0,true);
+      try{syncBgVideo(0,true)}catch(e){console.warn('LINA stop background sync failed',e)}
     }
-    render(0);
-    updateRemainingClock();
+    try{window.render?.(0)}catch(e){console.error('LINA stop redraw failed',e)}
+    try{updateRemainingClock()}catch{}
     status('Stopped.');
   });
 
