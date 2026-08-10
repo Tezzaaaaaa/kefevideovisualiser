@@ -13,8 +13,8 @@ const controls=['#albumInput','#titleInput','#artistInput','label[for="userArtwo
 
 async function assertUsable(page,name,viewport,selector){
   const el=page.locator(selector);
-  await el.scrollIntoViewIfNeeded();
-  await page.waitForTimeout(20);
+  await el.evaluate(node=>node.scrollIntoView({block:'center',inline:'nearest'}));
+  await page.waitForTimeout(80);
   const box=await el.boundingBox();
   assert.ok(box,`${name}/${viewport}: ${selector} has no layout box`);
   assert.ok(box.width>=44,`${name}/${viewport}: ${selector} collapsed to ${box.width}px`);
