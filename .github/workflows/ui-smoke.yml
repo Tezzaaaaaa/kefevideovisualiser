@@ -29,5 +29,7 @@ jobs:
           done
           cat /tmp/lina-http.log
           exit 1
+      - name: Diagnose Firefox export path
+        run: node qa/firefox-export-debug.mjs
       - name: Run full LINA control matrix
         run: node qa/ui-smoke.mjs
