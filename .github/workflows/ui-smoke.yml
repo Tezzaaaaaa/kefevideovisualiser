@@ -19,6 +19,7 @@ jobs:
           npx playwright install chromium firefox webkit
           if ! command -v ffmpeg >/dev/null 2>&1; then brew install ffmpeg; fi
           ffmpeg -version | head -n 1
+          ffprobe -version | head -n 1
       - name: Start LINA
         run: |
           python3 -m http.server 4173 --directory docs >/tmp/lina-http.log 2>&1 &
@@ -28,9 +29,5 @@ jobs:
           done
           cat /tmp/lina-http.log
           exit 1
-      - name: Diagnose Firefox export path
-        run: node qa/firefox-export-debug.mjs
-      - name: Diagnose WebKit export path
-        run: node qa/webkit-export-debug.mjs
-      - name: Run full LINA control matrix
+      - name: Run full LINA control and export matrix
         run: node qa/ui-smoke.mjs
