@@ -3,7 +3,9 @@ let linaExportActive=false,linaExportCancelCurrent=null;
 function requestLinaExportCancel(){
   if(!linaExportActive)return;
   abort=true;
-  status('Cancelling export…');
+  status('Stopping export…');
+  const dlg=document.getElementById('dlg');
+  if(dlg?.open)try{dlg.close()}catch{}
   try{linaExportCancelCurrent?.()}catch(e){console.warn('LINA export cancel signal failed',e)}
 }
 window.linaRequestExportCancel=requestLinaExportCancel;
@@ -24,7 +26,7 @@ async function exportVideo(){
   let stream=null,renderAudio=null,ac=null,src=null,dest=null,rec=null,exportBg=null,recorderDone=null,dlg=$('#dlg'),dialogOpen=false,completedBlob=null;
   const chunks=[];
   const stopTracks=s=>{try{s?.getTracks().forEach(t=>t.stop())}catch{}};
-  const closeDialog=()=>{if(dialogOpen&&dlg?.open)try{dlg.close()}catch{}dialogOpen=false};
+  const closeDialog=()=>{if(dlg?.open)try{dlg.close()}catch{}dialogOpen=false};
   const retireExportBg=()=>{
     if(exportBg?.tagName==='VIDEO'){
       try{exportBg.pause()}catch{}
@@ -37,6 +39,7 @@ async function exportVideo(){
     if(rec.state!=='inactive')try{rec.stop()}catch{}
     if(recorderDone)await Promise.race([recorderDone,new Promise(r=>setTimeout(r,1500))]).catch(()=>{});
   };
+  const stopRecorderFast=()=>{if(rec&&rec.state!=='inactive')try{rec.stop()}catch{}};
   const cleanup=async()=>{
     linaExportCancelCurrent=null;
     try{renderAudio?.pause()}catch{}
@@ -102,9 +105,12 @@ async function exportVideo(){
 
     try{renderAudio.pause()}catch{}
     if(exportBg?.tagName==='VIDEO')try{exportBg.pause()}catch{}
+    if(abort){
+      stopRecorderFast();
+      status('Export cancelled.');
+      return;
+    }
     await stopRecorder();
-
-    if(abort){status('Export cancelled.');return}
     if(!chunks.length)throw new Error('Recorder produced no video data');
 
     completedBlob=new Blob(chunks,{type:rec.mimeType||type||'video/webm'});chunks.length=0;
@@ -116,7 +122,7 @@ async function exportVideo(){
     const a=document.createElement('a'),url=URL.createObjectURL(completedBlob);a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);status('Export complete.');
   }catch(err){
     console.error('LINA export failed',err);
-    try{await stopRecorder()}catch{}
+    if(abort)stopRecorderFast();else try{await stopRecorder()}catch{}
     status(abort?'Export cancelled.':'Export failed. Your project is safe — try again.');
   }finally{
     chunks.length=0;
