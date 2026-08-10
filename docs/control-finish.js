@@ -10,6 +10,18 @@
   const album=$('#albumInput');if(album){album.oninput=()=>{selectedSong={...(selectedSong||{}),collectionName:album.value};redraw();dirty()};mark(album)}
   const introArtToggle=$('#userArtworkIntro');if(introArtToggle){introArtToggle.onchange=()=>{if($('#showArtworkIntro'))$('#showArtworkIntro').checked=introArtToggle.checked;$('#introArt')?.classList.toggle('on',introArtToggle.checked&&!!$('#introArt')?.src);redraw();dirty()};mark(introArtToggle)}
 
+  function syncEntranceUI(){
+    const select=$('#lyricsEntrance'),wrap=$('#customEntranceWrap');
+    if(!select||!wrap)return;
+    const custom=select.value==='custom';
+    wrap.classList.toggle('hidden',!custom);
+    wrap.hidden=!custom;
+    wrap.setAttribute('aria-hidden',custom?'false':'true');
+  }
+  const entrance=$('#lyricsEntrance');if(entrance){entrance.onchange=()=>{syncEntranceUI();redraw();dirty()};mark(entrance)}
+  syncEntranceUI();
+  Promise.resolve(window.linaRestorePromise).finally(()=>{syncEntranceUI();redraw()});
+
   const checks=[
     ['audioFile','onchange'],['lyricsFile','onchange'],['bgImageFile','onchange'],['bgVideoFile','onchange'],
     ['autosaveToggle','onchange'],['syncMethod','onchange'],['seek','oninput'],['useArtworkBg2','onchange'],
