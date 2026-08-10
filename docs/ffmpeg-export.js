@@ -148,5 +148,5 @@
   }
 
   window.linaFFmpegExport=ffmpegExport;
-  window.exportVideo=exportVideo=ffmpegExport;
+  window.exportVideo=ffmpegExport;
 })();
