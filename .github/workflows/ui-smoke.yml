@@ -7,19 +7,18 @@ on:
 jobs:
   ui-smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Install Playwright
+      - name: Install browser test runtime
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install --with-deps chromium firefox webkit
-          FFMPEG_BIN="$(find "$HOME/.cache/ms-playwright" -type f -name ffmpeg | head -n 1)"
-          test -x "$FFMPEG_BIN"
-          sudo ln -sf "$FFMPEG_BIN" /usr/local/bin/ffmpeg
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg
           ffmpeg -version | head -n 1
       - name: Start LINA
         run: |
@@ -30,5 +29,5 @@ jobs:
           done
           cat /tmp/lina-http.log
           exit 1
-      - name: Run control smoke tests
+      - name: Run full LINA control matrix
         run: node qa/ui-smoke.mjs
