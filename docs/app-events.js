@@ -1,8 +1,8 @@
 'use strict';
 (()=>{
-  const BUILD='p8-20260810-editor-shell';
+  const BUILD='p9-20260810-editor-shell-safety';
   const load=src=>new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=`${src}?v=${BUILD}`;s.onload=resolve;s.onerror=()=>reject(new Error(`Failed to load ${src}`));document.body.append(s)});
-  for(const href of ['apple-motion.css','ui-solid.css','intro-layout.css','production-consolidated.css','consolidated-studio.css','setup-layout-fix.css','editor-shell.css']){const css=document.createElement('link');css.rel='stylesheet';css.href=`${href}?v=${BUILD}`;document.head.append(css)}
+  for(const href of ['apple-motion.css','ui-solid.css','intro-layout.css','production-consolidated.css','consolidated-studio.css','setup-layout-fix.css','editor-shell.css','editor-shell-mobile-safety.css']){const css=document.createElement('link');css.rel='stylesheet';css.href=`${href}?v=${BUILD}`;document.head.append(css)}
   (async()=>{
     try{
       await load('app-core-safe.js');
