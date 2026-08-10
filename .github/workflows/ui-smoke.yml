@@ -2,6 +2,8 @@ name: LINA UI Smoke
 
 on:
   pull_request:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -29,6 +31,8 @@ jobs:
           done
           cat /tmp/lina-http.log
           exit 1
+      - name: Lock Setup layout across browsers and viewports
+        run: node qa/setup-layout-lock.mjs
       - name: Probe WebKit FFmpeg export
         run: node qa/safari-export-probe.mjs
       - name: Run full LINA control and FFmpeg export matrix
