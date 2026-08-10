@@ -18,8 +18,6 @@
       await load('apple-motion.js');
       await load('apple-subword.js');
       await load('production-motion-bridge.js');
-      // Activate signature effects before preview safety wrappers so every effect
-      // shares the same preview/recovery path instead of bypassing it.
       window.linaConsolidatedActivate?.();
       await load('preview-runtime.js');
       await load('preview-recovery.js');
@@ -27,6 +25,7 @@
       render(audio.currentTime*1000);
       await load('panel-nav.js');
       await load('control-audit.js');
+      await load('control-finish.js');
       await load('runtime-guard.js');
     }catch(e){
       console.error('LINA bootstrap failed',e);
