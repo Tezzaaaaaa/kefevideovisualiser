@@ -75,7 +75,42 @@
     }
   });
 
-  $('#resetBtn')?.addEventListener('click',()=>localStorage.removeItem('lina.letterCase'));
+  $('#confirmReview')?.addEventListener('click',()=>queueMicrotask(()=>{
+    if(reviewMode!=='manual'||!sourceLines.length)return;
+    manualIndex=0;
+    $('#manualTimingBox')?.classList.remove('hidden');
+    if($('#manualStatus'))$('#manualStatus').textContent=`Ready to stamp line 1 of ${sourceLines.length}: ${sourceLines[0].text}`;
+  }));
+
+  $('#stampLine')?.addEventListener('click',()=>{
+    if(reviewMode!=='manual'||!sourceLines.length)return status('Import and review plain lyrics first.');
+    if(manualIndex>=sourceLines.length)return status('All lyric lines are timestamped.');
+    const i=manualIndex;
+    const now=Math.max(0,Math.round((Number(audio.currentTime)||0)*1000)-offset);
+    const line=sourceLines[i];
+    line.start=now;
+    line.duration=2600;
+    if(i>0){
+      const prev=sourceLines[i-1];
+      prev.duration=Math.max(100,now-prev.start);
+    }
+    manualIndex++;
+    if(manualIndex>=sourceLines.length&&Number(audio.duration)>0)line.duration=Math.max(100,Math.round(audio.duration*1000)-line.start);
+    applyGrouping(false);
+    selected=Math.min(i,Math.max(0,lines.length-1));
+    timeline();
+    fillEditor(selected);
+    render((Number(audio.currentTime)||0)*1000);
+    if($('#manualStatus'))$('#manualStatus').textContent=manualIndex<sourceLines.length?`Next: line ${manualIndex+1} of ${sourceLines.length}: ${sourceLines[manualIndex].text}`:`All ${sourceLines.length} lines timestamped.`;
+    status(manualIndex<sourceLines.length?`Stamped line ${i+1}.`:'Manual lyric timing complete.');
+    markDirty();
+  });
+
+  $('#clearLyrics')?.addEventListener('click',()=>{
+    manualIndex=0;
+    $('#manualTimingBox')?.classList.add('hidden');
+  });
+
   applyLyricCase(false);
   updateRemainingClock();
 })();
