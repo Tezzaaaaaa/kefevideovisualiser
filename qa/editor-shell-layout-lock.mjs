@@ -35,6 +35,19 @@ for(const [browserName,type] of browsers){
     assert.equal(bottomExport,'none',`${browserName}/${vpName}: duplicate bottom Export action returned`);
 
     const previewControls=await box(page,'.preview-controls');
+    if(previewControls.height>220){
+      const diagnostic=await page.evaluate(()=>{
+        const p=document.querySelector('.preview-controls'),g=document.querySelector('.preview-control-grid');
+        const gp=getComputedStyle(g),pp=getComputedStyle(p);
+        return {
+          preview:{height:p.getBoundingClientRect().height,padding:pp.padding,display:pp.display},
+          grid:{height:g.getBoundingClientRect().height,display:gp.display,rows:gp.gridTemplateRows,columns:gp.gridTemplateColumns,gap:gp.gap},
+          children:[...g.children].map((el,i)=>{const r=el.getBoundingClientRect(),s=getComputedStyle(el);return{i:i+1,height:r.height,width:r.width,display:s.display,gridRow:s.gridRow,gridColumn:s.gridColumn,minHeight:s.minHeight}}),
+          densitySheet:[...document.styleSheets].some(s=>String(s.href||'').includes('editor-shell-density-fix.css'))
+        };
+      });
+      console.log(`${browserName}/${vpName} PREVIEW DENSITY DIAGNOSTIC`,JSON.stringify(diagnostic));
+    }
     assert.ok(previewControls.height<=220,`${browserName}/${vpName}: preview controls became oversized (${previewControls.height}px)`);
     const output=await box(page,'.stage-export');
     assert.ok(output.height<=190,`${browserName}/${vpName}: output settings became oversized (${output.height}px)`);
