@@ -123,6 +123,7 @@ async function exportVideo(){
 
     const type=[
       'video/mp4;codecs=h264,aac',
+      'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
       'video/mp4',
       'video/webm;codecs=vp9,opus',
       'video/webm;codecs=vp8,opus',
@@ -163,7 +164,6 @@ async function exportVideo(){
     if(isFirefox){
       try{firefoxAudio.currentTime=0}catch{}
       if(firefoxAudio.paused){
-        // play() was already authorised synchronously at export start; this normally stays playing.
         await cancelable(withTimeout(firefoxAudio.play(),2500,'Firefox audio playback stopped before recording.'));
       }
     }else audioSource.start(0,0,Math.min(seconds,decoded.duration));
@@ -207,7 +207,11 @@ async function exportVideo(){
     completedBlob=new Blob(chunks,{type:rec.mimeType||type||'video/webm'});chunks.length=0;
     const ext=completedBlob.type.includes('mp4')?'mp4':'webm',file=new File([completedBlob],`LINA-lyric-video-${Math.round(seconds)}s.${ext}`,{type:completedBlob.type});
     closeDialog();
-    if(navigator.canShare?.({files:[file]})){
+
+    // Desktop export is always a download. Share is reserved for touch/mobile
+    // devices where the native share sheet is the expected file-delivery UI.
+    const mobileShare=(navigator.maxTouchPoints||0)>0&&matchMedia('(pointer:coarse)').matches&&navigator.canShare?.({files:[file]});
+    if(mobileShare){
       try{await navigator.share({files:[file],title:'LINA: Lyric Video Visualizer'});outcome='complete';return}
       catch(err){if(err?.name==='AbortError'){outcome='complete';return}}
     }
