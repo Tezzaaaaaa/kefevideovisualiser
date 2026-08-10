@@ -36,7 +36,7 @@ const failedPromise=page.waitForFunction(()=>/Export failed/i.test(document.quer
   const state=await page.evaluate(()=>({state:window.linaExportState?.(),status:document.querySelector('#topStatus')?.textContent||'',render:document.querySelector('#renderText')?.textContent||''}));
   throw new Error(`Safari export reported failure: ${JSON.stringify(state)}`);
 });
-await page.click('#exportBottomBtn');
+await page.click('#exportBtn');
 const phaseTicker=setInterval(async()=>{
   try{
     const state=await page.evaluate(()=>({state:window.linaExportState?.(),status:document.querySelector('#topStatus')?.textContent||'',render:document.querySelector('#renderText')?.textContent||''}));
