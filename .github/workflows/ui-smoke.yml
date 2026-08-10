@@ -17,6 +17,10 @@ jobs:
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install --with-deps chromium firefox webkit
+          FFMPEG_BIN="$(find "$HOME/.cache/ms-playwright" -type f -name ffmpeg | head -n 1)"
+          test -x "$FFMPEG_BIN"
+          sudo ln -sf "$FFMPEG_BIN" /usr/local/bin/ffmpeg
+          ffmpeg -version | head -n 1
       - name: Start LINA
         run: |
           python3 -m http.server 4173 --directory docs >/tmp/lina-http.log 2>&1 &
