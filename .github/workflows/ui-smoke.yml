@@ -31,5 +31,7 @@ jobs:
           exit 1
       - name: Diagnose Firefox export path
         run: node qa/firefox-export-debug.mjs
+      - name: Diagnose WebKit export path
+        run: node qa/webkit-export-debug.mjs
       - name: Run full LINA control matrix
         run: node qa/ui-smoke.mjs
