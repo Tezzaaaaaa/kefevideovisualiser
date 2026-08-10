@@ -16,6 +16,7 @@
       await load('apple-timing.js');
       await load('apple-motion.js');
       await load('apple-subword.js');
+      await load('production-motion-bridge.js');
       await load('preview-runtime.js');
       await load('preview-recovery.js');
       window.invalidateLinaMotion?.(true);
