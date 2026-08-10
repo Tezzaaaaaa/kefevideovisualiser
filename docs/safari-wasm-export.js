@@ -7,7 +7,7 @@
   const nativeExport=window.exportVideo;
   const nativeCancel=window.linaRequestExportCancel;
   const nativeState=window.linaExportState;
-  let active=false,phase='idle',cancelled=false,ffmpeg=null,loadPromise=null,workerBlobURL='',coreBlobURL='',wasmBlobURL='';
+  let active=false,phase='idle',cancelled=false,ffmpeg=null,loadPromise=null,coreBlobURL='',wasmBlobURL='';
   const $=s=>document.querySelector(s);
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
@@ -30,27 +30,23 @@
   async function toBlobURL(url,type){
     const r=await fetch(url,{mode:'cors',cache:'force-cache'});if(!r.ok)throw new Error(`Could not load ${url}`);const b=await r.blob();return URL.createObjectURL(new Blob([b],{type}));
   }
-  async function makeWorkerURL(){
-    const base='https://cdnjs.cloudflare.com/ajax/libs/ffmpeg/0.12.15/esm/';
-    const r=await fetch(`${base}worker.js`,{mode:'cors',cache:'force-cache'});if(!r.ok)throw new Error('Could not load FFmpeg worker.');
-    let text=await r.text();
-    text=text.replace(/from\s+(["'])\.\/([^"']+)\1/g,(m,q,p)=>`from ${q}${base}${p}${q}`);
-    return URL.createObjectURL(new Blob([text],{type:'text/javascript'}));
-  }
   async function getFFmpeg(){
     if(ffmpeg?.loaded)return ffmpeg;
     if(loadPromise)return loadPromise;
     loadPromise=(async()=>{
-      setPhase('loading-engine','Loading Safari export engine…');
-      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/ffmpeg/0.12.15/umd/ffmpeg.min.js');
+      setPhase('loading-engine','Loading MP4 export engine…');
+      // Use FFmpeg.wasm's normal UMD runtime. Its own matching classic worker
+      // is resolved beside ffmpeg.js; do not mix the ESM class worker with UMD core.
+      await loadScript('https://unpkg.com/@ffmpeg/ffmpeg@0.12.15/dist/umd/ffmpeg.js');
       const coreBase='https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd';
-      workerBlobURL=await makeWorkerURL();
-      coreBlobURL=await toBlobURL(`${coreBase}/ffmpeg-core.js`,'text/javascript');
-      wasmBlobURL=await toBlobURL(`${coreBase}/ffmpeg-core.wasm`,'application/wasm');
+      [coreBlobURL,wasmBlobURL]=await Promise.all([
+        toBlobURL(`${coreBase}/ffmpeg-core.js`,'text/javascript'),
+        toBlobURL(`${coreBase}/ffmpeg-core.wasm`,'application/wasm')
+      ]);
       const engine=new window.FFmpegWASM.FFmpeg();
-      engine.on('log',({message})=>console.debug('LINA Safari FFmpeg:',message));
+      engine.on('log',({message})=>console.debug('LINA FFmpeg:',message));
       engine.on('progress',({progress})=>{if(active&&Number.isFinite(progress)&&$('#progress'))$('#progress').value=Math.max($('#progress').value||0,Math.min(99,progress*100))});
-      await engine.load({classWorkerURL:workerBlobURL,coreURL:coreBlobURL,wasmURL:wasmBlobURL});
+      await engine.load({coreURL:coreBlobURL,wasmURL:wasmBlobURL});
       ffmpeg=engine;return engine;
     })().catch(err=>{loadPromise=null;ffmpeg=null;throw err});
     return loadPromise;
@@ -95,9 +91,9 @@
   }
   async function encodeSegment(engine,segIndex,start,duration,fps,canvas,ctx,bg,w,h){
     const prefix=`lina_${Date.now()}_${segIndex}_`,frames=Math.max(1,Math.ceil(duration*fps));
-    setPhase('rendering-frames',`Safari export · rendering ${ft(start)}–${ft(start+duration)}`);
+    setPhase('rendering-frames',`Rendering ${ft(start)}–${ft(start+duration)}`);
     for(let i=0;i<frames;i++){
-      if(cancelled)throw new Error('LINA_SAFARI_CANCELLED');
+      if(cancelled)throw new Error('LINA_FFMPEG_CANCELLED');
       const t=Math.min(start+duration-.001,start+i/fps);
       await drawFrame(ctx,canvas,bg,t,w,h);
       const blob=await canvasBlob(canvas,'image/jpeg',.9),data=new Uint8Array(await blob.arrayBuffer()),name=`${prefix}${String(i).padStart(4,'0')}.jpg`;
@@ -106,36 +102,36 @@
       if(i%5===0)await sleep(0);
     }
     const out=`segment_${String(segIndex).padStart(4,'0')}.mp4`,pattern=`${prefix}%04d.jpg`;
-    setPhase('encoding-segment',`Safari export · encoding segment ${segIndex+1}`);
+    setPhase('encoding-segment',`Encoding segment ${segIndex+1}`);
     let code=await engine.exec(['-framerate',String(fps),'-i',pattern,'-t',String(duration),'-an','-c:v','libx264','-preset','ultrafast','-crf','20','-pix_fmt','yuv420p','-movflags','+faststart',out]);
     if(code!==0){await safeDelete(engine,out);code=await engine.exec(['-framerate',String(fps),'-i',pattern,'-t',String(duration),'-an','-c:v','mpeg4','-q:v','3','-pix_fmt','yuv420p',out])}
     for(let i=0;i<frames;i++)await safeDelete(engine,`${prefix}${String(i).padStart(4,'0')}.jpg`);
-    if(code!==0)throw new Error('Safari segment encoding failed.');
+    if(code!==0)throw new Error('MP4 segment encoding failed.');
     return out;
   }
 
   async function safariExport(){
     if(active)return status('An export is already running.');
     if(!window.audioFile||!window.lines?.length)return status('Add audio and synced lyrics before exporting.');
-    active=true;cancelled=false;phase='starting';openDialog();status('Safari export starting…');
-    let bg=null,engine=null,output='LINA-safari.mp4',audioName='',segmentFiles=[];
+    active=true;cancelled=false;phase='starting';openDialog();status('MP4 export starting…');
+    let bg=null,engine=null,output='LINA-export.mp4',audioName='',segmentFiles=[];
     const canvas=$('#canvas'),ctx=canvas.getContext('2d',{alpha:false});
     try{
-      engine=await getFFmpeg();if(cancelled)throw new Error('LINA_SAFARI_CANCELLED');
+      engine=await getFFmpeg();if(cancelled)throw new Error('LINA_FFMPEG_CANCELLED');
       const seconds=Math.min(Number(audio.duration)||0,window.MAX||600);if(!seconds)throw new Error('Audio duration unavailable.');
       const q=+($('#quality')?.value||720),[w,h]=dims(q,$('#aspect')?.value||'9:16');canvas.width=w;canvas.height=h;
       bg=await cloneBackground();
-      const touch=(navigator.maxTouchPoints||0)>0, fps=touch?12:(q>=1080?15:18),segmentSpan=touch?3:5,totalSegments=Math.ceil(seconds/segmentSpan);
+      const touch=(navigator.maxTouchPoints||0)>0,fps=touch?12:(q>=1080?15:18),segmentSpan=touch?3:5,totalSegments=Math.ceil(seconds/segmentSpan);
       for(let s=0;s<totalSegments;s++){
         const start=s*segmentSpan,duration=Math.min(segmentSpan,seconds-start);segmentFiles.push(await encodeSegment(engine,s,start,duration,fps,canvas,ctx,bg,w,h));
       }
-      if(cancelled)throw new Error('LINA_SAFARI_CANCELLED');
-      setPhase('muxing','Safari export · adding audio…');
+      if(cancelled)throw new Error('LINA_FFMPEG_CANCELLED');
+      setPhase('muxing','Adding audio…');
       const concat='segments.txt';await engine.writeFile(concat,new TextEncoder().encode(segmentFiles.map(f=>`file '${f}'`).join('\n')));
       audioName=`audio.${extForAudio(audioFile)}`;await engine.writeFile(audioName,new Uint8Array(await audioFile.arrayBuffer()));
-      let code=await engine.exec(['-f','concat','-safe','0','-i',concat,'-i',audioName,'-c:v','copy','-c:a','aac','-b:a','192k','-shortest','-movflags','+faststart',output]);
-      if(code!==0)throw new Error('Safari final mux failed.');
-      const data=await engine.readFile(output);if(!data?.byteLength)throw new Error('Safari export produced no file.');
+      const code=await engine.exec(['-f','concat','-safe','0','-i',concat,'-i',audioName,'-c:v','copy','-c:a','aac','-b:a','192k','-shortest','-movflags','+faststart',output]);
+      if(code!==0)throw new Error('Final MP4 mux failed.');
+      const data=await engine.readFile(output);if(!data?.byteLength)throw new Error('MP4 export produced no file.');
       const file=new File([data.buffer],`LINA-lyric-video-${Math.round(seconds)}s.mp4`,{type:'video/mp4'}),url=URL.createObjectURL(file);
       closeDialog();
       const mobileShare=(navigator.maxTouchPoints||0)>0&&matchMedia('(pointer:coarse)').matches&&navigator.canShare?.({files:[file]});
@@ -143,8 +139,8 @@
       else{const a=document.createElement('a');a.href=url;a.download=file.name;a.style.display='none';document.body.appendChild(a);a.click();a.remove()}
       setTimeout(()=>URL.revokeObjectURL(url),30000);status('Export complete.');phase='complete';
     }catch(err){
-      if(cancelled||String(err?.message||err).includes('LINA_SAFARI_CANCELLED'))status('Export cancelled.');
-      else{console.error('LINA Safari WASM export failed',err);status('Safari export failed. Your project is safe — try again.');}
+      if(cancelled||String(err?.message||err).includes('LINA_FFMPEG_CANCELLED'))status('Export cancelled.');
+      else{console.error('LINA FFmpeg export failed',err);status('Export failed. Your project is safe — try again.');}
     }finally{
       if(engine?.loaded){for(const f of segmentFiles)await safeDelete(engine,f);await safeDelete(engine,'segments.txt');if(audioName)await safeDelete(engine,audioName);await safeDelete(engine,output)}
       try{if(bg?.tagName==='VIDEO'){bg.pause();bg.removeAttribute('src');bg.load()}}catch{}
