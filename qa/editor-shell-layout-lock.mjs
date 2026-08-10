@@ -70,12 +70,14 @@ for(const [browserName,type] of browsers){
       assert.deepEqual(shell,{display:'flex',direction:'column'},`${browserName}/${vpName}: mobile shell is not a single column`);
       const stageMobile=await box(page,'.stage'),leftMobile=await box(page,'.left');
       assert.ok(stageMobile.y<leftMobile.y,`${browserName}/${vpName}: mobile preview is not first`);
-      const navStyle=await page.locator('#nav').evaluate(el=>({position:getComputedStyle(el).position,bottom:getComputedStyle(el).bottom}));
-      assert.equal(navStyle.position,'fixed',`${browserName}/${vpName}: mobile tool tabs are not fixed bottom navigation`);
+      const navStyle=await page.locator('#nav').evaluate(el=>({position:getComputedStyle(el).position}));
+      assert.equal(navStyle.position,'static',`${browserName}/${vpName}: tool tabs are still floating over editor content`);
       const bodyPad=await page.evaluate(()=>parseFloat(getComputedStyle(document.body).paddingBottom)||0);
-      assert.ok(bodyPad>=60,`${browserName}/${vpName}: mobile bottom tabs have no reserved content space`);
+      assert.ok(bodyPad<=10,`${browserName}/${vpName}: obsolete bottom-nav padding remains (${bodyPad}px)`);
+      const navBox=await box(page,'#nav');
       const active=await page.locator('[data-panel="lyrics"]').boundingBox();
       assert.ok(active&&active.width>=viewport.width-30,`${browserName}/${vpName}: mobile active inspector is squeezed`);
+      assert.ok(navBox.y+navBox.height<=active.y+2,`${browserName}/${vpName}: tool tabs overlap the active inspector`);
     }
 
     const wordDetails=page.locator('.inspector-disclosure');
