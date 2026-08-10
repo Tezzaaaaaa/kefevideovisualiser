@@ -26,6 +26,13 @@ const enhanced='[00:00.00]<00:00.00>Hello <00:00.18>world <00:00.38>from <00:00.
 
 async function setRange(page,id,value){await page.locator(id).evaluate((el,v)=>{el.value=String(v);el.dispatchEvent(new Event('input',{bubbles:true}))},value)}
 async function status(page){return (await page.textContent('#topStatus'))?.trim()||''}
+function verifyRenderedFile(path,name,effect){
+  const streams=execFileSync('ffprobe',['-v','error','-show_entries','stream=codec_type','-of','csv=p=0',path],{encoding:'utf8'}).trim().split(/\s+/).filter(Boolean);
+  assert.ok(streams.includes('video'),`${name}: ${effect} export has no video stream`);
+  assert.ok(streams.includes('audio'),`${name}: ${effect} export has no audio stream`);
+  const duration=Number(execFileSync('ffprobe',['-v','error','-show_entries','format=duration','-of','default=noprint_wrappers=1:nokey=1',path],{encoding:'utf8'}).trim());
+  assert.ok(Number.isFinite(duration)&&duration>1.5,`${name}: ${effect} export duration invalid (${duration})`);
+}
 async function ensureLyrics(page){
   await page.click('#nav [data-tool="lyrics"]');
   await page.selectOption('#syncMethod','pasteTimed');
@@ -51,7 +58,6 @@ for(const [name,type] of targets){
   assert.deepEqual([...audit.signatureEffects].sort(),['apple','charli','eternal'],`${name}: signature effects missing`);
   assert.equal(audit.missing.length,0,`${name}: unbound controls: ${audit.missing.join(', ')}`);
 
-  // WORKFLOW + SETUP
   for(const step of ['setup','lyrics','style','background']){await page.click(`#nav [data-tool="${step}"]`);assert.equal(await page.getAttribute(`#nav [data-tool="${step}"]`,'aria-selected'),'true',`${name}: ${step} navigation failed`)}
   await page.click('#nav [data-tool="setup"]');
   assert.equal(await page.isDisabled('#prevStep'),true,`${name}: Back state failed`);
@@ -72,7 +78,6 @@ for(const [name,type] of targets){
   await page.check('#userArtworkIntro');
   await page.uncheck('#showTitle');await page.check('#showTitle');
 
-  // LYRICS: paste review actions
   await page.click('#nav [data-tool="lyrics"]');
   await page.selectOption('#syncMethod','pasteTimed');
   await page.fill('#lyricsText','[00:00.00] https://example.com\n'+timed);
@@ -87,7 +92,6 @@ for(const [name,type] of targets){
   assert.equal(await page.locator('#reviewList .review-row').count(),3,`${name}: row Delete failed`);
   await page.click('#confirmReview');await page.waitForFunction(()=>document.querySelectorAll('#timeline .line').length===3);
 
-  // File import, including Enhanced LRC word timing.
   await page.click('#clearLyrics');
   await page.selectOption('#syncMethod','fileTimed');
   await page.setInputFiles('#lyricsFile',{name:'enhanced.lrc',mimeType:'text/plain',buffer:Buffer.from(enhanced)});
@@ -97,14 +101,12 @@ for(const [name,type] of targets){
   assert.equal(await page.locator('#wordEditor .word-row button').count(),0,`${name}: dead word buttons remain`);
   assert.ok(await page.locator('#wordEditor .word-label').count()>0,`${name}: word labels missing`);
 
-  // Word emphasis / hold inputs + Apply.
   await page.locator('#wordEditor .emph').first().fill('1.6');
   await page.locator('#wordEditor .hold').first().fill('1.5');
   await page.click('#applyWords');
   assert.equal(await page.evaluate(()=>lines[selected].words[0].emphasis),1.6,`${name}: word emphasis failed`);
   assert.equal(await page.evaluate(()=>lines[selected].words[0].hold),1.5,`${name}: word hold failed`);
 
-  // Plain lyrics + manual stamping.
   await page.click('#clearLyrics');
   await page.selectOption('#syncMethod','manual');
   await page.fill('#manualLyricsText','Manual first line\nManual second line');
@@ -114,7 +116,6 @@ for(const [name,type] of targets){
   await page.evaluate(()=>document.querySelector('#audio').currentTime=1.05);await page.click('#stampLine');
   assert.ok(await page.evaluate(()=>sourceLines[1].start>sourceLines[0].start),`${name}: manual stamping failed`);
 
-  // Restore timed lyrics for all remaining editor/effect/export checks.
   await page.click('#clearLyrics');await ensureLyrics(page);
   await page.selectOption('#grouping','2');await page.click('#applyGrouping');
   assert.ok(await page.locator('#timeline .line').count()>3,`${name}: grouping failed`);
@@ -125,7 +126,6 @@ for(const [name,type] of targets){
   assert.equal(await page.inputValue('#customEntrance'),'0.2',`${name}: custom entrance failed`);
   await page.selectOption('#lyricsEntrance','at');
 
-  // TRANSPORT + TIMELINE/EDITOR
   await page.evaluate(()=>document.querySelector('#audio').currentTime=0);
   await page.click('#play');await page.waitForFunction(()=>document.querySelector('#audio').currentTime>.05);await page.click('#play');
   assert.ok((await page.textContent('#clock')).includes('/'),`${name}: clock failed`);
@@ -141,7 +141,6 @@ for(const [name,type] of targets){
   const beforeAdd=await page.locator('#timeline .line').count();await page.click('#addLineAfter');assert.equal(await page.locator('#timeline .line').count(),beforeAdd+1,`${name}: Add line failed`);await page.click('#duplicateLine');assert.equal(await page.locator('#timeline .line').count(),beforeAdd+2,`${name}: Duplicate failed`);await page.click('#deleteLine');assert.equal(await page.locator('#timeline .line').count(),beforeAdd+1,`${name}: Delete failed`);await page.click('#deleteLine');assert.equal(await page.locator('#timeline .line').count(),beforeAdd,`${name}: Delete cleanup failed`);
   await page.click('#transportSync');
 
-  // STYLE + SIGNATURE EFFECTS
   await page.click('#nav [data-tool="style"]');
   await setRange(page,'#size',30);assert.equal(await page.textContent('#sizeVal'),'30',`${name}: size failed`);
   await setRange(page,'#yPos',56);assert.equal(await page.inputValue('#yPos'),'56',`${name}: vertical position failed`);
@@ -163,7 +162,6 @@ for(const [name,type] of targets){
 
   for(const effect of ['charli','eternal','apple']){await page.click(`.effect-option[data-effect="${effect}"]`);assert.equal(await page.getAttribute('#story','data-lyric-effect'),effect,`${name}: ${effect} button failed`);await page.evaluate(()=>render(900));if(effect==='charli'){await page.waitForSelector('.charli-card');assert.equal((await page.textContent('.charli-card')).trim(),(await page.textContent('.charli-card')).trim().toLowerCase(),`${name}: Charli case parity failed`)}if(effect==='eternal')await page.waitForSelector('.eternal-page');if(effect==='apple')await page.waitForSelector('.apple-flow')}
 
-  // BACKGROUND: image, framing, user artwork backdrop, video, trim/loop, gradient, readability.
   await page.click('#nav [data-tool="background"]');
   await page.setInputFiles('#bgImageFile',{name:'bg.svg',mimeType:'image/svg+xml',buffer:svg});await page.waitForFunction(()=>document.querySelector('#bg img'));
   await setRange(page,'#cropX',30);await setRange(page,'#cropY',70);await setRange(page,'#cropZoom',1.4);assert.match(await page.evaluate(()=>document.querySelector('#bg img').style.transform),/1\.4/,`${name}: crop zoom failed`);
@@ -175,13 +173,11 @@ for(const [name,type] of targets){
   await page.selectOption('#videoMode','trimLoop');await page.fill('#videoStart','0.2');await page.fill('#videoEnd','1.2');await page.locator('#videoEnd').dispatchEvent('input');assert.match(await page.textContent('#trimStatus'),/Looping/i,`${name}: trim-loop failed`);await page.selectOption('#videoMode','auto');
   await page.click('#removeBg');assert.equal(await page.locator('#bg img,#bg video').count(),0,`${name}: remove background failed`);
 
-  // OUTPUT SETTINGS + FINAL WORKFLOW
   for(const ratio of ['9:16','4:5','1:1','16:9']){await page.selectOption('#aspect',ratio);assert.match(await page.textContent('#stageMeta'),new RegExp(ratio.replace(':','\\:')),`${name}: aspect ${ratio} failed`)}
   for(const quality of ['720','1080']){await page.selectOption('#quality',quality);assert.match(await page.textContent('#stageMeta'),new RegExp(`${quality}p`),`${name}: quality ${quality} failed`)}
   await page.check('#safeToggle');assert.ok(await page.locator('#safe.on').count(),`${name}: safe guides failed`);await page.uncheck('#safeToggle');
   assert.equal(await page.textContent('#nextStep'),'Preview',`${name}: dead Review button remains`);await page.click('#nextStep');
 
-  // EXPORT RIGHTS + CANCEL + actual render for every signature effect.
   await page.uncheck('#rightsConfirm');await page.click('#exportBtn');assert.match(await status(page),/Confirm media rights/i,`${name}: rights gate failed`);await page.check('#rightsConfirm');
   await page.click('.effect-option[data-effect="apple"]');
   await page.click('#exportBottomBtn');await page.waitForSelector('#dlg[open]',{timeout:7000});await page.click('#cancel');await page.waitForFunction(()=>/cancel/i.test(document.querySelector('#topStatus')?.textContent||''),null,{timeout:7000});
@@ -194,10 +190,10 @@ for(const [name,type] of targets){
     const path=await download.path();
     assert.ok(path,`${name}: ${effect} export produced no file`);
     assert.match(download.suggestedFilename(),/LINA-lyric-video-.*\.(mp4|webm)$/i,`${name}: ${effect} export filename invalid`);
+    verifyRenderedFile(path,name,effect);
     await page.waitForFunction(()=>/Export complete/i.test(document.querySelector('#topStatus')?.textContent||''),null,{timeout:5000});
   }
 
-  // Save / autosave / reset persistence controls.
   await page.click('#saveProgressBtn');await page.waitForFunction(()=>document.querySelector('#saveProgressText')?.textContent==='Saved');
   await page.uncheck('#autosaveToggle');assert.equal(await page.isChecked('#autosaveToggle'),false,`${name}: autosave off failed`);await page.check('#autosaveToggle');
   await Promise.all([page.waitForNavigation({waitUntil:'networkidle'}),page.click('#resetBtn')]);
