@@ -58,7 +58,7 @@ async function exportVideo(){
   const q=+$('#quality').value,[w,h]=dims(q,$('#aspect').value),fps=q===1080?24:30,canvas=$('#canvas'),ctx=canvas.getContext('2d',{alpha:false});
   canvas.width=w;canvas.height=h;
 
-  let stream=null,canvasStream=null,ac=null,audioSource=null,dest=null,firefoxMediaStream=null,rec=null,exportBg=null,recorderDone=null,dlg=$('#dlg'),completedBlob=null,outcome='failed',resumePromise=null,decoded=null;
+  let stream=null,canvasStream=null,ac=null,audioSource=null,dest=null,firefoxMediaStream=null,rec=null,exportBg=null,recorderDone=null,dlg=$('#dlg'),completedBlob=null,outcome='failed',resumePromise=null,decoded=null,webkitGenerator=null,webkitWriter=null,webkitVideoTrack=null,webkitWriteChain=Promise.resolve(),webkitLastQueued=-Infinity;
   const chunks=[];
   const stopTracks=s=>{try{s?.getTracks().forEach(t=>t.stop())}catch{}};
   const closeDialog=()=>{if(dlg?.open)try{dlg.close()}catch{}};
@@ -84,6 +84,8 @@ async function exportVideo(){
     linaExportCancelCurrent=null;
     stopAudio();
     retireExportBg();
+    if(webkitWriter){try{await Promise.race([webkitWriter.abort?.('LINA export cleanup')||Promise.resolve(),new Promise(r=>setTimeout(r,300))])}catch{}webkitWriter=null}
+    try{webkitVideoTrack?.stop?.()}catch{}
     try{dest?.disconnect?.()}catch{}
     stopTracks(stream);stopTracks(canvasStream);stopTracks(dest?.stream);stopTracks(firefoxMediaStream);
     try{if(ac&&ac.state!=='closed')await Promise.race([ac.close(),new Promise(r=>setTimeout(r,600))])}catch{}
@@ -107,6 +109,21 @@ async function exportVideo(){
     const ent=entranceMs(),tw=titleWindowMs();
     if(tw>0&&ms<tw&&ms<ent)drawIntro(ctx,w,h);
     if(ms>=ent)drawApple(ctx,lines[ci(ms)]||lines[0],ms,w,h);
+  };
+
+  const queueWebKitFrame=(secondsNow=0,force=false)=>{
+    if(!webkitWriter||typeof VideoFrame!=='function')return webkitWriteChain;
+    const e=clamp(Number(secondsNow)||0,0,seconds),minGap=1/fps;
+    if(!force&&e-webkitLastQueued<minGap*.82)return webkitWriteChain;
+    webkitLastQueued=e;
+    const timestamp=Math.max(0,Math.round(e*1000000));
+    const duration=Math.max(1,Math.round(1000000/fps));
+    webkitWriteChain=webkitWriteChain.then(async()=>{
+      if(cancelled||abort)return;
+      const frame=new VideoFrame(canvas,{timestamp,duration});
+      try{await webkitWriter.write(frame)}finally{frame.close()}
+    });
+    return webkitWriteChain;
   };
 
   try{
@@ -157,21 +174,30 @@ async function exportVideo(){
 
     if(cancelled)throw cancelError;
 
-    // Prime the canvas before capture. WebKit can initialise MediaRecorder without
-    // a usable canvas video track if the track has not produced a frame yet.
+    // Prime the rendered image first. Safari/WebKit has a long-standing canvas capture
+    // reliability problem, so use its generated-video-track path when available.
     drawExportFrame(0);
-    canvasStream=canvas.captureStream(fps);
-    const videoTracks=canvasStream.getVideoTracks();
-    if(!videoTracks.length)throw new Error('Canvas export produced no video track.');
-    const videoTrack=videoTracks[0];
-    drawExportFrame(.001);
-    try{videoTrack.requestFrame?.()}catch{}
-    await cancelable(new Promise(resolve=>requestAnimationFrame(()=>resolve())));
-    drawExportFrame(.002);
-    try{videoTrack.requestFrame?.()}catch{}
+    let videoTracks=[],videoTrack=null;
+    const canGenerateWebKitVideo=isWebKit&&typeof VideoTrackGenerator==='function'&&typeof VideoFrame==='function';
+    if(canGenerateWebKitVideo){
+      linaExportPhase='preparing-webkit-video';
+      webkitGenerator=new VideoTrackGenerator();
+      webkitWriter=webkitGenerator.writable.getWriter();
+      webkitVideoTrack=webkitGenerator.track;
+      videoTracks=[webkitVideoTrack];videoTrack=webkitVideoTrack;
+    }else{
+      canvasStream=canvas.captureStream(fps);
+      videoTracks=canvasStream.getVideoTracks();
+      if(!videoTracks.length)throw new Error('Canvas export produced no video track.');
+      videoTrack=videoTracks[0];
+      drawExportFrame(.001);
+      try{videoTrack.requestFrame?.()}catch{}
+      await cancelable(new Promise(resolve=>requestAnimationFrame(()=>resolve())));
+      drawExportFrame(.002);
+      try{videoTrack.requestFrame?.()}catch{}
+    }
 
-    // Build a fresh combined MediaStream instead of mutating the canvas stream.
-    // This is required for reliable multi-track MediaRecorder initialisation in WebKit.
+    // Build a fresh combined MediaStream instead of mutating the source stream.
     stream=new MediaStream([...videoTracks,...audioTracks]);
     if(!stream.getVideoTracks().length)throw new Error('Combined export stream lost its video track.');
     if(!stream.getAudioTracks().length)throw new Error('Combined export stream lost its audio track.');
@@ -209,7 +235,8 @@ async function exportVideo(){
 
     rec.start(500);
     drawExportFrame(0);
-    try{videoTrack.requestFrame?.()}catch{}
+    if(webkitWriter)await cancelable(queueWebKitFrame(0,true));
+    else try{videoTrack.requestFrame?.()}catch{}
     const wallStart=performance.now();
     if(isFirefox){
       try{firefoxAudio.currentTime=0}catch{}
@@ -231,12 +258,15 @@ async function exportVideo(){
         const clock=isFirefox&&Number.isFinite(firefoxAudio?.currentTime)?firefoxAudio.currentTime:(performance.now()-wallStart)/1000;
         const e=Math.min(seconds,Math.max(0,clock));
         if(e>=seconds-.008){
-          try{drawExportFrame(seconds);videoTrack.requestFrame?.()}catch{}
-          finish();return;
+          try{drawExportFrame(seconds)}catch(err){fail(err);return}
+          if(webkitWriter)queueWebKitFrame(seconds,true).then(finish,fail);
+          else{try{videoTrack.requestFrame?.()}catch{}finish()}
+          return;
         }
         try{
           drawExportFrame(e);
-          if(isWebKit)try{videoTrack.requestFrame?.()}catch{}
+          if(webkitWriter)queueWebKitFrame(e).catch(fail);
+          else if(isWebKit)try{videoTrack.requestFrame?.()}catch{}
           if(now-lastUi>100||e===0){
             $('#progress').value=e/seconds*100;
             $('#renderText').textContent=`Rendering ${ft(e)} of ${ft(seconds)}`;
@@ -249,6 +279,11 @@ async function exportVideo(){
     });
 
     if(cancelled||abort)throw cancelError;
+    if(webkitWriter){
+      await cancelable(withTimeout(webkitWriteChain,3000,'Safari video frames did not finish encoding.'));
+      try{await cancelable(withTimeout(webkitWriter.close(),1500,'Safari video track did not close.'))}catch(err){if(err===cancelError)throw err}
+      webkitWriter=null;
+    }
     stopAudio();
     linaExportPhase='finalising';
     await stopRecorder(false);
