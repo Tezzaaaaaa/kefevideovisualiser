@@ -1,8 +1,8 @@
 'use strict';
 (()=>{
-  const BUILD='p1-20260810-consolidated';
+  const BUILD='p2-20260810-full-consolidation';
   const load=src=>new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=`${src}?v=${BUILD}`;s.onload=resolve;s.onerror=()=>reject(new Error(`Failed to load ${src}`));document.body.append(s)});
-  for(const href of ['apple-motion.css','ui-solid.css','intro-layout.css','production-consolidated.css']){const css=document.createElement('link');css.rel='stylesheet';css.href=`${href}?v=${BUILD}`;document.head.append(css)}
+  for(const href of ['apple-motion.css','ui-solid.css','intro-layout.css','production-consolidated.css','consolidated-studio.css']){const css=document.createElement('link');css.rel='stylesheet';css.href=`${href}?v=${BUILD}`;document.head.append(css)}
   (async()=>{
     try{
       await load('app-core-safe.js');
@@ -19,6 +19,7 @@
       await load('production-motion-bridge.js');
       await load('preview-runtime.js');
       await load('preview-recovery.js');
+      await load('consolidated-studio.js');
       window.invalidateLinaMotion?.(true);
       render(audio.currentTime*1000);
       await load('panel-nav.js');
