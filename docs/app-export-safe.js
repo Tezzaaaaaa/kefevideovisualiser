@@ -1,21 +1,67 @@
 'use strict';
-let linaExportActive=false;
+let linaExportActive=false,linaExportCancelCurrent=null,linaExportPhase='idle';
+
+function requestLinaExportCancel(){
+  if(!linaExportActive)return;
+  abort=true;
+  linaExportPhase='cancelling';
+  status('Stopping export…');
+  const dlg=document.getElementById('dlg');
+  if(dlg?.open)try{dlg.close()}catch{}
+  try{linaExportCancelCurrent?.()}catch(e){console.warn('LINA export cancel signal failed',e)}
+}
+window.linaRequestExportCancel=requestLinaExportCancel;
+document.getElementById('cancel')?.addEventListener('click',requestLinaExportCancel);
+
 async function exportVideo(){
   if(linaExportActive)return status('An export is already running.');
   if(!audioFile||!lines.length)return status('Add audio and synced lyrics before exporting.');
   if(!HTMLCanvasElement.prototype.captureStream||!window.MediaRecorder)return status('This browser cannot record canvas video.');
 
-  abort=false;linaExportActive=true;
+  abort=false;linaExportActive=true;linaExportPhase='initialising';
+  const ua=navigator.userAgent||'';
+  const isFirefox=/Firefox\//i.test(ua);
+  const isWebKit=/AppleWebKit/i.test(ua)&&!/Chrom(?:e|ium)|CriOS|Edg|Firefox/i.test(ua);
+  let cancelled=false,cancelResolve=()=>{};
+  const cancelPromise=new Promise(resolve=>{cancelResolve=resolve});
+  const cancelError=Object.assign(new Error('LINA_EXPORT_CANCELLED'),{name:'LinaExportCancelled'});
+  const signalCancel=()=>{if(cancelled)return;cancelled=true;abort=true;cancelResolve()};
+  linaExportCancelCurrent=signalCancel;
+  const cancelable=async promise=>{
+    const result=await Promise.race([
+      Promise.resolve(promise).then(value=>({kind:'value',value}),error=>({kind:'error',error})),
+      cancelPromise.then(()=>({kind:'cancel'}))
+    ]);
+    if(result.kind==='cancel')throw cancelError;
+    if(result.kind==='error')throw result.error;
+    return result.value;
+  };
+  const withTimeout=(promise,ms,label)=>Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error(label)),ms))]);
+
+  // Firefox needs media playback to begin synchronously from the Export click.
+  let firefoxAudio=null,firefoxPlayPromise=null;
+  if(isFirefox){
+    firefoxAudio=new Audio(audio.src);
+    firefoxAudio.preload='auto';firefoxAudio.volume=1;firefoxAudio.muted=false;
+    try{firefoxAudio.currentTime=0}catch{}
+    firefoxPlayPromise=firefoxAudio.play();
+    firefoxPlayPromise?.catch(()=>{});
+  }
+
   const seconds=Math.min(Number(audio.duration)||0,MAX);
-  if(!seconds){linaExportActive=false;return status('Audio duration unavailable.');}
+  if(!seconds){
+    linaExportCancelCurrent=null;linaExportActive=false;linaExportPhase='idle';
+    try{firefoxAudio?.pause()}catch{}
+    return status('Audio duration unavailable.');
+  }
 
   const q=+$('#quality').value,[w,h]=dims(q,$('#aspect').value),fps=q===1080?24:30,canvas=$('#canvas'),ctx=canvas.getContext('2d',{alpha:false});
   canvas.width=w;canvas.height=h;
 
-  let stream=null,renderAudio=null,ac=null,src=null,dest=null,rec=null,exportBg=null,recorderDone=null,dlg=$('#dlg'),dialogOpen=false,completedBlob=null;
+  let stream=null,canvasStream=null,ac=null,audioSource=null,dest=null,firefoxMediaStream=null,rec=null,exportBg=null,recorderDone=null,dlg=$('#dlg'),completedBlob=null,outcome='failed',resumePromise=null,decoded=null,webkitGenerator=null,webkitWriter=null,webkitVideoTrack=null,webkitWriteChain=Promise.resolve(),webkitLastQueued=-Infinity;
   const chunks=[];
   const stopTracks=s=>{try{s?.getTracks().forEach(t=>t.stop())}catch{}};
-  const closeDialog=()=>{if(dialogOpen&&dlg?.open)try{dlg.close()}catch{}dialogOpen=false};
+  const closeDialog=()=>{if(dlg?.open)try{dlg.close()}catch{}};
   const retireExportBg=()=>{
     if(exportBg?.tagName==='VIDEO'){
       try{exportBg.pause()}catch{}
@@ -23,90 +69,254 @@ async function exportVideo(){
     }
     exportBg=null;
   };
-  const stopRecorder=async()=>{
+  const stopAudio=()=>{
+    try{audioSource?.stop()}catch{}
+    try{audioSource?.disconnect()}catch{}
+    audioSource=null;
+    try{firefoxAudio?.pause()}catch{}
+  };
+  const stopRecorder=async fast=>{
     if(!rec)return;
     if(rec.state!=='inactive')try{rec.stop()}catch{}
-    if(recorderDone)await Promise.race([recorderDone,new Promise(r=>setTimeout(r,1500))]).catch(()=>{});
+    if(!fast&&recorderDone)await Promise.race([recorderDone,new Promise(r=>setTimeout(r,1800))]).catch(()=>{});
   };
   const cleanup=async()=>{
-    try{renderAudio?.pause()}catch{}
+    linaExportCancelCurrent=null;
+    stopAudio();
     retireExportBg();
-    try{src?.disconnect()}catch{}
+    if(webkitWriter){try{await Promise.race([webkitWriter.abort?.('LINA export cleanup')||Promise.resolve(),new Promise(r=>setTimeout(r,300))])}catch{}webkitWriter=null}
+    try{webkitVideoTrack?.stop?.()}catch{}
     try{dest?.disconnect?.()}catch{}
-    stopTracks(stream);stopTracks(dest?.stream);
-    try{if(ac&&ac.state!=='closed')await ac.close()}catch{}
-    if(renderAudio){try{renderAudio.removeAttribute('src');renderAudio.load()}catch{}}
+    stopTracks(stream);stopTracks(canvasStream);stopTracks(dest?.stream);stopTracks(firefoxMediaStream);
+    try{if(ac&&ac.state!=='closed')await Promise.race([ac.close(),new Promise(r=>setTimeout(r,600))])}catch{}
+    if(firefoxAudio){try{firefoxAudio.removeAttribute('src');firefoxAudio.load()}catch{}}
     closeDialog();
     linaExportActive=false;
+    linaExportPhase='idle';
+  };
+
+  const drawExportFrame=(secondsNow=0)=>{
+    const e=clamp(Number(secondsNow)||0,0,seconds),ms=e*1000;
+    if(exportBg?.tagName==='VIDEO')syncBgVideo(e,false,exportBg);
+    ctx.fillStyle='#171719';ctx.fillRect(0,0,w,h);
+    if(exportBg){try{drawCover(ctx,exportBg,w,h)}catch{}}
+    else{
+      const g=ctx.createLinearGradient(0,0,w,h);
+      g.addColorStop(0,'#5e35b1');g.addColorStop(.56,'#d81b60');g.addColorStop(1,'#fb8c00');
+      ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+    }
+    ctx.fillStyle=`rgba(0,0,0,${+$('#dim').value/100})`;ctx.fillRect(0,0,w,h);
+    const ent=entranceMs(),tw=titleWindowMs();
+    if(tw>0&&ms<tw&&ms<ent)drawIntro(ctx,w,h);
+    if(ms>=ent)drawApple(ctx,lines[ci(ms)]||lines[0],ms,w,h);
+  };
+
+  const queueWebKitFrame=(secondsNow=0,force=false)=>{
+    if(!webkitWriter||typeof VideoFrame!=='function')return webkitWriteChain;
+    const e=clamp(Number(secondsNow)||0,0,seconds),minGap=1/fps;
+    if(!force&&e-webkitLastQueued<minGap*.82)return webkitWriteChain;
+    webkitLastQueued=e;
+    const timestamp=Math.max(0,Math.round(e*1000000));
+    const duration=Math.max(1,Math.round(1000000/fps));
+    webkitWriteChain=webkitWriteChain.then(async()=>{
+      if(cancelled||abort)return;
+      const frame=new VideoFrame(canvas,{timestamp,duration});
+      try{await webkitWriter.write(frame)}finally{frame.close()}
+    });
+    return webkitWriteChain;
   };
 
   try{
-    stream=canvas.captureStream(fps);
-    renderAudio=new Audio(audio.src);renderAudio.preload='auto';renderAudio.muted=false;renderAudio.volume=1;
-    ac=new AudioContext();src=ac.createMediaElementSource(renderAudio);dest=ac.createMediaStreamDestination();src.connect(dest);
-    dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
+    let audioTracks=[];
 
-    const type=['video/mp4;codecs=h264,aac','video/mp4','video/webm;codecs=vp9,opus','video/webm'].find(x=>MediaRecorder.isTypeSupported(x))||'';
+    if(isFirefox){
+      linaExportPhase='starting-firefox-media';
+      if(!firefoxAudio||!firefoxPlayPromise)throw new Error('Firefox audio export could not start.');
+      await cancelable(withTimeout(firefoxPlayPromise,5000,'Firefox audio playback did not start.'));
+      if(cancelled)throw cancelError;
+      try{firefoxAudio.currentTime=0}catch{}
+      const capture=firefoxAudio.captureStream||firefoxAudio.mozCaptureStream;
+      if(typeof capture!=='function')throw new Error('Firefox does not expose media capture for this audio element.');
+      firefoxMediaStream=capture.call(firefoxAudio);
+      audioTracks=firefoxMediaStream?.getAudioTracks?.()||[];
+      if(!audioTracks.length){
+        await cancelable(new Promise(resolve=>setTimeout(resolve,120)));
+        firefoxMediaStream=capture.call(firefoxAudio);
+        audioTracks=firefoxMediaStream?.getAudioTracks?.()||[];
+      }
+      if(!audioTracks.length)throw new Error('Firefox audio capture produced no audio track.');
+    }else{
+      // Chromium/WebKit: deterministic decoded Web Audio route.
+      ac=new (window.AudioContext||window.webkitAudioContext)({latencyHint:'playback'});
+      resumePromise=ac.state==='running'?Promise.resolve():ac.resume();
+      dest=ac.createMediaStreamDestination();
+      linaExportPhase='decoding-audio';
+      const bytes=await cancelable(audioFile.arrayBuffer());
+      decoded=await cancelable(ac.decodeAudioData(bytes.slice(0)));
+      if(cancelled)throw cancelError;
+      audioSource=ac.createBufferSource();audioSource.buffer=decoded;audioSource.connect(dest);
+      audioTracks=dest.stream.getAudioTracks();
+      if(!audioTracks.length)throw new Error('Audio export produced no audio track.');
+    }
+
+    exportBg=bgMedia;
+    if(bgMedia?.tagName==='VIDEO'){
+      linaExportPhase='preparing-background';
+      exportBg=document.createElement('video');
+      exportBg.src=bgMedia.src;exportBg.muted=true;exportBg.playsInline=true;exportBg.preload='auto';
+      await cancelable(new Promise(res=>{
+        let done=false,timer=0;
+        const finish=()=>{if(done)return;done=true;clearTimeout(timer);exportBg.onloadedmetadata=null;exportBg.onerror=null;res()};
+        exportBg.onloadedmetadata=finish;exportBg.onerror=finish;timer=setTimeout(finish,2500);
+      }));
+      try{exportBg.currentTime=0}catch{}
+    }
+
+    if(cancelled)throw cancelError;
+
+    // Prime the rendered image first. Safari/WebKit has a long-standing canvas capture
+    // reliability problem, so use its generated-video-track path when available.
+    drawExportFrame(0);
+    let videoTracks=[],videoTrack=null;
+    const canGenerateWebKitVideo=isWebKit&&typeof VideoTrackGenerator==='function'&&typeof VideoFrame==='function';
+    if(canGenerateWebKitVideo){
+      linaExportPhase='preparing-webkit-video';
+      webkitGenerator=new VideoTrackGenerator();
+      webkitWriter=webkitGenerator.writable.getWriter();
+      webkitVideoTrack=webkitGenerator.track;
+      videoTracks=[webkitVideoTrack];videoTrack=webkitVideoTrack;
+    }else{
+      canvasStream=canvas.captureStream(fps);
+      videoTracks=canvasStream.getVideoTracks();
+      if(!videoTracks.length)throw new Error('Canvas export produced no video track.');
+      videoTrack=videoTracks[0];
+      drawExportFrame(.001);
+      try{videoTrack.requestFrame?.()}catch{}
+      await cancelable(new Promise(resolve=>requestAnimationFrame(()=>resolve())));
+      drawExportFrame(.002);
+      try{videoTrack.requestFrame?.()}catch{}
+    }
+
+    // Build a fresh combined MediaStream instead of mutating the source stream.
+    stream=new MediaStream([...videoTracks,...audioTracks]);
+    if(!stream.getVideoTracks().length)throw new Error('Combined export stream lost its video track.');
+    if(!stream.getAudioTracks().length)throw new Error('Combined export stream lost its audio track.');
+
+    const mimeCandidates=isWebKit?[
+      'video/mp4',
+      'video/mp4;codecs=avc1.42000a,mp4a.40.2',
+      'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+      'video/mp4;codecs=h264,aac'
+    ]:[
+      'video/mp4;codecs=h264,aac',
+      'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+      'video/mp4',
+      'video/webm;codecs=vp9,opus',
+      'video/webm;codecs=vp8,opus',
+      'video/webm'
+    ];
+    const type=mimeCandidates.find(x=>MediaRecorder.isTypeSupported(x))||'';
     const bits=q===1080?6000000:3000000;
     rec=new MediaRecorder(stream,type?{mimeType:type,videoBitsPerSecond:bits,audioBitsPerSecond:192000}:undefined);
     recorderDone=new Promise((resolve,reject)=>{rec.onstop=resolve;rec.onerror=e=>reject(e.error||new Error('Recorder failed'));});
     rec.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data)};
 
-    exportBg=bgMedia;
-    if(bgMedia?.tagName==='VIDEO'){
-      exportBg=document.createElement('video');exportBg.src=bgMedia.src;exportBg.muted=true;exportBg.playsInline=true;exportBg.preload='metadata';
-      await new Promise(res=>{let done=false;const finish=()=>{if(done)return;done=true;exportBg.onloadedmetadata=null;exportBg.onerror=null;res()};exportBg.onloadedmetadata=finish;exportBg.onerror=finish;setTimeout(finish,2500)});
-      if(Number.isFinite(exportBg.duration)){exportBg.currentTime=0;await exportBg.play().catch(()=>{})}
+    if(dlg&&!dlg.open)dlg.showModal();
+    $('#progress').value=0;$('#renderText').textContent='Preparing audio…';
+
+    if(!isFirefox){
+      linaExportPhase='starting-audio';
+      await cancelable(Promise.race([
+        resumePromise,
+        new Promise((resolve,reject)=>setTimeout(()=>ac.state==='running'?resolve():reject(new Error(`Audio engine did not start (${ac.state})`)),2500))
+      ]));
+      if(cancelled)throw cancelError;
     }
 
-    if(dlg&&!dlg.open){dlg.showModal();dialogOpen=true}
-    $('#progress').value=0;$('#renderText').textContent='Preparing audio…';
-    await ac.resume();
-    rec.start(1000);
-    renderAudio.currentTime=0;
-    await renderAudio.play();
+    rec.start(500);
+    drawExportFrame(0);
+    if(webkitWriter)await cancelable(queueWebKitFrame(0,true));
+    else try{videoTrack.requestFrame?.()}catch{}
+    const wallStart=performance.now();
+    if(isFirefox){
+      try{firefoxAudio.currentTime=0}catch{}
+      if(firefoxAudio.paused){
+        await cancelable(withTimeout(firefoxAudio.play(),2500,'Firefox audio playback stopped before recording.'));
+      }
+    }else audioSource.start(0,0,Math.min(seconds,decoded.duration));
+    linaExportPhase='rendering';
+    $('#renderText').textContent=`Rendering 0:00 of ${ft(seconds)}`;
 
-    let lastUi=0,lastT=-1;
+    let lastUi=0;
     await new Promise((resolve,reject)=>{
+      let finished=false,raf=0;
+      const finish=()=>{if(finished)return;finished=true;if(raf)cancelAnimationFrame(raf);resolve()};
+      const fail=err=>{if(finished)return;finished=true;if(raf)cancelAnimationFrame(raf);reject(err)};
+      cancelPromise.then(()=>{if(cancelled)finish()});
       const frame=now=>{
-        if(abort){resolve();return}
-        const e=Math.min(seconds,Number(renderAudio.currentTime)||0);
-        if(renderAudio.ended||e>=seconds-.015){resolve();return}
+        if(cancelled||abort){finish();return}
+        const clock=isFirefox&&Number.isFinite(firefoxAudio?.currentTime)?firefoxAudio.currentTime:(performance.now()-wallStart)/1000;
+        const e=Math.min(seconds,Math.max(0,clock));
+        if(e>=seconds-.008){
+          try{drawExportFrame(seconds)}catch(err){fail(err);return}
+          if(webkitWriter)queueWebKitFrame(seconds,true).then(finish,fail);
+          else{try{videoTrack.requestFrame?.()}catch{}finish()}
+          return;
+        }
         try{
-          if(exportBg?.tagName==='VIDEO')syncBgVideo(e,false,exportBg);
-          ctx.fillStyle='#171719';ctx.fillRect(0,0,w,h);
-          if(exportBg)try{drawCover(ctx,exportBg,w,h)}catch{}
-          else{const g=ctx.createLinearGradient(0,0,w,h);g.addColorStop(0,'#5e35b1');g.addColorStop(.56,'#d81b60');g.addColorStop(1,'#fb8c00');ctx.fillStyle=g;ctx.fillRect(0,0,w,h)}
-          ctx.fillStyle=`rgba(0,0,0,${+$('#dim').value/100})`;ctx.fillRect(0,0,w,h);
-          const ms=e*1000,ent=entranceMs(),tw=titleWindowMs();if(tw>0&&ms<tw&&ms<ent)drawIntro(ctx,w,h);if(ms>=ent)drawApple(ctx,lines[ci(ms)]||lines[0],ms,w,h);
-          if(now-lastUi>120||e===0){$('#progress').value=e/seconds*100;$('#renderText').textContent=`Rendering ${ft(e)} of ${ft(seconds)}`;lastUi=now}
-          lastT=e;requestAnimationFrame(frame);
-        }catch(err){reject(err)}
+          drawExportFrame(e);
+          if(webkitWriter)queueWebKitFrame(e).catch(fail);
+          else if(isWebKit)try{videoTrack.requestFrame?.()}catch{}
+          if(now-lastUi>100||e===0){
+            $('#progress').value=e/seconds*100;
+            $('#renderText').textContent=`Rendering ${ft(e)} of ${ft(seconds)}`;
+            lastUi=now;
+          }
+          raf=requestAnimationFrame(frame);
+        }catch(err){fail(err)}
       };
-      requestAnimationFrame(frame);
+      raf=requestAnimationFrame(frame);
     });
 
-    try{renderAudio.pause()}catch{}
-    if(exportBg?.tagName==='VIDEO')try{exportBg.pause()}catch{}
-    await stopRecorder();
-
-    if(abort){status('Export cancelled.');return}
+    if(cancelled||abort)throw cancelError;
+    if(webkitWriter){
+      await cancelable(withTimeout(webkitWriteChain,3000,'Safari video frames did not finish encoding.'));
+      try{await cancelable(withTimeout(webkitWriter.close(),1500,'Safari video track did not close.'))}catch(err){if(err===cancelError)throw err}
+      webkitWriter=null;
+    }
+    stopAudio();
+    linaExportPhase='finalising';
+    await stopRecorder(false);
+    if(cancelled||abort)throw cancelError;
     if(!chunks.length)throw new Error('Recorder produced no video data');
 
     completedBlob=new Blob(chunks,{type:rec.mimeType||type||'video/webm'});chunks.length=0;
     const ext=completedBlob.type.includes('mp4')?'mp4':'webm',file=new File([completedBlob],`LINA-lyric-video-${Math.round(seconds)}s.${ext}`,{type:completedBlob.type});
     closeDialog();
-    if(navigator.canShare?.({files:[file]})){
-      try{await navigator.share({files:[file],title:'LINA: Lyric Video Visualizer'});status('Export complete.');return}catch(err){if(err?.name==='AbortError'){status('Export complete.');return}}
+
+    const mobileShare=(navigator.maxTouchPoints||0)>0&&matchMedia('(pointer:coarse)').matches&&navigator.canShare?.({files:[file]});
+    if(mobileShare){
+      try{await navigator.share({files:[file],title:'LINA: Lyric Video Visualizer'});outcome='complete';return}
+      catch(err){if(err?.name==='AbortError'){outcome='complete';return}}
     }
-    const a=document.createElement('a'),url=URL.createObjectURL(completedBlob);a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);status('Export complete.');
+    const a=document.createElement('a'),url=URL.createObjectURL(completedBlob);
+    a.href=url;a.download=file.name;a.style.display='none';document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),30000);outcome='complete';
   }catch(err){
-    console.error('LINA export failed',err);
-    try{await stopRecorder()}catch{}
-    status(abort?'Export cancelled.':'Export failed. Your project is safe — try again.');
+    if(err===cancelError||err?.name==='LinaExportCancelled'||cancelled||abort){
+      cancelled=true;abort=true;outcome='cancelled';
+      await stopRecorder(true);
+    }else{
+      console.error('LINA export failed',err);
+      outcome='failed';
+      await stopRecorder(false).catch(()=>{});
+    }
   }finally{
     chunks.length=0;
     await cleanup();
+    if(outcome==='cancelled')status('Export cancelled.');
+    else if(outcome==='complete')status('Export complete.');
+    else status('Export failed. Your project is safe — try again.');
   }
 }
-window.linaExportState=()=>({active:linaExportActive});
+window.linaExportState=()=>({active:linaExportActive,cancellable:!!linaExportCancelCurrent,phase:linaExportPhase,firefox:/Firefox\//i.test(navigator.userAgent)});

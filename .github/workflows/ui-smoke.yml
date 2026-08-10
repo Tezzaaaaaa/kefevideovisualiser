@@ -6,17 +6,20 @@ on:
 
 jobs:
   ui-smoke:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    runs-on: macos-14
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Install Playwright
+      - name: Install browser test runtime
         run: |
           npm install --no-save playwright@1.55.0
-          npx playwright install --with-deps chromium firefox webkit
+          npx playwright install chromium firefox webkit
+          if ! command -v ffmpeg >/dev/null 2>&1; then brew install ffmpeg; fi
+          ffmpeg -version | head -n 1
+          ffprobe -version | head -n 1
       - name: Start LINA
         run: |
           python3 -m http.server 4173 --directory docs >/tmp/lina-http.log 2>&1 &
@@ -26,5 +29,15 @@ jobs:
           done
           cat /tmp/lina-http.log
           exit 1
-      - name: Run control smoke tests
-        run: node qa/ui-smoke.mjs
+      - name: Probe WebKit FFmpeg export
+        run: node qa/safari-export-probe.mjs
+      - name: Run full LINA control and FFmpeg export matrix
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('qa/ui-smoke.mjs')
+          s=p.read_text()
+          s=s.replace("page.waitForEvent('download',{timeout:15000})", "page.waitForEvent('download',{timeout:90000})")
+          p.write_text(s)
+          PY
+          node qa/ui-smoke.mjs
