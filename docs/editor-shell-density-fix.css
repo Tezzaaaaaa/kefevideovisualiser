@@ -1,7 +1,7 @@
 /* Final density pass: live preview controls behave like an editor toolbar, not a form. */
 @media(min-width:901px){
-  .preview-controls{padding:8px 10px!important}
-  .preview-controls-head{margin:0 0 6px!important;min-height:18px!important}
+  .preview-controls{padding:8px 10px!important;min-height:0!important;height:118px!important;max-height:118px!important;overflow:hidden!important}
+  .preview-controls-head{margin:0 0 6px!important;min-height:18px!important;height:18px!important}
   .preview-control-grid{
     display:grid!important;
     grid-template-columns:repeat(4,minmax(0,1fr))!important;
@@ -9,6 +9,8 @@
     grid-auto-rows:36px!important;
     gap:6px 10px!important;
     align-items:center!important;
+    height:78px!important;
+    min-height:0!important;
   }
   .preview-control-grid .field{
     display:grid!important;
@@ -32,7 +34,7 @@
   .preview-control-grid .wide{grid-column:auto!important}
 }
 @media(max-width:900px){
-  .preview-controls{padding:8px!important}
+  .preview-controls{padding:8px!important;min-height:0!important;height:auto!important;max-height:none!important;overflow:visible!important}
   .preview-controls-head{margin-bottom:6px!important}
   .preview-control-grid{gap:7px!important}
   .preview-control-grid .field{min-height:52px!important}
