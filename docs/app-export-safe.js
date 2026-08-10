@@ -19,7 +19,9 @@ async function exportVideo(){
   if(!HTMLCanvasElement.prototype.captureStream||!window.MediaRecorder)return status('This browser cannot record canvas video.');
 
   abort=false;linaExportActive=true;linaExportPhase='initialising';
-  const isFirefox=/Firefox\//i.test(navigator.userAgent);
+  const ua=navigator.userAgent||'';
+  const isFirefox=/Firefox\//i.test(ua);
+  const isWebKit=/AppleWebKit/i.test(ua)&&!/Chrom(?:e|ium)|CriOS|Edg|Firefox/i.test(ua);
   let cancelled=false,cancelResolve=()=>{};
   const cancelPromise=new Promise(resolve=>{cancelResolve=resolve});
   const cancelError=Object.assign(new Error('LINA_EXPORT_CANCELLED'),{name:'LinaExportCancelled'});
@@ -36,8 +38,7 @@ async function exportVideo(){
   };
   const withTimeout=(promise,ms,label)=>Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error(label)),ms))]);
 
-  // Firefox: call play() immediately, before the first await, while the Export click
-  // still carries user activation. Later we capture this element's audio stream.
+  // Firefox needs media playback to begin synchronously from the Export click.
   let firefoxAudio=null,firefoxPlayPromise=null;
   if(isFirefox){
     firefoxAudio=new Audio(audio.src);
@@ -48,12 +49,16 @@ async function exportVideo(){
   }
 
   const seconds=Math.min(Number(audio.duration)||0,MAX);
-  if(!seconds){linaExportCancelCurrent=null;linaExportActive=false;linaExportPhase='idle';try{firefoxAudio?.pause()}catch{};return status('Audio duration unavailable.');}
+  if(!seconds){
+    linaExportCancelCurrent=null;linaExportActive=false;linaExportPhase='idle';
+    try{firefoxAudio?.pause()}catch{}
+    return status('Audio duration unavailable.');
+  }
 
   const q=+$('#quality').value,[w,h]=dims(q,$('#aspect').value),fps=q===1080?24:30,canvas=$('#canvas'),ctx=canvas.getContext('2d',{alpha:false});
   canvas.width=w;canvas.height=h;
 
-  let stream=null,ac=null,audioSource=null,dest=null,firefoxMediaStream=null,rec=null,exportBg=null,recorderDone=null,dlg=$('#dlg'),completedBlob=null,outcome='failed',resumePromise=null,decoded=null;
+  let stream=null,canvasStream=null,ac=null,audioSource=null,dest=null,firefoxMediaStream=null,rec=null,exportBg=null,recorderDone=null,dlg=$('#dlg'),completedBlob=null,outcome='failed',resumePromise=null,decoded=null;
   const chunks=[];
   const stopTracks=s=>{try{s?.getTracks().forEach(t=>t.stop())}catch{}};
   const closeDialog=()=>{if(dlg?.open)try{dlg.close()}catch{}};
@@ -80,7 +85,7 @@ async function exportVideo(){
     stopAudio();
     retireExportBg();
     try{dest?.disconnect?.()}catch{}
-    stopTracks(stream);stopTracks(dest?.stream);stopTracks(firefoxMediaStream);
+    stopTracks(stream);stopTracks(canvasStream);stopTracks(dest?.stream);stopTracks(firefoxMediaStream);
     try{if(ac&&ac.state!=='closed')await Promise.race([ac.close(),new Promise(r=>setTimeout(r,600))])}catch{}
     if(firefoxAudio){try{firefoxAudio.removeAttribute('src');firefoxAudio.load()}catch{}}
     closeDialog();
@@ -88,8 +93,24 @@ async function exportVideo(){
     linaExportPhase='idle';
   };
 
+  const drawExportFrame=(secondsNow=0)=>{
+    const e=clamp(Number(secondsNow)||0,0,seconds),ms=e*1000;
+    if(exportBg?.tagName==='VIDEO')syncBgVideo(e,false,exportBg);
+    ctx.fillStyle='#171719';ctx.fillRect(0,0,w,h);
+    if(exportBg){try{drawCover(ctx,exportBg,w,h)}catch{}}
+    else{
+      const g=ctx.createLinearGradient(0,0,w,h);
+      g.addColorStop(0,'#5e35b1');g.addColorStop(.56,'#d81b60');g.addColorStop(1,'#fb8c00');
+      ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+    }
+    ctx.fillStyle=`rgba(0,0,0,${+$('#dim').value/100})`;ctx.fillRect(0,0,w,h);
+    const ent=entranceMs(),tw=titleWindowMs();
+    if(tw>0&&ms<tw&&ms<ent)drawIntro(ctx,w,h);
+    if(ms>=ent)drawApple(ctx,lines[ci(ms)]||lines[0],ms,w,h);
+  };
+
   try{
-    stream=canvas.captureStream(fps);
+    let audioTracks=[];
 
     if(isFirefox){
       linaExportPhase='starting-firefox-media';
@@ -100,14 +121,13 @@ async function exportVideo(){
       const capture=firefoxAudio.captureStream||firefoxAudio.mozCaptureStream;
       if(typeof capture!=='function')throw new Error('Firefox does not expose media capture for this audio element.');
       firefoxMediaStream=capture.call(firefoxAudio);
-      let tracks=firefoxMediaStream?.getAudioTracks?.()||[];
-      if(!tracks.length){
+      audioTracks=firefoxMediaStream?.getAudioTracks?.()||[];
+      if(!audioTracks.length){
         await cancelable(new Promise(resolve=>setTimeout(resolve,120)));
         firefoxMediaStream=capture.call(firefoxAudio);
-        tracks=firefoxMediaStream?.getAudioTracks?.()||[];
+        audioTracks=firefoxMediaStream?.getAudioTracks?.()||[];
       }
-      if(!tracks.length)throw new Error('Firefox audio capture produced no audio track.');
-      tracks.forEach(t=>stream.addTrack(t));
+      if(!audioTracks.length)throw new Error('Firefox audio capture produced no audio track.');
     }else{
       // Chromium/WebKit: deterministic decoded Web Audio route.
       ac=new (window.AudioContext||window.webkitAudioContext)({latencyHint:'playback'});
@@ -118,26 +138,15 @@ async function exportVideo(){
       decoded=await cancelable(ac.decodeAudioData(bytes.slice(0)));
       if(cancelled)throw cancelError;
       audioSource=ac.createBufferSource();audioSource.buffer=decoded;audioSource.connect(dest);
-      dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
+      audioTracks=dest.stream.getAudioTracks();
+      if(!audioTracks.length)throw new Error('Audio export produced no audio track.');
     }
-
-    const type=[
-      'video/mp4;codecs=h264,aac',
-      'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
-      'video/mp4',
-      'video/webm;codecs=vp9,opus',
-      'video/webm;codecs=vp8,opus',
-      'video/webm'
-    ].find(x=>MediaRecorder.isTypeSupported(x))||'';
-    const bits=q===1080?6000000:3000000;
-    rec=new MediaRecorder(stream,type?{mimeType:type,videoBitsPerSecond:bits,audioBitsPerSecond:192000}:undefined);
-    recorderDone=new Promise((resolve,reject)=>{rec.onstop=resolve;rec.onerror=e=>reject(e.error||new Error('Recorder failed'));});
-    rec.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data)};
 
     exportBg=bgMedia;
     if(bgMedia?.tagName==='VIDEO'){
       linaExportPhase='preparing-background';
-      exportBg=document.createElement('video');exportBg.src=bgMedia.src;exportBg.muted=true;exportBg.playsInline=true;exportBg.preload='auto';
+      exportBg=document.createElement('video');
+      exportBg.src=bgMedia.src;exportBg.muted=true;exportBg.playsInline=true;exportBg.preload='auto';
       await cancelable(new Promise(res=>{
         let done=false,timer=0;
         const finish=()=>{if(done)return;done=true;clearTimeout(timer);exportBg.onloadedmetadata=null;exportBg.onerror=null;res()};
@@ -147,6 +156,45 @@ async function exportVideo(){
     }
 
     if(cancelled)throw cancelError;
+
+    // Prime the canvas before capture. WebKit can initialise MediaRecorder without
+    // a usable canvas video track if the track has not produced a frame yet.
+    drawExportFrame(0);
+    canvasStream=canvas.captureStream(fps);
+    const videoTracks=canvasStream.getVideoTracks();
+    if(!videoTracks.length)throw new Error('Canvas export produced no video track.');
+    const videoTrack=videoTracks[0];
+    drawExportFrame(.001);
+    try{videoTrack.requestFrame?.()}catch{}
+    await cancelable(new Promise(resolve=>requestAnimationFrame(()=>resolve())));
+    drawExportFrame(.002);
+    try{videoTrack.requestFrame?.()}catch{}
+
+    // Build a fresh combined MediaStream instead of mutating the canvas stream.
+    // This is required for reliable multi-track MediaRecorder initialisation in WebKit.
+    stream=new MediaStream([...videoTracks,...audioTracks]);
+    if(!stream.getVideoTracks().length)throw new Error('Combined export stream lost its video track.');
+    if(!stream.getAudioTracks().length)throw new Error('Combined export stream lost its audio track.');
+
+    const mimeCandidates=isWebKit?[
+      'video/mp4',
+      'video/mp4;codecs=avc1.42000a,mp4a.40.2',
+      'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+      'video/mp4;codecs=h264,aac'
+    ]:[
+      'video/mp4;codecs=h264,aac',
+      'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+      'video/mp4',
+      'video/webm;codecs=vp9,opus',
+      'video/webm;codecs=vp8,opus',
+      'video/webm'
+    ];
+    const type=mimeCandidates.find(x=>MediaRecorder.isTypeSupported(x))||'';
+    const bits=q===1080?6000000:3000000;
+    rec=new MediaRecorder(stream,type?{mimeType:type,videoBitsPerSecond:bits,audioBitsPerSecond:192000}:undefined);
+    recorderDone=new Promise((resolve,reject)=>{rec.onstop=resolve;rec.onerror=e=>reject(e.error||new Error('Recorder failed'));});
+    rec.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data)};
+
     if(dlg&&!dlg.open)dlg.showModal();
     $('#progress').value=0;$('#renderText').textContent='Preparing audio…';
 
@@ -160,6 +208,8 @@ async function exportVideo(){
     }
 
     rec.start(500);
+    drawExportFrame(0);
+    try{videoTrack.requestFrame?.()}catch{}
     const wallStart=performance.now();
     if(isFirefox){
       try{firefoxAudio.currentTime=0}catch{}
@@ -180,17 +230,18 @@ async function exportVideo(){
         if(cancelled||abort){finish();return}
         const clock=isFirefox&&Number.isFinite(firefoxAudio?.currentTime)?firefoxAudio.currentTime:(performance.now()-wallStart)/1000;
         const e=Math.min(seconds,Math.max(0,clock));
-        if(e>=seconds-.008){finish();return}
+        if(e>=seconds-.008){
+          try{drawExportFrame(seconds);videoTrack.requestFrame?.()}catch{}
+          finish();return;
+        }
         try{
-          if(exportBg?.tagName==='VIDEO')syncBgVideo(e,false,exportBg);
-          ctx.fillStyle='#171719';ctx.fillRect(0,0,w,h);
-          if(exportBg)try{drawCover(ctx,exportBg,w,h)}catch{}
-          else{const g=ctx.createLinearGradient(0,0,w,h);g.addColorStop(0,'#5e35b1');g.addColorStop(.56,'#d81b60');g.addColorStop(1,'#fb8c00');ctx.fillStyle=g;ctx.fillRect(0,0,w,h)}
-          ctx.fillStyle=`rgba(0,0,0,${+$('#dim').value/100})`;ctx.fillRect(0,0,w,h);
-          const ms=e*1000,ent=entranceMs(),tw=titleWindowMs();
-          if(tw>0&&ms<tw&&ms<ent)drawIntro(ctx,w,h);
-          if(ms>=ent)drawApple(ctx,lines[ci(ms)]||lines[0],ms,w,h);
-          if(now-lastUi>100||e===0){$('#progress').value=e/seconds*100;$('#renderText').textContent=`Rendering ${ft(e)} of ${ft(seconds)}`;lastUi=now}
+          drawExportFrame(e);
+          if(isWebKit)try{videoTrack.requestFrame?.()}catch{}
+          if(now-lastUi>100||e===0){
+            $('#progress').value=e/seconds*100;
+            $('#renderText').textContent=`Rendering ${ft(e)} of ${ft(seconds)}`;
+            lastUi=now;
+          }
           raf=requestAnimationFrame(frame);
         }catch(err){fail(err)}
       };
@@ -208,14 +259,14 @@ async function exportVideo(){
     const ext=completedBlob.type.includes('mp4')?'mp4':'webm',file=new File([completedBlob],`LINA-lyric-video-${Math.round(seconds)}s.${ext}`,{type:completedBlob.type});
     closeDialog();
 
-    // Desktop export is always a download. Share is reserved for touch/mobile
-    // devices where the native share sheet is the expected file-delivery UI.
     const mobileShare=(navigator.maxTouchPoints||0)>0&&matchMedia('(pointer:coarse)').matches&&navigator.canShare?.({files:[file]});
     if(mobileShare){
       try{await navigator.share({files:[file],title:'LINA: Lyric Video Visualizer'});outcome='complete';return}
       catch(err){if(err?.name==='AbortError'){outcome='complete';return}}
     }
-    const a=document.createElement('a'),url=URL.createObjectURL(completedBlob);a.href=url;a.download=file.name;a.style.display='none';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);outcome='complete';
+    const a=document.createElement('a'),url=URL.createObjectURL(completedBlob);
+    a.href=url;a.download=file.name;a.style.display='none';document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),30000);outcome='complete';
   }catch(err){
     if(err===cancelError||err?.name==='LinaExportCancelled'||cancelled||abort){
       cancelled=true;abort=true;outcome='cancelled';
