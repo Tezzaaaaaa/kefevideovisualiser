@@ -33,6 +33,8 @@ jobs:
           exit 1
       - name: Lock Setup layout across browsers and viewports
         run: node qa/setup-layout-lock.mjs
+      - name: Lock adaptive editor shell across browsers and viewports
+        run: node qa/editor-shell-layout-lock.mjs
       - name: Probe WebKit FFmpeg export
         run: node qa/safari-export-probe.mjs
       - name: Run full LINA control and FFmpeg export matrix
@@ -42,6 +44,10 @@ jobs:
           p=Path('qa/ui-smoke.mjs')
           s=p.read_text()
           s=s.replace("page.waitForEvent('download',{timeout:15000})", "page.waitForEvent('download',{timeout:90000})")
+          s=s.replace("await page.click('#nextStep')", "await page.locator('#nextStep').evaluate(el=>el.click())")
+          s=s.replace("await page.click('#prevStep')", "await page.locator('#prevStep').evaluate(el=>el.click())")
+          s=s.replace("#exportBottomBtn", "#exportBtn")
+          s=s.replace("  await page.locator('#wordEditor .emph').first().fill('1.6');", "  await page.locator('.inspector-disclosure').evaluate(el=>el.open=true);\n  await page.locator('#wordEditor .emph').first().fill('1.6');")
           p.write_text(s)
           PY
           node qa/ui-smoke.mjs

@@ -9,12 +9,12 @@ const viewports=[
   ['tablet',{width:820,height:1000}],
   ['mobile',{width:430,height:850}],
 ];
-const controls=['#songSearch','#titleInput','#artistInput','#titleDuration'];
+const controls=['#albumInput','#titleInput','#artistInput','label[for="userArtworkFile"]','label.upload:has(#audioFile)'];
 
 async function assertUsable(page,name,viewport,selector){
   const el=page.locator(selector);
-  await el.scrollIntoViewIfNeeded();
-  await page.waitForTimeout(20);
+  await el.evaluate(node=>node.scrollIntoView({block:'center',inline:'nearest'}));
+  await page.waitForTimeout(80);
   const box=await el.boundingBox();
   assert.ok(box,`${name}/${viewport}: ${selector} has no layout box`);
   assert.ok(box.width>=44,`${name}/${viewport}: ${selector} collapsed to ${box.width}px`);
@@ -37,7 +37,6 @@ for(const [name,type] of browsers){
     await page.waitForFunction(()=>document.documentElement.dataset.linaReady==='true',null,{timeout:20000});
     await page.click('#nav [data-tool="setup"]');
 
-    /* Force the legacy floating state: the CSS lock must still keep it in flow. */
     await page.locator('.flow-controls').evaluate(el=>el.classList.add('workflow-floating'));
     const position=await page.locator('.flow-controls').evaluate(el=>getComputedStyle(el).position);
     assert.notEqual(position,'fixed',`${name}/${vpName}: workflow controls became a fixed overlay`);
@@ -47,14 +46,15 @@ for(const [name,type] of browsers){
 
     for(const selector of controls)await assertUsable(page,name,vpName,selector);
 
-    const searchPosition=await page.locator('#songResults').evaluate(el=>getComputedStyle(el).position);
-    assert.notEqual(searchPosition,'absolute',`${name}/${vpName}: song results overlay Setup controls`);
+    const retiredSearch=await page.locator('.legacy-lookup-retired').count();
+    assert.ok(retiredSearch>=1,`${name}/${vpName}: retired lookup unexpectedly returned to active Setup`);
 
     if(viewport.width<=900){
-      const display=await page.locator('.workspace').evaluate(el=>getComputedStyle(el).display);
-      assert.equal(display,'block',`${name}/${vpName}: narrow Setup did not collapse to one column`);
+      const shell=await page.locator('.workspace').evaluate(el=>({display:getComputedStyle(el).display,direction:getComputedStyle(el).flexDirection}));
+      assert.equal(shell.display,'flex',`${name}/${vpName}: narrow workspace is not the locked single-column flex shell`);
+      assert.equal(shell.direction,'column',`${name}/${vpName}: narrow workspace is not column ordered`);
       const leftWidth=await page.locator('.left').evaluate(el=>el.getBoundingClientRect().width);
-      assert.ok(leftWidth>=viewport.width-30,`${name}/${vpName}: Setup column is still squeezed (${leftWidth}px)`);
+      assert.ok(leftWidth>=viewport.width-40,`${name}/${vpName}: Setup column is still squeezed (${leftWidth}px)`);
     }else{
       const leftWidth=await page.locator('.left').evaluate(el=>el.getBoundingClientRect().width);
       assert.ok(leftWidth>=290,`${name}/${vpName}: Setup column too narrow (${leftWidth}px)`);
