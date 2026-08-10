@@ -10,6 +10,7 @@
       await load('intro-layout.js');
       await load('app-export-safe.js');
       await load('production-controls.js');
+      await load('consolidated-studio.js');
       await load('app-events-safe.js');
       if(window.linaRestorePromise)await window.linaRestorePromise;
       await load('media-lifecycle.js');
@@ -19,7 +20,7 @@
       await load('production-motion-bridge.js');
       await load('preview-runtime.js');
       await load('preview-recovery.js');
-      await load('consolidated-studio.js');
+      window.linaConsolidatedActivate?.();
       window.invalidateLinaMotion?.(true);
       render(audio.currentTime*1000);
       await load('panel-nav.js');
