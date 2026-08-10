@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const BUILD='p2-20260810-full-consolidation';
+  const BUILD='p3-20260810-control-qa';
   const load=src=>new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=`${src}?v=${BUILD}`;s.onload=resolve;s.onerror=()=>reject(new Error(`Failed to load ${src}`));document.body.append(s)});
   for(const href of ['apple-motion.css','ui-solid.css','intro-layout.css','production-consolidated.css','consolidated-studio.css']){const css=document.createElement('link');css.rel='stylesheet';css.href=`${href}?v=${BUILD}`;document.head.append(css)}
   (async()=>{
@@ -18,12 +18,15 @@
       await load('apple-motion.js');
       await load('apple-subword.js');
       await load('production-motion-bridge.js');
+      // Activate signature effects before preview safety wrappers so every effect
+      // shares the same preview/recovery path instead of bypassing it.
+      window.linaConsolidatedActivate?.();
       await load('preview-runtime.js');
       await load('preview-recovery.js');
-      window.linaConsolidatedActivate?.();
       window.invalidateLinaMotion?.(true);
       render(audio.currentTime*1000);
       await load('panel-nav.js');
+      await load('control-audit.js');
       await load('runtime-guard.js');
     }catch(e){
       console.error('LINA bootstrap failed',e);
