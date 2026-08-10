@@ -4,10 +4,9 @@
   const isWebKit=/AppleWebKit/i.test(ua)&&!/Chrom(?:e|ium)|CriOS|Edg|Firefox/i.test(ua);
   if(!isWebKit||typeof window.exportVideo!=='function')return;
 
-  const nativeExport=window.exportVideo;
   const nativeCancel=window.linaRequestExportCancel;
   const nativeState=window.linaExportState;
-  let active=false,phase='idle',cancelled=false,ffmpeg=null,loadPromise=null,coreBlobURL='',wasmBlobURL='';
+  let active=false,phase='idle',cancelled=false,ffmpeg=null,loadPromise=null,classWorkerBlobURL='',coreBlobURL='',wasmBlobURL='';
   const $=s=>document.querySelector(s);
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
@@ -30,23 +29,31 @@
   async function toBlobURL(url,type){
     const r=await fetch(url,{mode:'cors',cache:'force-cache'});if(!r.ok)throw new Error(`Could not load ${url}`);const b=await r.blob();return URL.createObjectURL(new Blob([b],{type}));
   }
+  async function makeClassWorkerURL(){
+    const base='https://unpkg.com/@ffmpeg/ffmpeg@0.12.15/dist/esm/';
+    const r=await fetch(`${base}worker.js`,{mode:'cors',cache:'force-cache'});if(!r.ok)throw new Error('Could not load FFmpeg worker.');
+    let text=await r.text();
+    text=text.replace(/from\s+(["'])\.\/([^"']+)\1/g,(m,q,p)=>`from ${q}${base}${p}${q}`);
+    return URL.createObjectURL(new Blob([text],{type:'text/javascript'}));
+  }
   async function getFFmpeg(){
     if(ffmpeg?.loaded)return ffmpeg;
     if(loadPromise)return loadPromise;
     loadPromise=(async()=>{
       setPhase('loading-engine','Loading MP4 export engine…');
-      // Use FFmpeg.wasm's normal UMD runtime. Its own matching classic worker
-      // is resolved beside ffmpeg.js; do not mix the ESM class worker with UMD core.
       await loadScript('https://unpkg.com/@ffmpeg/ffmpeg@0.12.15/dist/umd/ffmpeg.js');
-      const coreBase='https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd';
-      [coreBlobURL,wasmBlobURL]=await Promise.all([
+      // classWorkerURL creates a module worker, so it must be paired with the ESM core.
+      // The previous Safari failure came from pairing this module worker with UMD core.
+      const coreBase='https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm';
+      [classWorkerBlobURL,coreBlobURL,wasmBlobURL]=await Promise.all([
+        makeClassWorkerURL(),
         toBlobURL(`${coreBase}/ffmpeg-core.js`,'text/javascript'),
         toBlobURL(`${coreBase}/ffmpeg-core.wasm`,'application/wasm')
       ]);
       const engine=new window.FFmpegWASM.FFmpeg();
       engine.on('log',({message})=>console.debug('LINA FFmpeg:',message));
       engine.on('progress',({progress})=>{if(active&&Number.isFinite(progress)&&$('#progress'))$('#progress').value=Math.max($('#progress').value||0,Math.min(99,progress*100))});
-      await engine.load({coreURL:coreBlobURL,wasmURL:wasmBlobURL});
+      await engine.load({classWorkerURL:classWorkerBlobURL,coreURL:coreBlobURL,wasmURL:wasmBlobURL});
       ffmpeg=engine;return engine;
     })().catch(err=>{loadPromise=null;ffmpeg=null;throw err});
     return loadPromise;
