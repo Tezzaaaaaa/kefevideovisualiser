@@ -1,0 +1,30 @@
+name: LINA UI Smoke
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  ui-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium firefox webkit
+      - name: Start LINA
+        run: |
+          python3 -m http.server 4173 --directory docs >/tmp/lina-http.log 2>&1 &
+          for i in {1..20}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/lina-http.log
+          exit 1
+      - name: Run control smoke tests
+        run: node qa/ui-smoke.mjs
