@@ -44,7 +44,7 @@
       const test=window.linaRuntime.selfTest?.()||{};
       if(document.documentElement.dataset.renderOwner!=='canonical-v1'||window.render!==window.linaRuntime.render)failures.push('render-owner');
       if(document.documentElement.dataset.effectOwner!=='canonical-v1')failures.push('effect-owner');
-      if(document.documentElement.dataset.layoutOwner!=='canonical-v1')failures.push('layout-owner');
+      if(document.documentElement.dataset.layoutOwner!=='canonical-v2-hard-reset')failures.push('layout-owner');
       if(JSON.stringify(test.contextModes)!==JSON.stringify([1,3,5,7,9]))failures.push('lyrics-view-modes');
     }
 
