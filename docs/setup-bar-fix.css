@@ -27,6 +27,9 @@
 [data-panel="setup"] .body,
 [data-panel="setup"] .subsection{overflow:visible!important}
 
+/* Artwork features are retired from the active editor. Keep legacy DOM hidden for safe bootstrap binding. */
+.subsection:has(#useArtworkBg2){display:none!important}
+
 /* Use the extra Setup width efficiently. */
 @media(min-width:1200px){
   [data-panel="setup"] .body{
