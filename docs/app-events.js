@@ -1,8 +1,8 @@
 'use strict';
 (()=>{
-  const BUILD='p24-20260811-single-setup-path';
+  const BUILD='p25-20260811-setup-shell-rebuild';
   const load=src=>new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=`${src}?v=${BUILD}`;s.onload=resolve;s.onerror=()=>reject(new Error(`Failed to load ${src}`));document.body.append(s)});
-  for(const href of ['apple-motion.css','ui-solid.css','intro-layout.css','production-consolidated.css','consolidated-studio.css','setup-layout-fix.css','editor-shell.css','editor-shell-mobile-safety.css','editor-shell-density-fix.css','setup-bar-fix.css']){const css=document.createElement('link');css.rel='stylesheet';css.href=`${href}?v=${BUILD}`;document.head.append(css)}
+  for(const href of ['apple-motion.css','ui-solid.css','intro-layout.css','production-consolidated.css','consolidated-studio.css','editor-shell.css','editor-shell-mobile-safety.css','editor-shell-density-fix.css','setup-shell.css']){const css=document.createElement('link');css.rel='stylesheet';css.href=`${href}?v=${BUILD}`;document.head.append(css)}
   (async()=>{
     try{
       await load('app-core-safe.js');
@@ -25,10 +25,9 @@
       await load('preview-recovery.js');
       window.invalidateLinaMotion?.(true);
       render(audio.currentTime*1000);
-      await load('panel-nav.js');
+      await load('setup-shell.js');
       await load('control-audit.js');
       await load('control-finish.js');
-      await load('setup-finalize.js');
       await load('visual-polish.js');
       await load('runtime-guard.js');
     }catch(e){
