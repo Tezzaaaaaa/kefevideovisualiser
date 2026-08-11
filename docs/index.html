@@ -9,7 +9,7 @@
 <body>
 <script>
 (async()=>{
-  const BUILD='p59-20260811-runtime-stabilisation';
+  const BUILD='p60-20260811-canonical-runtime';
   try{
     const response=await fetch(`app-source.html?v=${BUILD}`,{cache:'no-store'});
     if(!response.ok)throw new Error(`HTTP ${response.status}`);
