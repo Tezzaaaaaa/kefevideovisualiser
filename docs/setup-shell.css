@@ -28,8 +28,8 @@
   gap:6px!important;
   position:static!important;
   inset:auto!important;
-  width:min(980px,100%)!important;
-  max-width:980px!important;
+  width:min(1080px,100%)!important;
+  max-width:1080px!important;
   margin:0 auto!important;
   padding:0!important;
   box-sizing:border-box!important;
@@ -65,7 +65,6 @@
   box-sizing:border-box!important;
 }
 
-/* Exact vertical order: active step first, preview second, inspector/controls last. */
 .left{
   order:1!important;
   position:static!important;
@@ -100,7 +99,6 @@
   overflow:visible!important;
 }
 
-/* Only the selected workflow panel exists in the content flow. */
 .left .panel.tool{
   display:none!important;
   width:100%!important;
@@ -109,9 +107,7 @@
   margin:0!important;
   box-sizing:border-box!important;
 }
-.left .panel.tool.active{
-  display:block!important;
-}
+.left .panel.tool.active{display:block!important}
 .left .panel .body{
   width:100%!important;
   max-width:none!important;
@@ -119,7 +115,6 @@
   box-sizing:border-box!important;
 }
 
-/* Back/Next live at the bottom of the active workflow panel, never in the top tab bar. */
 .flow-controls.workflow-inline{
   display:flex!important;
   position:static!important;
@@ -138,7 +133,6 @@
 .flow-controls.workflow-inline #stepStatus{margin:0 auto!important}
 .flow-controls.workflow-inline .btn{min-width:110px!important}
 
-/* Setup content remains compact inside its single active section. */
 [data-panel="setup"],
 [data-panel="setup"] .body,
 .setup-shell-section,
@@ -185,7 +179,6 @@
 }
 [data-panel="setup"] .toggle input{width:auto!important}
 
-/* Lyrics is one column. Review is its own fifth workflow step. */
 [data-panel="lyrics"] .body,
 [data-panel="review"] .body{
   display:grid!important;
@@ -204,7 +197,6 @@
 #reviewBox .review-list{max-height:420px!important;overflow:auto!important}
 .review-overview{margin:0!important}
 
-/* Preserve all inspector/effect controls below the preview. */
 .right > *,
 .right .panel,
 .right .body,
