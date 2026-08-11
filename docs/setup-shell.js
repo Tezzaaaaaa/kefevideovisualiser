@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const STEPS=['setup','lyrics','style','background'];
+  const STEPS=['setup','lyrics','style','background','review'];
   const q=s=>document.querySelector(s);
   const qa=s=>[...document.querySelectorAll(s)];
 
@@ -55,10 +55,50 @@
     q('#useArtworkBg2')?.closest('.subsection')?.remove();
     qa('#userArtworkFile,#userArtworkPreview,#artworkEmpty,#userArtworkIntro,#showArtworkIntro,#useArtworkBg,#pickedArt,#introArt').forEach(el=>el.remove());
 
-    document.documentElement.dataset.setupStructure='clean-v1';
+    document.documentElement.dataset.setupStructure='vertical-v2';
     document.documentElement.dataset.setupAudioFirst='true';
     document.documentElement.dataset.artworkRetired='true';
     return true;
+  }
+
+  function ensureReviewStep(){
+    const left=q('.left');
+    const background=q('[data-panel="background"]');
+    if(!left||!background)return false;
+
+    let review=q('[data-panel="review"]');
+    if(!review){
+      review=document.createElement('section');
+      review.className='panel tool';
+      review.dataset.panel='review';
+      review.hidden=true;
+      review.setAttribute('aria-hidden','true');
+      review.innerHTML='<h2>Review</h2><div class="body"><div class="subsection review-overview"><div class="subhead"><b>Review</b><span>Final check</span></div><div class="statusbox">Check your imported lyrics if needed, then preview the finished result below.</div></div></div>';
+      background.after(review);
+    }
+
+    const reviewBox=q('#reviewBox');
+    const body=review.querySelector('.body');
+    if(reviewBox&&body&&reviewBox.parentElement!==body)body.append(reviewBox);
+
+    const nav=q('#nav');
+    if(nav&&!nav.querySelector('[data-tool="review"]')){
+      const button=document.createElement('button');
+      button.className='navbtn';
+      button.dataset.tool='review';
+      button.type='button';
+      button.innerHTML='<span class="step">5</span>Review';
+      nav.append(button);
+    }
+    return true;
+  }
+
+  function moveWorkflowControls(panel){
+    const controls=q('.flow-controls');
+    const body=panel?.querySelector('.body');
+    if(!controls||!body)return;
+    controls.classList.add('workflow-inline');
+    body.append(controls);
   }
 
   function showPanel(step){
@@ -82,16 +122,22 @@
       button.tabIndex=0;
     });
 
+    const panel=q(`.tool[data-panel="${id}"]`);
+    moveWorkflowControls(panel);
+
     const status=q('#stepStatus');
     if(status)status.textContent=`Step ${index+1} of ${STEPS.length}`;
     const prev=q('#prevStep');
     const next=q('#nextStep');
     if(prev)prev.disabled=index===0;
     if(next)next.textContent=index===STEPS.length-1?'Preview':'Next';
-    q('.left')?.scrollTo({top:0,behavior:'auto'});
+
+    window.scrollTo({top:0,behavior:'auto'});
   }
 
   function bindNavigation(){
+    if(document.documentElement.dataset.verticalWorkflowBound==='true')return;
+    document.documentElement.dataset.verticalWorkflowBound='true';
     document.addEventListener('click',e=>{
       const tab=e.target.closest('#nav .navbtn[data-tool]');
       if(tab){e.preventDefault();showPanel(tab.dataset.tool);return;}
@@ -114,10 +160,10 @@
     let attempts=0;
     const run=()=>{
       attempts++;
-      if(rebuildSetup()){
+      if(rebuildSetup()&&ensureReviewStep()){
         bindNavigation();
         window.linaShowPanel=showPanel;
-        showPanel(q('#nav .navbtn.active')?.dataset.tool||'setup');
+        showPanel('setup');
         return;
       }
       if(attempts<40)setTimeout(run,50);
