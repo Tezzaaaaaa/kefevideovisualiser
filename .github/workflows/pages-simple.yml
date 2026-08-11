@@ -57,6 +57,7 @@ jobs:
             docs/canonical-ui-lock.js
             docs/canonical-export.js
             docs/canonical-audit.js
+            docs/fresh-reset.js
             docs/style-effect-selector.js
             docs/transport-lock.js
             docs/apple-letter-highlight.js
@@ -100,6 +101,7 @@ jobs:
           grep -q 'canonical-ui-lock.js' docs/app-events.js || { echo 'bootstrap does not load canonical UI lock'; exit 1; }
           grep -q 'canonical-export.js' docs/app-events.js || { echo 'bootstrap does not load canonical export'; exit 1; }
           grep -q 'canonical-audit.js' docs/app-events.js || { echo 'bootstrap does not load canonical audit'; exit 1; }
+          grep -q 'fresh-reset.js' docs/app-events.js || { echo 'bootstrap does not load fresh reset control'; exit 1; }
           grep -q 'transport-lock.js' docs/app-events.js || { echo 'bootstrap does not load canonical transport'; exit 1; }
           grep -q 'runtime-guard.js' docs/app-events.js || { echo 'bootstrap does not load runtime guard'; exit 1; }
 
