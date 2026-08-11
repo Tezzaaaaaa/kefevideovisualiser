@@ -9,7 +9,7 @@
 <body>
 <script>
 (async()=>{
-  const BUILD='p31-20260811-text-only-intro-card';
+  const BUILD='p32-20260811-guided-editor';
   try{
     const response=await fetch(`app-source.html?v=${BUILD}`,{cache:'no-store'});
     if(!response.ok)throw new Error(`HTTP ${response.status}`);
