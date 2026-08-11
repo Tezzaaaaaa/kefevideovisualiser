@@ -57,7 +57,7 @@ jobs:
             docs/canonical-ui-lock.js
             docs/canonical-export.js
             docs/canonical-audit.js
-            docs/fresh-reset.js
+            docs/reset-button-v2.js
             docs/style-effect-selector.js
             docs/transport-lock.js
             docs/apple-letter-highlight.js
@@ -76,6 +76,7 @@ jobs:
             docs/control-audit.js
             docs/control-finish.js
             docs/visual-polish.js
+            docs/fresh-reset.js
           )
           for f in "${retired[@]}"; do
             test ! -e "$f" || { echo "Retired controller unexpectedly present: $f"; exit 1; }
@@ -101,13 +102,14 @@ jobs:
           grep -q 'canonical-ui-lock.js' docs/app-events.js || { echo 'bootstrap does not load canonical UI lock'; exit 1; }
           grep -q 'canonical-export.js' docs/app-events.js || { echo 'bootstrap does not load canonical export'; exit 1; }
           grep -q 'canonical-audit.js' docs/app-events.js || { echo 'bootstrap does not load canonical audit'; exit 1; }
-          grep -q 'fresh-reset.js' docs/app-events.js || { echo 'bootstrap does not load fresh reset control'; exit 1; }
+          grep -q 'reset-button-v2.js' docs/app-events.js || { echo 'bootstrap does not load direct reset v2'; exit 1; }
           grep -q 'transport-lock.js' docs/app-events.js || { echo 'bootstrap does not load canonical transport'; exit 1; }
           grep -q 'runtime-guard.js' docs/app-events.js || { echo 'bootstrap does not load runtime guard'; exit 1; }
 
           ! grep -q 'preview-runtime.js' docs/app-events.js || { echo 'bootstrap still references retired preview-runtime'; exit 1; }
           ! grep -q 'preview-recovery.js' docs/app-events.js || { echo 'bootstrap still references retired preview-recovery'; exit 1; }
           ! grep -q 'layout-reset-fix.js' docs/app-events.js || { echo 'bootstrap still references retired layout reset controller'; exit 1; }
+          ! grep -q 'fresh-reset.js' docs/app-events.js || { echo 'bootstrap still references retired fresh reset'; exit 1; }
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
