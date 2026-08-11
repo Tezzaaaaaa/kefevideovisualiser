@@ -1,10 +1,31 @@
-/* Typography follows the effect chosen under Preview. */
+/* Typography is shared by Style and Quick Settings and must affect the real renderer. */
 #story[data-lyric-effect="apple"] .lyrics{
   font-family:var(--lina-effect-font,-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Arial,sans-serif)!important;
+  font-weight:var(--lina-effect-weight,700)!important;
+  text-align:var(--lina-effect-align,left)!important;
+  line-height:var(--lina-effect-lh,1.02)!important;
+  letter-spacing:var(--lina-effect-spacing,-.02em)!important;
 }
+#story[data-lyric-effect="apple"] .apple-line{
+  font-weight:var(--lina-effect-weight,700)!important;
+  line-height:var(--lina-effect-lh,1.02)!important;
+  letter-spacing:var(--lina-effect-spacing,-.02em)!important;
+  text-align:var(--lina-effect-align,left)!important;
+}
+#story[data-lyric-effect="charli"] .lyrics,
 #story[data-lyric-effect="charli"] .charli-card{
   font-family:var(--lina-effect-font,"Arial Narrow","Helvetica Neue Condensed","Helvetica Neue",Arial,sans-serif)!important;
+  font-weight:var(--lina-effect-weight,900)!important;
+  text-align:var(--lina-effect-align,center)!important;
+  line-height:var(--lina-effect-lh,.84)!important;
+  letter-spacing:var(--lina-effect-spacing,-.055em)!important;
 }
-#story[data-lyric-effect="eternal"] .eternal-page{
-  font-family:var(--lina-effect-font,"Bradley Hand","Noteworthy","Chalkboard SE","Segoe Print",cursive)!important;
+#story[data-lyric-effect="eternal"] .lyrics,
+#story[data-lyric-effect="eternal"] .eternal-page,
+#story[data-lyric-effect="eternal"] .eternal-current{
+  font-family:var(--lina-effect-font,"Reenie Beanie","Waiting for the Sunrise","Segoe Print","Bradley Hand",cursive)!important;
+  font-weight:var(--lina-effect-weight,400)!important;
+  text-align:var(--lina-effect-align,left)!important;
+  line-height:var(--lina-effect-lh,1.02)!important;
+  letter-spacing:var(--lina-effect-spacing,.005em)!important;
 }
