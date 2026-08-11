@@ -1,1 +1,1 @@
-CI trigger for p23 reset-state/no-artwork verification.
+CI trigger for p23 reset-state/no-artwork verification after QA cleanup.
