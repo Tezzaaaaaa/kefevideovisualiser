@@ -16,9 +16,7 @@
     target.value=value;
   }
 
-  function currentEffect(){
-    return $('#lyricEffect')?.value||$('#story')?.dataset.lyricEffect||$('#styleEffectSelect')?.value||'apple';
-  }
+  function currentEffect(){return $('#lyricEffect')?.value||$('#story')?.dataset.lyricEffect||$('#styleEffectSelect')?.value||'apple'}
 
   function safeSize(){
     const aspect=$('#aspect')?.value||'16:9',effect=currentEffect();
@@ -43,7 +41,7 @@
     quick.addEventListener('change',()=>{source.value=quick.value;fire(source,'change');fire(source,'input');setTimeout(syncAll,0)});
     const sync=()=>{copyOptions(source,quick);quick.value=source.value};
     source.addEventListener('change',sync);source.addEventListener('input',sync);
-    if(sourceId==='fontChoice')new MutationObserver(()=>sync()).observe(source,{childList:true});
+    if(sourceId==='fontChoice')new MutationObserver(sync).observe(source,{childList:true});
   }
 
   function bindRange(sourceId,quickId,valueId,format=v=>v){
@@ -63,10 +61,10 @@
     source.addEventListener('input',sync);source.addEventListener('change',sync);sync();
   }
 
-  function bindToggle(sourceId,quickId){
+  function bindToggle(sourceId,quickId,after){
     const source=$('#'+sourceId),quick=$('#'+quickId);if(!source||!quick)return;
-    const sync=()=>quick.checked=!!source.checked;
-    quick.addEventListener('change',()=>{source.checked=quick.checked;fire(source,'input');fire(source,'change');try{window.render?.((Number($('#audio')?.currentTime)||0)*1000)}catch{}});
+    const sync=()=>{quick.checked=!!source.checked;after?.()};
+    quick.addEventListener('change',()=>{source.checked=quick.checked;fire(source,'input');fire(source,'change');after?.();try{window.render?.((Number($('#audio')?.currentTime)||0)*1000)}catch{}});
     source.addEventListener('change',sync);source.addEventListener('input',sync);sync();
   }
 
@@ -91,25 +89,48 @@
     setTimeout(()=>{window.linaSyncTypography?.();resetLayout();syncAll()},20);
   }
 
-  function moveBackgroundSections(box){
-    const frame=$('#cropX')?.closest('.subsection');
-    const readable=$('#dim')?.closest('.subsection');
-    const actions=box.querySelector('.quick-actions');
-    const configure=(section,title,meta)=>{
-      if(!section||section.closest('#previewQuickControls'))return;
-      section.classList.add('quick-group','quick-background-group');
-      section.dataset.quickBackground='true';
-      const head=section.querySelector(':scope > .subhead');
-      if(head){
-        head.classList.add('quick-group-head');
-        const b=head.querySelector('b'),s=head.querySelector('span');
-        if(b)b.textContent=title;
-        if(s)s.textContent=meta;
-      }
-      if(actions)box.insertBefore(section,actions);else box.append(section);
-    };
-    configure(frame,'2. Frame it','Position · crop · zoom');
-    configure(readable,'3. Make lyrics readable','Overlay · blur');
+  function takeField(id){
+    const el=$('#'+id);if(!el)return null;
+    return el.closest('label')||el;
+  }
+
+  function moveBackgroundControls(box){
+    const group=box.querySelector('#quickBackgroundGroup');if(!group)return;
+    const frameSection=$('#cropX')?.closest('.subsection');
+    const readableSection=$('#dim')?.closest('.subsection');
+    const frameGrid=group.querySelector('.quick-background-frame');
+    const readableGrid=group.querySelector('.quick-background-readable');
+    const actionGrid=group.querySelector('.quick-background-actions');
+
+    for(const id of ['bgFit','cropZoom','cropX','cropY']){
+      const field=takeField(id);if(field&&frameGrid)frameGrid.append(field);
+    }
+    for(const id of ['dim','blur']){
+      const field=takeField(id);if(field&&readableGrid)readableGrid.append(field);
+    }
+    const reset=$('#resetCrop'),remove=$('#removeBg');
+    if(reset&&actionGrid)actionGrid.append(reset);
+    if(remove&&actionGrid)actionGrid.append(remove);
+
+    if(frameSection&&frameSection!==group)frameSection.remove();
+    if(readableSection&&readableSection!==group)readableSection.remove();
+
+    const advancedBody=box.querySelector('.quick-advanced-body');
+    const videoBox=$('#videoTrimBox');
+    if(videoBox&&advancedBody){
+      const oldParent=videoBox.parentElement;
+      const videoWrap=document.createElement('div');
+      videoWrap.className='quick-advanced-section quick-video-timing';
+      videoWrap.innerHTML='<div class="quick-mini-head"><b>Background video timing</b><span>Only when needed</span></div>';
+      videoWrap.append(videoBox);
+      advancedBody.prepend(videoWrap);
+      if(oldParent?.tagName==='DETAILS'&&!oldParent.querySelector('.subsection'))oldParent.remove();
+    }
+  }
+
+  function titleEnabledState(){
+    const toggle=$('#quickTitle'),duration=$('#quickTitleDuration');
+    if(duration)duration.disabled=toggle?!toggle.checked:false;
   }
 
   function build(){
@@ -119,55 +140,75 @@
     const box=document.createElement('section');
     box.id='previewQuickControls';box.className='preview-quick-controls';
     box.innerHTML=`
-      <div class="quick-control-head"><b>Quick settings</b><span>Every common adjustment in one place.</span></div>
+      <div class="quick-control-head"><b>Quick settings</b><span>Most-used controls first.</span></div>
 
-      <div class="quick-group">
-        <div class="quick-group-head"><b>Essentials</b><span>Effect · type · layout</span></div>
+      <div class="quick-group quick-priority-1">
+        <div class="quick-group-head"><b>1. Lyric look</b><span>What viewers notice first</span></div>
         <div class="quick-control-grid">
           <label><span>Effect</span><select id="quickEffect"><option value="apple">Apple Music</option><option value="charli">Charli xcx · Apple</option><option value="eternal">Eternal Sunshine</option></select></label>
           <label><span>Font</span><select id="quickFont"></select></label>
           <label><span>Text size</span><select id="quickSize"></select></label>
           <label><span>Lyrics view</span><select id="quickLyricsView"></select></label>
-          <label><span>Aspect ratio</span><select id="quickFrame"></select></label>
-          <label><span>Letter case</span><select id="quickCase"></select></label>
-        </div>
-      </div>
-
-      <div class="quick-group">
-        <div class="quick-group-head"><b>Typography</b><span>Synced with Style</span></div>
-        <div class="quick-control-grid">
-          <label><span>Weight</span><select id="quickWeight"></select></label>
           <label><span>Alignment</span><select id="quickAlign"></select></label>
-          <label class="quick-range"><span>Line height <b id="quickLineHeightVal"></b></span><input id="quickLineHeight" type="range"></label>
-          <label class="quick-range"><span>Letter spacing <b id="quickLetterSpacingVal"></b></span><input id="quickLetterSpacing" type="range"></label>
           <label class="quick-colour"><span>Text colour</span><input id="quickTextColor" type="color" value="#ffffff"></label>
         </div>
       </div>
 
-      <div class="quick-group">
-        <div class="quick-group-head"><b>Placement & timing</b><span>Safe reversible changes</span></div>
+      <div class="quick-group quick-priority-2" id="quickBackgroundGroup">
+        <div class="quick-group-head"><b>2. Background</b><span>Frame it · keep lyrics readable</span></div>
+        <div class="quick-mini-head"><b>Framing</b><span>Fit · zoom · focus</span></div>
+        <div class="quick-control-grid quick-background-frame"></div>
+        <div class="quick-mini-head"><b>Readability</b><span>Darken or soften only if needed</span></div>
+        <div class="quick-control-grid quick-background-readable"></div>
+        <div class="quick-background-actions"></div>
+      </div>
+
+      <div class="quick-group quick-priority-3">
+        <div class="quick-group-head"><b>3. Position & sync</b><span>Keep lyrics placed and timed correctly</span></div>
         <div class="quick-control-grid">
           <label class="quick-range"><span>Vertical position <b id="quickYVal"></b></span><input id="quickY" type="range"></label>
-          <label class="quick-range"><span>Glow <b id="quickGlowVal"></b></span><input id="quickGlow" type="range"></label>
-          <label class="quick-range quick-wide"><span>Lyric offset <b id="quickOffsetVal"></b></span><input id="quickOffset" type="range"></label>
+          <label class="quick-range"><span>Lyric offset <b id="quickOffsetVal"></b></span><input id="quickOffset" type="range"></label>
         </div>
       </div>
 
-      <div class="quick-group">
-        <div class="quick-group-head"><b>Intro & output</b><span>Title card · export</span></div>
+      <div class="quick-group quick-priority-4">
+        <div class="quick-group-head"><b>4. Title card</b><span>Optional intro</span></div>
         <div class="quick-control-grid">
-          <label class="quick-toggle"><span><b>Title card</b><small>Title, artist and album</small></span><input id="quickTitle" type="checkbox"></label>
-          <label><span>Title duration</span><select id="quickTitleDuration"></select></label>
-          <label><span>Quality</span><select id="quickQuality"></select></label>
-          <label class="quick-toggle"><span><b>Safe-area guides</b><small>Preview only</small></span><input id="quickSafe" type="checkbox"></label>
+          <label class="quick-toggle"><span><b>Show title card</b><small>Title, artist and album</small></span><input id="quickTitle" type="checkbox"></label>
+          <label><span>Duration</span><select id="quickTitleDuration"></select></label>
         </div>
       </div>
+
+      <div class="quick-group quick-priority-5">
+        <div class="quick-group-head"><b>5. Output</b><span>Choose the final format</span></div>
+        <div class="quick-control-grid">
+          <label><span>Aspect ratio</span><select id="quickFrame"></select></label>
+          <label><span>Quality</span><select id="quickQuality"></select></label>
+        </div>
+      </div>
+
+      <details id="quickAdvanced" class="quick-fine quick-advanced">
+        <summary>Advanced controls</summary>
+        <div class="quick-advanced-body">
+          <div class="quick-advanced-section">
+            <div class="quick-mini-head"><b>Fine typography</b><span>Usually leave these alone</span></div>
+            <div class="quick-control-grid">
+              <label><span>Weight</span><select id="quickWeight"></select></label>
+              <label><span>Letter case</span><select id="quickCase"></select></label>
+              <label class="quick-range"><span>Line height <b id="quickLineHeightVal"></b></span><input id="quickLineHeight" type="range"></label>
+              <label class="quick-range"><span>Letter spacing <b id="quickLetterSpacingVal"></b></span><input id="quickLetterSpacing" type="range"></label>
+              <label class="quick-range"><span>Glow <b id="quickGlowVal"></b></span><input id="quickGlow" type="range"></label>
+              <label class="quick-toggle"><span><b>Safe-area guides</b><small>Preview only</small></span><input id="quickSafe" type="checkbox"></label>
+            </div>
+          </div>
+          <details id="quickFineTiming" class="quick-fine quick-timing-editor"><summary>Fine timing & lyric editing</summary><div class="quick-fine-body"></div></details>
+        </div>
+      </details>
 
       <div class="quick-actions">
         <button id="quickResetLayout" class="btn subtle" type="button">Reset lyric layout</button>
         <button id="quickExport" class="btn primary" type="button">Export video</button>
-      </div>
-      <details id="quickFineTiming" class="quick-fine"><summary>Fine timing & lyric editing</summary><div class="quick-fine-body"></div></details>`;
+      </div>`;
 
     const tools=$('.transport-tools'),transport=$('.transport');
     (tools||transport||stageWrap).after(box);
@@ -178,27 +219,28 @@
     if(exportBlock)sourceStash.append(exportBlock);
     const inspector=$('.right'),fineBody=$('#quickFineTiming .quick-fine-body');
     if(inspector&&fineBody)fineBody.append(inspector);
-    const more=$('.more-controls');if(more)more.remove();
+    $('.more-controls')?.remove();
 
-    moveBackgroundSections(box);
+    moveBackgroundControls(box);
 
     const qe=$('#quickEffect');qe.value=currentEffect();qe.addEventListener('change',()=>setEffect(qe.value));
     bindSelect('fontChoice','quickFont');
     bindSize();
     bindSelect('contextMode','quickLyricsView');
-    bindSelect('aspect','quickFrame');
-    bindSelect('letterCase','quickCase');
-    bindSelect('fontWeight','quickWeight');
     bindSelect('textAlign','quickAlign');
-    bindRange('lineHeight','quickLineHeight','quickLineHeightVal',v=>Number(v).toFixed(2));
-    bindRange('letterSpacing','quickLetterSpacing','quickLetterSpacingVal',v=>`${Number(v).toFixed(3).replace(/0+$/,'').replace(/\.$/,'')}em`);
     bindColor();
     bindRange('yPos','quickY','quickYVal',v=>`${v}%`);
-    bindRange('glow','quickGlow','quickGlowVal',v=>`${v}%`);
     bindRange('offset','quickOffset','quickOffsetVal',v=>`${Number(v)>0?'+':''}${v} ms`);
-    bindToggle('showTitle','quickTitle');
+    bindToggle('showTitle','quickTitle',titleEnabledState);
     bindSelect('titleDuration','quickTitleDuration');
+    bindSelect('aspect','quickFrame');
     bindSelect('quality','quickQuality');
+
+    bindSelect('fontWeight','quickWeight');
+    bindSelect('letterCase','quickCase');
+    bindRange('lineHeight','quickLineHeight','quickLineHeightVal',v=>Number(v).toFixed(2));
+    bindRange('letterSpacing','quickLetterSpacing','quickLetterSpacingVal',v=>`${Number(v).toFixed(3).replace(/0+$/,'').replace(/\.$/,'')}em`);
+    bindRange('glow','quickGlow','quickGlowVal',v=>`${v}%`);
     bindToggle('safeToggle','quickSafe');
 
     $('#quickResetLayout')?.addEventListener('click',resetLayout);
@@ -216,16 +258,18 @@
     }
 
     window.linaQuickSettingsSync=syncAll;
-    setTimeout(()=>{window.linaSyncTypography?.();syncAll();resetLayout()},30);
+    setTimeout(()=>{window.linaSyncTypography?.();syncAll();resetLayout();titleEnabledState()},30);
+    document.documentElement.dataset.quickControlsOrder='priority-v2';
     return true;
   }
 
   function syncAll(){
     const qe=$('#quickEffect');if(qe)qe.value=currentEffect();
-    const pairs=[['fontChoice','quickFont'],['contextMode','quickLyricsView'],['aspect','quickFrame'],['letterCase','quickCase'],['fontWeight','quickWeight'],['textAlign','quickAlign'],['titleDuration','quickTitleDuration'],['quality','quickQuality']];
+    const pairs=[['fontChoice','quickFont'],['contextMode','quickLyricsView'],['textAlign','quickAlign'],['titleDuration','quickTitleDuration'],['aspect','quickFrame'],['quality','quickQuality'],['fontWeight','quickWeight'],['letterCase','quickCase']];
     for(const [sourceId,quickId] of pairs){const source=$('#'+sourceId),quick=$('#'+quickId);if(source&&quick){if(sourceId==='fontChoice')copyOptions(source,quick);quick.value=source.value}}
     if($('#quickTitle')&&$('#showTitle'))$('#quickTitle').checked=$('#showTitle').checked;
     if($('#quickSafe')&&$('#safeToggle'))$('#quickSafe').checked=$('#safeToggle').checked;
+    titleEnabledState();
   }
 
   function init(){let tries=0;const run=()=>{tries++;if(!build()&&tries<50)setTimeout(run,60)};run()}
