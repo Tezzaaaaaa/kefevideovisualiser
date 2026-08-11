@@ -9,7 +9,7 @@
 <body>
 <script>
 (async()=>{
-  const BUILD='p66-20260812-fresh-reset';
+  const BUILD='p68-20260812-full-project-reset';
   try{
     const response=await fetch(`app-source.html?v=${BUILD}`,{cache:'no-store'});
     if(!response.ok)throw new Error(`HTTP ${response.status}`);
