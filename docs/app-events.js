@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const BUILD='p59-20260811-runtime-stabilisation';
+  const BUILD='p60-20260811-canonical-runtime';
   const load=src=>new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=`${src}?v=${BUILD}`;s.onload=resolve;s.onerror=()=>reject(new Error(`Failed to load ${src}`));document.body.append(s)});
   for(const href of ['apple-motion.css','ui-solid.css','intro-layout.css','production-consolidated.css','consolidated-studio.css','editor-shell.css','editor-shell-mobile-safety.css','editor-shell-density-fix.css','setup-shell.css','guided-ui.css','setup-lyrics-bridge.css','background-dropzone.css','effect-typography.css','eternal-sunshine-effect.css','preview-quick-controls.css']){const css=document.createElement('link');css.rel='stylesheet';css.href=`${href}?v=${BUILD}`;document.head.append(css)}
   (async()=>{
@@ -21,7 +21,6 @@
       await load('apple-subword.js');
       await load('production-motion-bridge.js');
 
-      // Capture the stable Apple renderer before the multi-effect dispatcher is installed.
       window.linaAppleBaseRender=window.render;
       window.linaAppleBaseDrawApple=window.drawApple;
       window.linaAppleBaseDrawIntro=window.drawIntro;
@@ -39,7 +38,6 @@
       await load('background-dropzone.js');
       await load('effect-typography.js');
 
-      // Effect modules are pure enhancers now; canonical-runtime owns render().
       await load('eternal-sunshine-effect.js');
       await load('apple-letter-highlight.js');
       await load('canonical-runtime.js');
