@@ -24,6 +24,8 @@ jobs:
           node --check docs/transport-lock.js
           node --check docs/apple-letter-highlight.js
           node --check docs/eternal-sunshine-effect.js
+          node --check qa/setup-layout-current.mjs
+          node --check qa/editor-shell-current.mjs
           node --check qa/runtime-ownership.mjs
           test ! -e docs/preview-runtime.js
           test ! -e docs/preview-recovery.js
@@ -52,10 +54,10 @@ jobs:
           exit 1
       - name: Lock destructive project reset and cleared song details
         run: node qa/reset-state-lock.mjs
-      - name: Lock Setup layout across browsers and viewports
-        run: node qa/setup-layout-lock.mjs
-      - name: Lock adaptive editor shell across browsers and viewports
-        run: node qa/editor-shell-layout-lock.mjs
+      - name: Lock current Setup layout across browsers and viewports
+        run: node qa/setup-layout-current.mjs
+      - name: Lock current editor shell across browsers and viewports
+        run: node qa/editor-shell-current.mjs
       - name: Lock canonical runtime ownership across browsers
         run: node qa/runtime-ownership.mjs
       - name: Probe WebKit FFmpeg export
