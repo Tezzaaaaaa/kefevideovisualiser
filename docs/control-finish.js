@@ -5,9 +5,17 @@
   const redraw=()=>{try{window.render?.((Number($('#audio')?.currentTime)||0)*1000)}catch{}};
   const mark=(el)=>{if(el)el.dataset.linaBound=el.dataset.linaBound||'control-finish'};
 
-  // Keep signature effects permanently visible beside the live preview controls.
-  const effects=$('.consolidated-effects'),preview=$('.preview-controls'),previewGrid=$('.preview-control-grid');
-  if(effects&&preview&&previewGrid&&effects.parentElement!==preview){preview.insertBefore(effects,previewGrid);effects.classList.add('persistent-effects')}
+  // The effect picker belongs in Style. Never move it into the bottom preview controls.
+  const effects=$('.consolidated-effects'),styleBody=$('[data-panel="style"] .body');
+  if(effects&&styleBody&&effects.parentElement!==styleBody)styleBody.prepend(effects);
+  if(effects){
+    effects.classList.remove('persistent-effects');
+    const head=effects.querySelector('.subhead');
+    const title=head?.querySelector('b');
+    const meta=head?.querySelector('span');
+    if(title)title.textContent='Choose lyric effect';
+    if(meta)meta.textContent='Choose one';
+  }
 
   const showTitle=$('#showTitle');if(showTitle){const label=showTitle.closest('.toggle')?.querySelector('span');if(label)label.textContent='Show title + artist at start';mark(showTitle)}
   const duration=$('#titleDuration');if(duration){duration.onchange=()=>{redraw();dirty()};mark(duration)}
