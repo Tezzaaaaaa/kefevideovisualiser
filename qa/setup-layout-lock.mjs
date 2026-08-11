@@ -35,6 +35,7 @@ for(const [name,type] of browsers){
     const page=await browser.newPage({viewport});
     await page.goto(base,{waitUntil:'networkidle'});
     await page.waitForFunction(()=>document.documentElement.dataset.linaReady==='true',null,{timeout:20000});
+    await page.waitForFunction(()=>document.documentElement.dataset.setupStructure==='v2',null,{timeout:10000});
     await page.click('#nav [data-tool="setup"]');
 
     await page.locator('.flow-controls').evaluate(el=>el.classList.add('workflow-floating'));
@@ -45,6 +46,11 @@ for(const [name,type] of browsers){
     assert.notEqual(setupOverflow,'hidden',`${name}/${vpName}: Setup panel clips its controls`);
 
     for(const selector of controls)await assertUsable(page,name,vpName,selector);
+
+    const intro=page.locator('.consolidated-track .track-intro-settings');
+    assert.equal(await intro.count(),1,`${name}/${vpName}: repaired intro settings row is missing`);
+    assert.equal(await intro.locator('#showTitle').count(),1,`${name}/${vpName}: title toggle was not moved into full-width intro row`);
+    assert.equal(await intro.locator('#titleDuration').count(),1,`${name}/${vpName}: intro duration was not moved into full-width intro row`);
 
     const albumBox=await page.locator('#albumInput').boundingBox();
     assert.ok(albumBox&&albumBox.width>=150,`${name}/${vpName}: Track identity edit column is still squeezed (${albumBox?.width||0}px)`);
