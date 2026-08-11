@@ -59,10 +59,14 @@ for(const [name,type] of targets){
   await page.waitForTimeout(30);
   assert.equal(await page.inputValue('#lyricEffect'),'eternal',`${name}: Quick effect did not reach canonical state`);
   assert.equal(await page.evaluate(()=>window.render===window.linaRuntime.render),true,`${name}: Quick effect replaced canonical render()`);
+
+  await page.locator('#nav .navbtn[data-tool="style"]').click();
+  await page.waitForFunction(()=>document.querySelector('[data-panel="style"]')?.classList.contains('active'));
   await page.selectOption('#styleEffectSelect','charli');
   await page.waitForTimeout(30);
   assert.equal(await page.inputValue('#lyricEffect'),'charli',`${name}: Style effect did not reach canonical state`);
   assert.equal(await page.evaluate(()=>window.render===window.linaRuntime.render),true,`${name}: Style effect replaced canonical render()`);
+
   await page.selectOption('#quickEffect','apple');
   await page.waitForTimeout(30);
   assert.equal(await page.evaluate(()=>window.render===window.linaRuntime.render),true,`${name}: Apple effect replaced canonical render()`);
