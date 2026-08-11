@@ -29,11 +29,21 @@
 .preview-effect-switcher,
 .consolidated-effects{display:none!important}
 
+/* Playback sits directly under the visual preview. */
+.transport{
+  margin-top:8px!important;
+  margin-bottom:6px!important;
+}
+.transport-tools{
+  margin-top:0!important;
+  margin-bottom:8px!important;
+}
+
 .preview-quick-controls{
   display:grid!important;
   gap:10px!important;
   padding:12px!important;
-  margin-top:8px!important;
+  margin-top:0!important;
   border:1px solid var(--border)!important;
   border-radius:12px!important;
   background:rgba(255,255,255,.03)!important;
@@ -48,13 +58,48 @@
 }
 .quick-control-grid label{display:grid!important;gap:5px!important;min-width:0!important}
 .quick-control-grid label>span{font-size:9px!important;color:var(--muted)!important}
-.quick-control-grid select{
+
+/* Selected dropdown values must stay readable on every browser. */
+[data-panel] select,
+#previewQuickControls select,
+.more-controls select,
+.right select{
   width:100%!important;
   min-width:0!important;
   min-height:40px!important;
   box-sizing:border-box!important;
   border-radius:9px!important;
+  border:1px solid #34343d!important;
+  background:#141419!important;
+  color:#f7f7fa!important;
+  -webkit-text-fill-color:#f7f7fa!important;
+  color-scheme:dark!important;
+  opacity:1!important;
 }
+[data-panel] select option,
+#previewQuickControls select option,
+.more-controls select option,
+.right select option{
+  background:#141419!important;
+  color:#f7f7fa!important;
+}
+[data-panel] select:focus,
+#previewQuickControls select:focus,
+.more-controls select:focus,
+.right select:focus{
+  border-color:#777781!important;
+  outline:2px solid rgba(255,255,255,.14)!important;
+  outline-offset:1px!important;
+}
+[data-panel] select:disabled,
+#previewQuickControls select:disabled,
+.more-controls select:disabled,
+.right select:disabled{
+  color:#a9a9b2!important;
+  -webkit-text-fill-color:#a9a9b2!important;
+  opacity:1!important;
+}
+
 #quickResetLayout{justify-self:start!important;min-height:36px!important}
 
 .style-advanced-wrap,
