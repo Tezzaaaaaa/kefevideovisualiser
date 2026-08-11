@@ -1,0 +1,2 @@
+p62-20260812-hard-lyric-reset
+Exact-state rerun after opening Advanced controls in the visible Reset test.
