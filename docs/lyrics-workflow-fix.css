@@ -1,0 +1,37 @@
+/* Lyrics workflow: primary work on the left, optional review on the right. */
+[data-panel="lyrics"] .body{
+  display:grid!important;
+  grid-template-columns:minmax(0,1.6fr) minmax(300px,.8fr)!important;
+  gap:12px!important;
+  align-items:start!important;
+}
+[data-panel="lyrics"] .body > *:not(#reviewBox){grid-column:1!important}
+#reviewBox{
+  grid-column:2!important;
+  grid-row:1 / span 8!important;
+  align-self:start!important;
+  position:sticky!important;
+  top:118px!important;
+  max-height:calc(100dvh - 136px)!important;
+  overflow:auto!important;
+  margin:0!important;
+}
+#reviewBox .review-list{max-height:48dvh!important;overflow:auto!important}
+#reviewBox .subhead b::after{content:' · optional';font-weight:500;color:var(--muted)}
+
+/* Automatic lookup is the first-class path. */
+#searchLyricsBox{display:grid;gap:8px}
+#searchLyricsBox.hidden{display:none!important}
+#findLyricsBtn{min-height:42px!important}
+
+@media(max-width:900px){
+  [data-panel="lyrics"] .body{grid-template-columns:1fr!important}
+  [data-panel="lyrics"] .body > *{grid-column:1!important}
+  #reviewBox{
+    grid-row:auto!important;
+    position:static!important;
+    max-height:none!important;
+    order:20;
+  }
+  #reviewBox .review-list{max-height:320px!important}
+}
