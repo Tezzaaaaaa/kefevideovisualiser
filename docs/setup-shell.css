@@ -1,4 +1,4 @@
-/* LINA: no side columns. Preview first, editor controls full-width underneath. */
+/* LINA vertical workflow: top tabs -> active step -> preview -> controls. */
 .topbar{
   position:sticky!important;
   top:0!important;
@@ -22,15 +22,14 @@
   backdrop-filter:blur(18px)!important;
   -webkit-backdrop-filter:blur(18px)!important;
 }
-.flow-controls{display:none!important}
 #nav.nav,.nav{
   display:grid!important;
-  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  grid-template-columns:repeat(5,minmax(0,1fr))!important;
   gap:6px!important;
   position:static!important;
   inset:auto!important;
-  width:min(860px,100%)!important;
-  max-width:860px!important;
+  width:min(980px,100%)!important;
+  max-width:980px!important;
   margin:0 auto!important;
   padding:0!important;
   box-sizing:border-box!important;
@@ -48,12 +47,12 @@
   border-radius:10px!important;
 }
 
-/* No sidebar: stage, tool panels and inspector are stacked vertically. */
 .workspace,
 .workspace:has(.navbtn[data-tool="setup"].active),
 .workspace:has(.navbtn[data-tool="lyrics"].active),
 .workspace:has(.navbtn[data-tool="style"].active),
-.workspace:has(.navbtn[data-tool="background"].active){
+.workspace:has(.navbtn[data-tool="background"].active),
+.workspace:has(.navbtn[data-tool="review"].active){
   display:flex!important;
   flex-direction:column!important;
   grid-template-columns:none!important;
@@ -65,16 +64,10 @@
   padding:66px 12px 16px!important;
   box-sizing:border-box!important;
 }
-.stage{
-  order:1!important;
-  position:static!important;
-  width:100%!important;
-  max-width:none!important;
-  min-width:0!important;
-  margin:0!important;
-}
+
+/* Exact vertical order: active step first, preview second, inspector/controls last. */
 .left{
-  order:2!important;
+  order:1!important;
   position:static!important;
   top:auto!important;
   width:100%!important;
@@ -84,6 +77,14 @@
   margin:0!important;
   padding:0!important;
   overflow:visible!important;
+}
+.stage{
+  order:2!important;
+  position:static!important;
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  margin:0!important;
 }
 .right{
   order:3!important;
@@ -99,24 +100,17 @@
   overflow:visible!important;
 }
 
-/* Preserve all effects/inspector controls; they now live below the preview. */
-.right > *,
-.right .panel,
-.right .body,
-.right .subsection{
+/* Only the selected workflow panel exists in the content flow. */
+.left .panel.tool{
+  display:none!important;
   width:100%!important;
   max-width:none!important;
   min-width:0!important;
-  box-sizing:border-box!important;
-}
-.right .panel{margin:0 0 12px!important}
-
-.left .panel.tool.active,
-.left .panel.tool:not([hidden]){
-  width:100%!important;
-  max-width:none!important;
   margin:0!important;
   box-sizing:border-box!important;
+}
+.left .panel.tool.active{
+  display:block!important;
 }
 .left .panel .body{
   width:100%!important;
@@ -125,6 +119,26 @@
   box-sizing:border-box!important;
 }
 
+/* Back/Next live at the bottom of the active workflow panel, never in the top tab bar. */
+.flow-controls.workflow-inline{
+  display:flex!important;
+  position:static!important;
+  inset:auto!important;
+  width:100%!important;
+  max-width:none!important;
+  margin:12px 0 0!important;
+  padding:10px 0 0!important;
+  border-top:1px solid var(--border)!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:10px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.flow-controls.workflow-inline #stepStatus{margin:0 auto!important}
+.flow-controls.workflow-inline .btn{min-width:110px!important}
+
+/* Setup content remains compact inside its single active section. */
 [data-panel="setup"],
 [data-panel="setup"] .body,
 .setup-shell-section,
@@ -171,6 +185,37 @@
 }
 [data-panel="setup"] .toggle input{width:auto!important}
 
+/* Lyrics is one column. Review is its own fifth workflow step. */
+[data-panel="lyrics"] .body,
+[data-panel="review"] .body{
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  gap:12px!important;
+  width:100%!important;
+}
+#reviewBox{
+  grid-column:1!important;
+  grid-row:auto!important;
+  position:static!important;
+  max-height:none!important;
+  overflow:visible!important;
+  margin:0!important;
+}
+#reviewBox .review-list{max-height:420px!important;overflow:auto!important}
+.review-overview{margin:0!important}
+
+/* Preserve all inspector/effect controls below the preview. */
+.right > *,
+.right .panel,
+.right .body,
+.right .subsection{
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  box-sizing:border-box!important;
+}
+.right .panel{margin:0 0 12px!important}
+
 @media(max-width:1000px){
   [data-panel="setup"] .body{grid-template-columns:1fr!important}
 }
@@ -184,11 +229,13 @@
   .workspace:has(.navbtn[data-tool="setup"].active),
   .workspace:has(.navbtn[data-tool="lyrics"].active),
   .workspace:has(.navbtn[data-tool="style"].active),
-  .workspace:has(.navbtn[data-tool="background"].active){padding:64px 8px 8px!important;gap:8px!important}
-  .right{display:block!important;width:100%!important}
+  .workspace:has(.navbtn[data-tool="background"].active),
+  .workspace:has(.navbtn[data-tool="review"].active){padding:64px 8px 8px!important;gap:8px!important}
+  .flow-controls.workflow-inline .btn{min-width:86px!important}
 }
 
 @media(max-width:560px){
-  .navbtn{font-size:9px!important;padding:6px 3px!important;gap:4px!important}
-  .navbtn .step{width:18px!important;height:18px!important;font-size:9px!important}
+  .navbtn{font-size:8px!important;padding:6px 2px!important;gap:3px!important}
+  .navbtn .step{width:17px!important;height:17px!important;font-size:8px!important}
+  .flow-controls.workflow-inline{display:grid!important;grid-template-columns:auto 1fr auto!important}
 }
