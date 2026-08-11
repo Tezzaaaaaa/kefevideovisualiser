@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const BUILD='p42-20260811-title-text-only';
+  const BUILD='p43-20260811-transport-handwriting-title-clean';
   const load=src=>new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=`${src}?v=${BUILD}`;s.onload=resolve;s.onerror=()=>reject(new Error(`Failed to load ${src}`));document.body.append(s)});
   for(const href of ['apple-motion.css','ui-solid.css','intro-layout.css','production-consolidated.css','consolidated-studio.css','editor-shell.css','editor-shell-mobile-safety.css','editor-shell-density-fix.css','setup-shell.css','guided-ui.css','effect-typography.css','eternal-sunshine-effect.css','preview-quick-controls.css']){const css=document.createElement('link');css.rel='stylesheet';css.href=`${href}?v=${BUILD}`;document.head.append(css)}
   (async()=>{
@@ -36,6 +36,7 @@
       await load('style-effect-selector.js');
       await load('visual-polish.js');
       await load('runtime-guard.js');
+      await load('transport-lock.js');
     }catch(e){
       console.error('LINA bootstrap failed',e);
       const s=document.querySelector('#topStatus');if(s)s.textContent='LINA failed to start — refresh once.';
