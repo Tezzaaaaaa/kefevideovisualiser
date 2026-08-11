@@ -1,3 +1,4 @@
+// Verification trigger for Claude layout repair.
 import assert from 'node:assert/strict';
 import { chromium, firefox, webkit } from 'playwright';
 
