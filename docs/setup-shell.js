@@ -83,7 +83,6 @@
       button.innerHTML='<span class="step">5</span>Review';
       nav.append(button);
     }
-    // Review is the production-controls destination, not another form panel.
     q('[data-panel="review"]')?.remove();
     return true;
   }
@@ -170,15 +169,22 @@
     document.documentElement.dataset.verticalWorkflowBound='true';
     document.addEventListener('click',e=>{
       const tab=e.target.closest('#nav .navbtn[data-tool]');
-      if(tab){e.preventDefault();showPanel(tab.dataset.tool);return;}
+      if(tab){
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        showPanel(tab.dataset.tool);
+        return;
+      }
       if(e.target.closest('#prevStep')){
         e.preventDefault();
+        e.stopImmediatePropagation();
         const current=Math.max(0,STEPS.indexOf(q('#nav .navbtn.active')?.dataset.tool||'setup'));
         showPanel(STEPS[Math.max(0,current-1)]);
         return;
       }
       if(e.target.closest('#nextStep')){
         e.preventDefault();
+        e.stopImmediatePropagation();
         const current=Math.max(0,STEPS.indexOf(q('#nav .navbtn.active')?.dataset.tool||'setup'));
         showPanel(STEPS[Math.min(STEPS.length-1,current+1)]);
       }
