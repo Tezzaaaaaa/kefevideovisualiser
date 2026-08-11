@@ -32,14 +32,16 @@
     try{window.render?.((Number($('#audio')?.currentTime)||0)*1000)}catch{}
   }
 
-  function buildTitleToggle(anchor){
-    if($('#previewTitleToggle'))return;
+  function buildTitleControls(anchor){
+    if($('#previewTitleControls'))return;
     const source=$('#showTitle');
-    const row=document.createElement('label');
-    row.id='previewTitleToggle';
-    row.className='preview-title-toggle';
-    row.innerHTML='<span><b>Title card</b><small>Show title, artist and album at the start</small></span><input id="previewTitleToggleInput" type="checkbox">';
+    const duration=$('#titleDuration');
+    const row=document.createElement('div');
+    row.id='previewTitleControls';
+    row.className='preview-title-controls';
+    row.innerHTML='<label class="preview-title-toggle"><span><b>Title card</b><small>Show title, artist and album at the start</small></span><input id="previewTitleToggleInput" type="checkbox"></label><label class="preview-title-duration"><span>Duration</span></label>';
     anchor.after(row);
+
     const input=$('#previewTitleToggleInput');
     input.checked=source?.checked!==false;
     input.addEventListener('change',()=>{
@@ -47,6 +49,16 @@
       try{window.render?.((Number($('#audio')?.currentTime)||0)*1000)}catch{}
     });
     source?.addEventListener('change',()=>{if(input.checked!==source.checked)input.checked=source.checked});
+
+    const durationWrap=row.querySelector('.preview-title-duration');
+    if(duration&&durationWrap){
+      durationWrap.append(duration);
+      duration.addEventListener('change',()=>{
+        try{window.render?.((Number($('#audio')?.currentTime)||0)*1000)}catch{}
+      });
+    }else if(durationWrap){
+      durationWrap.remove();
+    }
   }
 
   function build(){
@@ -72,9 +84,9 @@
     const transport=$('.transport');
     const transportTools=$('.transport-tools');
     const playbackAnchor=transportTools||transport||stageWrap;
-    buildTitleToggle(playbackAnchor);
-    const titleToggle=$('#previewTitleToggle');
-    if(titleToggle)titleToggle.after(box);
+    buildTitleControls(playbackAnchor);
+    const titleControls=$('#previewTitleControls');
+    if(titleControls)titleControls.after(box);
     else playbackAnchor.after(box);
 
     const effect=$('#previewEffectSelect');
