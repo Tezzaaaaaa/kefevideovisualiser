@@ -48,6 +48,15 @@ for(const [name,type] of browsers){
 
     const albumBox=await page.locator('#albumInput').boundingBox();
     assert.ok(albumBox&&albumBox.width>=150,`${name}/${vpName}: Track identity edit column is still squeezed (${albumBox?.width||0}px)`);
+
+    const setupBounds=await page.locator('[data-panel="setup"]').evaluate(el=>{const r=el.getBoundingClientRect();return{left:r.left,right:r.right}});
+    const visibleSetupOverflow=await page.locator('[data-panel="setup"] input,[data-panel="setup"] select,[data-panel="setup"] textarea,[data-panel="setup"] button,[data-panel="setup"] .upload,[data-panel="setup"] .toggle').evaluateAll((els,bounds)=>els.filter(el=>{
+      const s=getComputedStyle(el);if(s.display==='none'||s.visibility==='hidden')return false;
+      const r=el.getBoundingClientRect();if(r.width<1||r.height<1)return false;
+      return r.left<bounds.left-1||r.right>bounds.right+1;
+    }).map(el=>({tag:el.tagName,id:el.id||'',className:el.className||'',left:el.getBoundingClientRect().left,right:el.getBoundingClientRect().right})),setupBounds);
+    assert.deepEqual(visibleSetupOverflow,[],`${name}/${vpName}: visible Setup controls overflow panel: ${JSON.stringify(visibleSetupOverflow)}`);
+
     const trackBounds=await page.locator('.consolidated-track').evaluate(el=>{const r=el.getBoundingClientRect();return{left:r.left,right:r.right}});
     const fieldsBounds=await page.locator('.consolidated-track .track-fields').evaluate(el=>{const r=el.getBoundingClientRect();return{left:r.left,right:r.right}});
     assert.ok(fieldsBounds.left>=trackBounds.left-1&&fieldsBounds.right<=trackBounds.right+1,`${name}/${vpName}: Track identity fields overflow the Setup panel`);
@@ -60,10 +69,10 @@ for(const [name,type] of browsers){
       assert.equal(shell.display,'flex',`${name}/${vpName}: narrow workspace is not the locked single-column flex shell`);
       assert.equal(shell.direction,'column',`${name}/${vpName}: narrow workspace is not column ordered`);
       const leftWidth=await page.locator('.left').evaluate(el=>el.getBoundingClientRect().width);
-      assert.ok(leftWidth>=viewport.width-40,`${name}/${vpName}: Setup column is still squeezed (${leftWidth}px)`);
+      assert.ok(leftWidth>=viewport.width-20,`${name}/${vpName}: Setup column is still squeezed (${leftWidth}px)`);
     }else{
       const leftWidth=await page.locator('.left').evaluate(el=>el.getBoundingClientRect().width);
-      assert.ok(leftWidth>=350,`${name}/${vpName}: Setup column too narrow (${leftWidth}px)`);
+      assert.ok(leftWidth>=430,`${name}/${vpName}: Setup column too narrow (${leftWidth}px)`);
     }
 
     await page.close();
