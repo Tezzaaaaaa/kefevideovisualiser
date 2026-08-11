@@ -7,6 +7,7 @@
   const seek=$('#seek');
   const clock=$('#clock');
   const remaining=$('#remainingClock');
+  const story=$('#story');
   if(!audio||!play||!stop||!seek)return;
 
   const fmt=v=>{
@@ -46,6 +47,11 @@
     if(remaining)remaining.textContent=`−${fmt(Math.max(0,duration-current))}`;
     play.textContent=audio.paused?'▶':'❚❚';
     play.setAttribute('aria-label',audio.paused?'Play':'Pause');
+    if(story){
+      story.classList.toggle('is-playing',!audio.paused);
+      story.setAttribute('aria-label',audio.paused?'Play preview':'Pause preview');
+      story.title=audio.paused?'Click to play':'Click to pause';
+    }
   }
 
   async function togglePlayback(e){
@@ -94,6 +100,19 @@
   stop.addEventListener('click',stopPlayback,true);
   seek.addEventListener('input',seekPlayback,true);
 
+  if(story){
+    story.style.cursor='pointer';
+    story.setAttribute('role','button');
+    story.tabIndex=0;
+    story.addEventListener('click',togglePlayback,true);
+    story.addEventListener('keydown',e=>{
+      if(e.key==='Enter'||e.key===' '){
+        e.preventDefault();
+        togglePlayback(e);
+      }
+    },true);
+  }
+
   ['loadedmetadata','durationchange','timeupdate','play','pause','ended'].forEach(type=>audio.addEventListener(type,updateUI));
   audio.addEventListener('play',()=>syncBackground(audio.currentTime,true));
   audio.addEventListener('pause',()=>syncBackground(audio.currentTime,false));
@@ -110,5 +129,5 @@
 
   updateUI();
   syncBackground(audio.currentTime,!audio.paused);
-  document.documentElement.dataset.transportOwner='canonical-v1';
+  document.documentElement.dataset.transportOwner='canonical-v2-preview-click';
 })();
