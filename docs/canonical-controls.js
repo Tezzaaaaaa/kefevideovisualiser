@@ -55,6 +55,9 @@
   }
 
   function activate(){
+    const lineHeight=$('#lineHeight');
+    if(lineHeight){lineHeight.min='0.75';lineHeight.max='1.35';lineHeight.step='0.01';lineHeight.dataset.linaRangeOwner='canonical-controls'}
+
     const letterCase=$('#letterCase');
     if(letterCase){letterCase.onchange=()=>applyCase(true);letterCase.dataset.linaOwner='canonical-controls'}
     applyCase(false);
