@@ -15,6 +15,23 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Check canonical runtime sources
+        run: |
+          node --check docs/canonical-runtime.js
+          node --check docs/preview-quick-controls.js
+          node --check docs/style-effect-selector.js
+          node --check docs/runtime-guard.js
+          node --check docs/transport-lock.js
+          node --check docs/apple-letter-highlight.js
+          node --check docs/eternal-sunshine-effect.js
+          node --check qa/runtime-ownership.mjs
+          test ! -e docs/preview-runtime.js
+          test ! -e docs/preview-recovery.js
+          test ! -e docs/layout-reset-fix.js
+          grep -q "canonical-runtime.js" docs/app-events.js
+          ! grep -q "preview-runtime.js" docs/app-events.js
+          ! grep -q "preview-recovery.js" docs/app-events.js
+          ! grep -q "layout-reset-fix.js" docs/app-events.js
       - name: Install browser test runtime
         run: |
           npm install --no-save playwright@1.55.0
