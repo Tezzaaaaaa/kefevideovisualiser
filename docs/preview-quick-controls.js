@@ -91,6 +91,27 @@
     setTimeout(()=>{window.linaSyncTypography?.();resetLayout();syncAll()},20);
   }
 
+  function moveBackgroundSections(box){
+    const frame=$('#cropX')?.closest('.subsection');
+    const readable=$('#dim')?.closest('.subsection');
+    const actions=box.querySelector('.quick-actions');
+    const configure=(section,title,meta)=>{
+      if(!section||section.closest('#previewQuickControls'))return;
+      section.classList.add('quick-group','quick-background-group');
+      section.dataset.quickBackground='true';
+      const head=section.querySelector(':scope > .subhead');
+      if(head){
+        head.classList.add('quick-group-head');
+        const b=head.querySelector('b'),s=head.querySelector('span');
+        if(b)b.textContent=title;
+        if(s)s.textContent=meta;
+      }
+      if(actions)box.insertBefore(section,actions);else box.append(section);
+    };
+    configure(frame,'2. Frame it','Position · crop · zoom');
+    configure(readable,'3. Make lyrics readable','Overlay · blur');
+  }
+
   function build(){
     const stageWrap=$('.stage-wrap');if(!stageWrap||$('#previewQuickControls'))return false;
     $('#previewEffectSwitcher')?.remove();$('#simpleControlSummary')?.remove();$('#previewTitleControls')?.remove();
@@ -107,7 +128,7 @@
           <label><span>Font</span><select id="quickFont"></select></label>
           <label><span>Text size</span><select id="quickSize"></select></label>
           <label><span>Lyrics view</span><select id="quickLyricsView"></select></label>
-          <label><span>Frame</span><select id="quickFrame"></select></label>
+          <label><span>Aspect ratio</span><select id="quickFrame"></select></label>
           <label><span>Letter case</span><select id="quickCase"></select></label>
         </div>
       </div>
@@ -158,6 +179,8 @@
     const inspector=$('.right'),fineBody=$('#quickFineTiming .quick-fine-body');
     if(inspector&&fineBody)fineBody.append(inspector);
     const more=$('.more-controls');if(more)more.remove();
+
+    moveBackgroundSections(box);
 
     const qe=$('#quickEffect');qe.value=currentEffect();qe.addEventListener('change',()=>setEffect(qe.value));
     bindSelect('fontChoice','quickFont');
