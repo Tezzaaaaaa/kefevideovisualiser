@@ -1,0 +1,2 @@
+p60-20260811-canonical-runtime-lock7
+Final validation trigger after guarding the retired song-results click handler.
