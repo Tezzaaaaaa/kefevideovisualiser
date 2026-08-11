@@ -1,0 +1,102 @@
+/* LINA background upload: one obvious target for image or video, with a clear loaded state. */
+.background-upload-source-stash{display:none!important}
+
+.background-dropzone{
+  width:100%!important;
+  min-height:132px!important;
+  display:grid!important;
+  place-items:center!important;
+  padding:20px!important;
+  box-sizing:border-box!important;
+  border:1px dashed #4a4a56!important;
+  border-radius:12px!important;
+  background:rgba(255,255,255,.022)!important;
+  cursor:pointer!important;
+  transition:border-color .14s ease,background .14s ease,transform .14s ease!important;
+}
+.background-dropzone:hover,
+.background-dropzone.is-dragging{
+  border-color:#8f8f9b!important;
+  background:rgba(255,255,255,.05)!important;
+}
+.background-dropzone.is-dragging{transform:scale(.998)!important}
+.background-dropzone input{display:none!important}
+
+.background-drop-copy{
+  display:grid!important;
+  justify-items:center!important;
+  gap:5px!important;
+  text-align:center!important;
+  pointer-events:none!important;
+}
+.background-drop-icon{
+  display:grid!important;
+  place-items:center!important;
+  width:36px!important;
+  height:36px!important;
+  border-radius:50%!important;
+  background:rgba(255,255,255,.06)!important;
+  font-size:15px!important;
+  line-height:1!important;
+}
+.background-drop-copy b{
+  color:var(--text)!important;
+  font-size:13px!important;
+  line-height:1.2!important;
+}
+.background-drop-copy span{
+  color:var(--muted)!important;
+  font-size:9px!important;
+  line-height:1.45!important;
+}
+
+#backgroundLoadState{
+  display:none!important;
+  grid-template-columns:auto minmax(0,1fr)!important;
+  gap:11px!important;
+  align-items:center!important;
+  min-height:58px!important;
+  padding:11px 13px!important;
+  box-sizing:border-box!important;
+  border:1px solid var(--border)!important;
+  border-radius:11px!important;
+  background:rgba(255,255,255,.025)!important;
+}
+#backgroundLoadState.is-loading,
+#backgroundLoadState.is-success,
+#backgroundLoadState.is-error{display:grid!important}
+#backgroundLoadState.is-success{
+  border-color:rgba(126,231,168,.44)!important;
+  background:rgba(126,231,168,.075)!important;
+}
+#backgroundLoadState.is-error{
+  border-color:rgba(255,125,125,.42)!important;
+  background:rgba(255,125,125,.065)!important;
+}
+.background-load-mark{
+  display:grid!important;
+  place-items:center!important;
+  width:30px!important;
+  height:30px!important;
+  border-radius:50%!important;
+  background:rgba(255,255,255,.07)!important;
+  color:#fff!important;
+  font-size:14px!important;
+  font-weight:900!important;
+}
+#backgroundLoadState.is-success .background-load-mark{background:rgba(126,231,168,.15)!important}
+.background-load-copy{display:grid!important;gap:3px!important;min-width:0!important}
+.background-load-copy b{font-size:11px!important;line-height:1.25!important;color:var(--text)!important}
+.background-load-copy span{font-size:9px!important;line-height:1.4!important;color:var(--muted)!important;overflow-wrap:anywhere!important}
+
+/* The legacy one-line status remains available to the runtime, but is no longer the user-facing confirmation. */
+[data-panel="background"] #bgStatus{display:none!important}
+
+[data-panel="background"] .subsection.background-media-ready>.subhead>span{
+  color:rgba(166,239,196,.9)!important;
+  font-weight:750!important;
+}
+
+@media(max-width:700px){
+  .background-dropzone{min-height:112px!important;padding:16px!important}
+}
