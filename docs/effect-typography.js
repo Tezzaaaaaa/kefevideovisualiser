@@ -32,22 +32,22 @@
     eternal:{
       name:'Eternal Sunshine',
       fonts:[
-        ['eternal-hand','Bradley Hand / Noteworthy'],
-        ['eternal-chalk','Chalkboard SE'],
-        ['eternal-print','Segoe Print / handwritten']
+        ['eternal-reenie','Reenie Beanie · recommended'],
+        ['eternal-sunrise','Waiting for the Sunrise'],
+        ['eternal-grace','Covered By Your Grace']
       ],
       stacks:{
-        'eternal-hand':'"Bradley Hand","Noteworthy","Chalkboard SE","Segoe Print",cursive',
-        'eternal-chalk':'"Chalkboard SE","Bradley Hand","Noteworthy","Segoe Print",cursive',
-        'eternal-print':'"Segoe Print","Bradley Hand","Noteworthy","Chalkboard SE",cursive'
+        'eternal-reenie':'"Reenie Beanie","Waiting for the Sunrise","Segoe Print","Bradley Hand",cursive',
+        'eternal-sunrise':'"Waiting for the Sunrise","Reenie Beanie","Segoe Print","Bradley Hand",cursive',
+        'eternal-grace':'"Covered By Your Grace","Reenie Beanie","Segoe Print","Bradley Hand",cursive'
       }
     }
   };
 
-  const chosen={apple:'apple-system',charli:'charli-condensed',eternal:'eternal-hand'};
+  const chosen={apple:'apple-system',charli:'charli-condensed',eternal:'eternal-reenie'};
 
   function effect(){
-    return $('#previewEffectSelect')?.value||$('#lyricEffect')?.value||$('#story')?.dataset.lyricEffect||'apple';
+    return $('#styleEffectSelect')?.value||$('#quickEffect')?.value||$('#previewEffectSelect')?.value||$('#lyricEffect')?.value||$('#story')?.dataset.lyricEffect||'apple';
   }
 
   function applyFont(key){
@@ -59,6 +59,7 @@
     const lyrics=$('#lyrics');
     if(story)story.style.setProperty('--lina-effect-font',stack);
     if(lyrics)lyrics.style.fontFamily=stack;
+    if(e==='eternal')document.fonts?.load?.(`32px ${stack.split(',')[0]}`).catch(()=>{});
     try{window.invalidateLinaMotion?.(true)}catch{}
     try{window.render?.((Number($('#audio')?.currentTime)||0)*1000)}catch{}
   }
@@ -79,7 +80,7 @@
     if(title)title.textContent=`Typography · ${p.name}`;
     if(meta)meta.textContent='For the selected effect';
     const helper=section?.querySelector('.helper');
-    if(helper)helper.textContent=`These font choices belong to ${p.name}. Change the lyric effect under Preview to see that effect’s typography choices.`;
+    if(helper)helper.textContent=e==='eternal'?'Reenie Beanie is the recommended free commercial-safe handwriting match.':'These font choices belong to '+p.name+'.';
 
     applyFont(current);
     return true;
@@ -91,10 +92,11 @@
       select.dataset.effectTypographyBound='true';
       select.addEventListener('change',()=>applyFont(select.value));
     }
-    const effectSelect=$('#previewEffectSelect');
-    if(effectSelect&&effectSelect.dataset.typographyBound!=='true'){
-      effectSelect.dataset.typographyBound='true';
-      effectSelect.addEventListener('change',()=>setTimeout(syncTypography,0));
+    for(const effectSelect of [$('#styleEffectSelect'),$('#quickEffect'),$('#previewEffectSelect'),$('#lyricEffect')]){
+      if(effectSelect&&effectSelect.dataset.typographyBound!=='true'){
+        effectSelect.dataset.typographyBound='true';
+        effectSelect.addEventListener('change',()=>setTimeout(syncTypography,0));
+      }
     }
     document.addEventListener('click',e=>{
       if(e.target.closest?.('.effect-option[data-effect]'))setTimeout(syncTypography,0);
@@ -107,7 +109,7 @@
       tries++;
       const ok=syncTypography();
       bind();
-      if((!ok||!$('#previewEffectSelect'))&&tries<50)setTimeout(run,60);
+      if(!ok&&tries<50)setTimeout(run,60);
       else document.documentElement.dataset.effectTypography='ready';
     };
     run();
