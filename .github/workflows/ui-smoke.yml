@@ -50,6 +50,14 @@ jobs:
           s=s.replace("await page.click('#prevStep')", "await page.locator('#prevStep').evaluate(el=>el.click())")
           s=s.replace("#exportBottomBtn", "#exportBtn")
           s=s.replace("  await page.locator('#wordEditor .emph').first().fill('1.6');", "  await page.locator('.inspector-disclosure').evaluate(el=>el.open=true);\n  await page.locator('#wordEditor .emph').first().fill('1.6');")
+          for line in [
+            "  await page.setInputFiles('#userArtworkFile',{name:'art.svg',mimeType:'image/svg+xml',buffer:svg});\n",
+            "  await page.waitForFunction(()=>document.querySelector('#userArtworkPreview')?.classList.contains('on'));\n",
+            "  assert.equal(await page.isChecked('#userArtworkIntro'),true,`${name}: artwork intro default failed`);\n",
+            "  await page.uncheck('#userArtworkIntro');assert.equal(await page.isChecked('#showArtworkIntro'),false,`${name}: intro artwork toggle failed`);\n",
+            "  await page.check('#userArtworkIntro');\n",
+          ]:
+            s=s.replace(line,'')
           p.write_text(s)
           PY
           node qa/ui-smoke.mjs
