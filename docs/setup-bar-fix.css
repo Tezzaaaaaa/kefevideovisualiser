@@ -1,4 +1,59 @@
-/* LINA narrow-layout tool bar safety: never cover editable content. */
+/* LINA Setup/tool bar safety: never cover or squeeze editable content. */
+
+/* Give the source inspector enough room to be a real editor panel. */
+:root{--editor-left:390px}
+@media(min-width:901px) and (max-width:1280px){
+  :root{--editor-left:370px}
+}
+
+/* Track identity must not collapse its editable column. */
+.consolidated-track .track-grid{
+  grid-template-columns:88px minmax(0,1fr)!important;
+  gap:12px!important;
+  width:100%!important;
+  min-width:0!important;
+}
+.consolidated-track .track-art{
+  width:88px!important;
+  height:88px!important;
+  min-width:88px!important;
+}
+.consolidated-track .track-fields{
+  min-width:0!important;
+  width:100%!important;
+}
+.consolidated-track .track-fields>*{
+  min-width:0!important;
+  max-width:100%!important;
+  width:100%!important;
+  box-sizing:border-box!important;
+}
+.consolidated-track .track-fields .field input,
+.consolidated-track .track-fields .field select{
+  width:100%!important;
+  min-width:0!important;
+  box-sizing:border-box!important;
+}
+.consolidated-track .track-fields .toggle{
+  white-space:normal!important;
+}
+.consolidated-track .track-fields .toggle span,
+.consolidated-track .track-fields .helper{
+  overflow-wrap:anywhere!important;
+}
+
+/* On a phone, stack artwork above the fields instead of creating a skinny column. */
+@media(max-width:620px){
+  .consolidated-track .track-grid{
+    grid-template-columns:1fr!important;
+  }
+  .consolidated-track .track-art{
+    width:96px!important;
+    height:96px!important;
+  }
+}
+
+/* Tablet/mobile tool tabs belong in normal flow, never over the editor. */
 @media(max-width:900px){
   body{padding-bottom:0!important}
 
