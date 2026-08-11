@@ -27,7 +27,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate LINA runtime
+      - name: Validate LINA canonical runtime
         shell: bash
         run: |
           set -euo pipefail
@@ -44,38 +44,68 @@ jobs:
             docs/apple-timing.js
             docs/apple-motion.js
             docs/apple-subword.js
-            docs/preview-runtime.js
-            docs/preview-recovery.js
             docs/apple-motion.css
             docs/ui-solid.css
             docs/setup-shell.js
             docs/setup-shell.css
             docs/intro-layout.js
             docs/intro-layout.css
+            docs/preview-quick-controls.js
+            docs/preview-quick-controls.css
+            docs/canonical-runtime.js
+            docs/canonical-controls.js
+            docs/canonical-ui-lock.js
+            docs/canonical-export.js
+            docs/canonical-audit.js
+            docs/style-effect-selector.js
+            docs/transport-lock.js
+            docs/apple-letter-highlight.js
+            docs/eternal-sunshine-effect.js
             docs/runtime-guard.js
           )
           for f in "${required[@]}"; do
             test -s "$f" || { echo "Missing required runtime file: $f"; exit 1; }
           done
+
+          retired=(
+            docs/preview-runtime.js
+            docs/preview-recovery.js
+            docs/layout-reset-fix.js
+            docs/production-controls.js
+            docs/control-audit.js
+            docs/control-finish.js
+            docs/visual-polish.js
+          )
+          for f in "${retired[@]}"; do
+            test ! -e "$f" || { echo "Retired controller unexpectedly present: $f"; exit 1; }
+          done
+
           for f in docs/*.js; do
             echo "Syntax checking $f"
             node --check "$f"
           done
+
           grep -q 'app-events.js' docs/index.html || { echo 'index.html does not load the LINA bootstrap'; exit 1; }
           grep -q 'app-core-safe.js' docs/app-events.js || { echo 'bootstrap does not load canonical core'; exit 1; }
           grep -q 'app-media-safe.js' docs/app-events.js || { echo 'bootstrap does not load canonical media'; exit 1; }
           grep -q 'ffmpeg-export.js' docs/app-events.js || { echo 'bootstrap does not load export runtime'; exit 1; }
           grep -q 'media-lifecycle.js' docs/app-events.js || { echo 'bootstrap does not load media lifecycle layer'; exit 1; }
-          grep -q 'apple-timing.js' docs/app-events.js || { echo 'bootstrap does not load timing repair layer'; exit 1; }
+          grep -q 'apple-timing.js' docs/app-events.js || { echo 'bootstrap does not load timing layer'; exit 1; }
           grep -q 'apple-motion.js' docs/app-events.js || { echo 'bootstrap does not load Apple motion engine'; exit 1; }
           grep -q 'apple-subword.js' docs/app-events.js || { echo 'bootstrap does not load sub-word motion layer'; exit 1; }
-          grep -q 'preview-runtime.js' docs/app-events.js || { echo 'bootstrap does not load hardened preview runtime'; exit 1; }
-          grep -q 'preview-recovery.js' docs/app-events.js || { echo 'bootstrap does not load preview recovery runtime'; exit 1; }
           grep -q 'setup-shell.js' docs/app-events.js || { echo 'bootstrap does not load rebuilt setup shell'; exit 1; }
-          grep -q 'setup-shell.css' docs/app-events.js || { echo 'bootstrap does not load rebuilt setup styling'; exit 1; }
-          grep -q 'intro-layout.js' docs/app-events.js || { echo 'bootstrap does not load adaptive intro layout'; exit 1; }
-          grep -q 'intro-layout.css' docs/app-events.js || { echo 'bootstrap does not load adaptive intro styling'; exit 1; }
+          grep -q 'preview-quick-controls.js' docs/app-events.js || { echo 'bootstrap does not load Quick Settings'; exit 1; }
+          grep -q 'canonical-runtime.js' docs/app-events.js || { echo 'bootstrap does not load canonical runtime'; exit 1; }
+          grep -q 'canonical-controls.js' docs/app-events.js || { echo 'bootstrap does not load canonical controls'; exit 1; }
+          grep -q 'canonical-ui-lock.js' docs/app-events.js || { echo 'bootstrap does not load canonical UI lock'; exit 1; }
+          grep -q 'canonical-export.js' docs/app-events.js || { echo 'bootstrap does not load canonical export'; exit 1; }
+          grep -q 'canonical-audit.js' docs/app-events.js || { echo 'bootstrap does not load canonical audit'; exit 1; }
+          grep -q 'transport-lock.js' docs/app-events.js || { echo 'bootstrap does not load canonical transport'; exit 1; }
           grep -q 'runtime-guard.js' docs/app-events.js || { echo 'bootstrap does not load runtime guard'; exit 1; }
+
+          ! grep -q 'preview-runtime.js' docs/app-events.js || { echo 'bootstrap still references retired preview-runtime'; exit 1; }
+          ! grep -q 'preview-recovery.js' docs/app-events.js || { echo 'bootstrap still references retired preview-recovery'; exit 1; }
+          ! grep -q 'layout-reset-fix.js' docs/app-events.js || { echo 'bootstrap still references retired layout reset controller'; exit 1; }
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
