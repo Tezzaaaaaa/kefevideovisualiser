@@ -56,6 +56,27 @@
   box-sizing:border-box!important;
 }
 
+/* Intro settings are a separate full-width row, never part of the skinny metadata column. */
+.consolidated-track .track-intro-settings{
+  grid-column:1/-1!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) minmax(150px,.55fr)!important;
+  gap:8px!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  box-sizing:border-box!important;
+  align-items:end!important;
+}
+.consolidated-track .track-intro-settings>.toggle,
+.consolidated-track .track-intro-settings>.field{
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  margin:0!important;
+  box-sizing:border-box!important;
+}
+
 /* No Setup control may grow past its column or panel. */
 [data-panel="setup"] .field,
 [data-panel="setup"] .upload,
@@ -167,9 +188,12 @@
     min-width:96px!important;
     max-width:96px!important;
   }
+  .consolidated-track .track-intro-settings{
+    grid-template-columns:minmax(0,1fr) minmax(140px,.55fr)!important;
+  }
 }
 
-/* Phones: stack Track Identity; there is no reason to squeeze it into two columns. */
+/* Phones: stack Track Identity and intro settings; never squeeze them into tiny columns. */
 @media(max-width:560px){
   .consolidated-track .track-grid{
     grid-template-columns:minmax(0,1fr)!important;
@@ -179,5 +203,8 @@
     height:104px!important;
     min-width:104px!important;
     max-width:104px!important;
+  }
+  .consolidated-track .track-intro-settings{
+    grid-template-columns:minmax(0,1fr)!important;
   }
 }
