@@ -9,7 +9,7 @@
 <body>
 <script>
 (async()=>{
-  const BUILD='p45-20260811-audio-drop-zone';
+  const BUILD='p46-20260811-lyrics-loaded-state';
   try{
     const response=await fetch(`app-source.html?v=${BUILD}`,{cache:'no-store'});
     if(!response.ok)throw new Error(`HTTP ${response.status}`);
@@ -23,7 +23,7 @@
     document.write(html);
     document.close();
   }catch(error){
-    document.body.innerHTML='<main style="font-family:system-ui;background:#0a0b;color:#fff;min-height:100vh;padding:24px"><h1>LINA</h1><p>Failed to load the editor. Reload once.</p></main>';
+    document.body.innerHTML='<main style="font-family:system-ui;background:#0a0a0b;color:#fff;min-height:100vh;padding:24px"><h1>LINA</h1><p>Failed to load the editor. Reload once.</p></main>';
     console.error('LINA entry load failed',error);
   }
 })();
