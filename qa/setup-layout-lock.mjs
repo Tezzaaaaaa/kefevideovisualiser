@@ -35,7 +35,10 @@ for(const [name,type] of browsers){
     const page=await browser.newPage({viewport});
     await page.goto(base,{waitUntil:'networkidle'});
     await page.waitForFunction(()=>document.documentElement.dataset.linaReady==='true',null,{timeout:20000});
-    await page.waitForFunction(()=>document.documentElement.dataset.setupStructure==='v3',null,{timeout:10000});
+    await page.waitForFunction(()=>{
+      const intro=document.querySelector('.consolidated-track .track-intro-settings');
+      return !!intro && intro.querySelector('#showTitle') && intro.querySelector('#titleDuration') && intro.querySelector('#userArtworkIntro');
+    },null,{timeout:10000});
     await page.click('#nav [data-tool="setup"]');
 
     await page.locator('.flow-controls').evaluate(el=>el.classList.add('workflow-floating'));
