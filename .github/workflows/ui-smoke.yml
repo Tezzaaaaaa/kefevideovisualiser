@@ -15,9 +15,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Check canonical runtime sources
+      - name: Check unified runtime sources
         run: |
           node --check docs/canonical-runtime.js
+          node --check docs/canonical-controls.js
+          node --check docs/canonical-ui-lock.js
+          node --check docs/canonical-export.js
+          node --check docs/canonical-audit.js
           node --check docs/preview-quick-controls.js
           node --check docs/style-effect-selector.js
           node --check docs/runtime-guard.js
@@ -35,6 +39,13 @@ jobs:
           test ! -e docs/layout-reset-fix.js
           test ! -e docs/visual-polish.js
           grep -q "canonical-runtime.js" docs/app-events.js
+          grep -q "canonical-controls.js" docs/app-events.js
+          grep -q "canonical-ui-lock.js" docs/app-events.js
+          grep -q "canonical-export.js" docs/app-events.js
+          grep -q "canonical-audit.js" docs/app-events.js
+          ! grep -q "production-controls.js" docs/app-events.js
+          ! grep -q "control-audit.js" docs/app-events.js
+          ! grep -q "control-finish.js" docs/app-events.js
           ! grep -q "preview-runtime.js" docs/app-events.js
           ! grep -q "preview-recovery.js" docs/app-events.js
           ! grep -q "layout-reset-fix.js" docs/app-events.js
@@ -63,7 +74,7 @@ jobs:
         run: node qa/editor-shell-current.mjs
       - name: Lock canonical runtime ownership across browsers
         run: node qa/runtime-ownership.mjs
-      - name: Run current control matrix across browsers
+      - name: Run unified visible-control matrix across browsers
         run: node qa/current-control-matrix.mjs
       - name: Probe current WebKit FFmpeg export
         run: node qa/safari-export-current.mjs
