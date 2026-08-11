@@ -1,4 +1,4 @@
-/* LINA intro card: text only. Two required lines + optional album line. */
+/* LINA intro card: text only. Title + Artist + optional Album, never clipped. */
 .title-card[hidden]{display:none!important}
 .title-card{z-index:3;pointer-events:none}
 .title-card *{pointer-events:none}
@@ -9,33 +9,42 @@
 .title-card.on{display:grid}
 
 .share-card{
-  width:min(72%,700px)!important;
+  width:min(86%,820px)!important;
+  max-width:86%!important;
   display:grid!important;
-  grid-template-columns:1fr!important;
+  grid-template-columns:minmax(0,1fr)!important;
   grid-template-rows:auto auto auto!important;
-  gap:6px!important;
+  gap:7px!important;
   align-content:center!important;
   text-align:left!important;
   padding:clamp(18px,3vw,32px)!important;
   border-radius:clamp(18px,2.4vw,28px)!important;
   box-sizing:border-box!important;
+  overflow:visible!important;
 }
 .intro-art{display:none!important}
 .title-name,.title-artist,.title-album{
   grid-column:1!important;
   min-width:0!important;
   width:100%!important;
+  max-width:100%!important;
   margin:0!important;
   text-align:left!important;
-  white-space:nowrap!important;
-  overflow:hidden!important;
-  text-overflow:ellipsis!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  white-space:normal!important;
+  overflow-wrap:break-word!important;
+  word-break:normal!important;
 }
 .title-name{
   grid-row:1!important;
   font-size:clamp(26px,3.4vw,56px)!important;
-  line-height:1!important;
+  line-height:1.02!important;
   font-weight:800!important;
+  display:-webkit-box!important;
+  -webkit-box-orient:vertical!important;
+  -webkit-line-clamp:2!important;
+  line-clamp:2!important;
 }
 .title-artist{
   grid-row:2!important;
@@ -51,7 +60,10 @@
 }
 .title-album:empty{display:none!important}
 
-#story:not([data-aspect="16:9"]) .share-card{width:min(84%,430px)!important}
+#story:not([data-aspect="16:9"]) .share-card{
+  width:min(88%,500px)!important;
+  max-width:88%!important;
+}
 #story:not([data-aspect="16:9"]) .title-name{font-size:clamp(30px,8vw,48px)!important}
 #story:not([data-aspect="16:9"]) .title-artist{font-size:clamp(16px,4vw,24px)!important}
 #story:not([data-aspect="16:9"]) .title-album{font-size:clamp(12px,3vw,18px)!important}
