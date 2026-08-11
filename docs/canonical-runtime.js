@@ -193,14 +193,11 @@
 
   const initialLayout=captureLayout();
 
-  function replaceSelect(id,handler){
-    const old=$('#'+id);if(!old||old.dataset.linaOwner==='canonical')return false;
-    const clone=old.cloneNode(true);clone.value=old.value;clone.dataset.linaOwner='canonical';old.replaceWith(clone);clone.addEventListener('change',()=>handler(clone.value));return true;
-  }
-
-  function ownResetButton(){
-    const old=$('#quickResetLayout');if(!old||old.dataset.linaOwner==='canonical')return false;
-    const button=old.cloneNode(true);button.dataset.linaOwner='canonical';button.dataset.linaReset='canonical';old.replaceWith(button);button.addEventListener('click',resetLayout);return true;
+  function markDelegatedControl(id,{reset=false}={}){
+    const el=$('#'+id);if(!el)return false;
+    el.dataset.linaOwner='canonical';
+    if(reset)el.dataset.linaReset='canonical';
+    return true;
   }
 
   function ownEffectPicker(){
@@ -211,8 +208,11 @@
   function restoreInitialLayout(){applyLayoutValues(initialLayout,{dirty:false,redraw:true})}
 
   function installControlOwnership(){
-    replaceSelect('quickEffect',value=>setEffect(value));replaceSelect('styleEffectSelect',value=>setEffect(value));ownResetButton();ownEffectPicker();
-    if($('#previewQuickControls')&&!state.snapshotRestored){state.snapshotRestored=true;requestAnimationFrame(restoreInitialLayout);setTimeout(restoreInitialLayout,90)}
+    markDelegatedControl('quickEffect');
+    markDelegatedControl('styleEffectSelect');
+    markDelegatedControl('quickResetLayout',{reset:true});
+    ownEffectPicker();
+    if($('#previewQuickControls')&&!state.snapshotRestored){state.snapshotRestored=true;requestAnimationFrame(restoreInitialLayout)}
     syncEffectUI(getEffect());
   }
 
