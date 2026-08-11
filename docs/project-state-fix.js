@@ -2,21 +2,23 @@
 (()=>{
   const $=s=>document.querySelector(s);
 
-  function removeTrackArtwork(){
+  function removeArtworkUI(){
     const track=$('.consolidated-track');
-    if(!track)return;
-    track.querySelector('.track-art')?.remove();
-    track.querySelector('label[for="userArtworkFile"]')?.remove();
-    track.querySelector('#userArtworkFile')?.remove();
-    const intro=$('#userArtworkIntro');
-    intro?.closest('label')?.remove();
-    track.querySelector('#artworkEmpty')?.remove();
-    const fields=track.querySelector('.track-fields');
-    if(fields){
-      fields.classList.add('track-fields-no-artwork');
-      const helper=fields.querySelector('.helper');
-      if(helper)helper.textContent='Audio and lyrics stay user supplied.';
+    if(track){
+      track.querySelector('.track-art')?.remove();
+      track.querySelector('label[for="userArtworkFile"]')?.remove();
+      track.querySelector('#userArtworkFile')?.remove();
+      const intro=$('#userArtworkIntro');
+      intro?.closest('label')?.remove();
+      track.querySelector('#artworkEmpty')?.remove();
+      const fields=track.querySelector('.track-fields');
+      if(fields){
+        fields.classList.add('track-fields-no-artwork');
+        const helper=fields.querySelector('.helper');
+        if(helper)helper.textContent='Audio and lyrics stay user supplied.';
+      }
     }
+    $('#useArtworkBg2')?.closest('.subsection')?.remove();
   }
 
   function clearArtworkVisuals(){
@@ -63,13 +65,13 @@
     try{setBgSource(null)}catch{}
   }
 
-  removeTrackArtwork();
+  removeArtworkUI();
 
   if(typeof restoreSavedProject==='function'){
     const baseRestore=restoreSavedProject;
     restoreSavedProject=async function(){
       const result=await baseRestore();
-      removeTrackArtwork();
+      removeArtworkUI();
       clearArtworkVisuals();
       try{await saveMedia('artwork',null)}catch{}
       return result;
