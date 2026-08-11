@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const BUILD='p67-20260812-direct-reset-v2';
+  const BUILD='p68-20260812-full-project-reset';
   const load=src=>new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=`${src}?v=${BUILD}`;s.onload=resolve;s.onerror=()=>reject(new Error(`Failed to load ${src}`));document.body.append(s)});
   for(const href of ['apple-motion.css','ui-solid.css','intro-layout.css','production-consolidated.css','consolidated-studio.css','editor-shell.css','editor-shell-mobile-safety.css','editor-shell-density-fix.css','setup-shell.css','guided-ui.css','setup-lyrics-bridge.css','background-dropzone.css','effect-typography.css','eternal-sunshine-effect.css','preview-quick-controls.css']){const css=document.createElement('link');css.rel='stylesheet';css.href=`${href}?v=${BUILD}`;document.head.append(css)}
   (async()=>{
@@ -12,6 +12,7 @@
       await load('consolidated-studio.js');
       await load('canonical-controls.js');
       await load('project-state-fix.js');
+      if(window.linaResetCleanupPromise)await window.linaResetCleanupPromise;
       await load('editor-shell.js');
       await load('app-events-safe.js');
       if(window.linaRestorePromise)await window.linaRestorePromise;
@@ -46,7 +47,7 @@
       await load('canonical-export.js');
       await load('style-effect-selector.js');
       await load('canonical-ui-lock.js');
-      await load('reset-button-v2.js');
+      await load('project-reset-button.js');
       await load('transport-lock.js');
       await load('canonical-audit.js');
       await load('runtime-guard.js');
