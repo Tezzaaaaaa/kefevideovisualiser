@@ -1,0 +1,2 @@
+p60-20260811-canonical-runtime-lock7
+Final validation using visible Quick Settings for WebKit export.
