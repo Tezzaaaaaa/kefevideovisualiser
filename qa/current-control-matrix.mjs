@@ -52,6 +52,7 @@ for(const [name,type] of targets){
   await page.selectOption('#quickFrame','16:9');
   await page.locator('#quickOffset').evaluate(el=>{el.value='350';el.dispatchEvent(new Event('input',{bubbles:true}))});
   assert.equal(await page.inputValue('#offset'),'350',`${name}: timing offset setup failed`);
+  await page.locator('#quickAdvanced').evaluate(el=>el.open=true);
 
   for(const effect of ['apple','charli','eternal']){
     const d=resetDefaults[effect];
