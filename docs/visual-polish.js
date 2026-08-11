@@ -5,6 +5,7 @@
   const escapeHTML=v=>String(v??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
   const caseText=v=>window.linaCaseText?window.linaCaseText(v):String(v??'');
   const isEternal=()=>q('#story')?.dataset.lyricEffect==='eternal';
+  const handFont='"Bradley Hand","Noteworthy","Chalkboard SE","Segoe Print","Comic Sans MS",cursive';
 
   function activeAt(ms){
     if(!lines?.length)return null;
@@ -18,28 +19,38 @@
       const eased=progress*progress*(3-2*progress);
       return full.slice(0,Math.ceil(full.length*eased));
     }
-    const parts=[];
+    const out=[];
     for(const word of units(line)){
       const text=caseText(word.text),x=clamp((ms-(word.start+offset))/Math.max(80,word.duration||300),0,1);
       if(x<=0)break;
-      parts.push(text.slice(0,Math.max(1,Math.ceil(text.length*x))));
+      out.push(text.slice(0,Math.max(1,Math.ceil(text.length*(x*x*(3-2*x))))));
       if(x<1)break;
     }
-    return parts.join(' ');
+    return out.join(' ');
+  }
+
+  function lineMood(i,progress){
+    const seed=(i*47)%17;
+    return{
+      tilt:((seed%9)-4)*.11,
+      currentTilt:((((seed*3)%7)-3)*.075),
+      driftX:Math.sin((progress+i*.31)*Math.PI*1.2)*.035,
+      driftY:Math.cos((progress+i*.19)*Math.PI*1.1)*.022,
+      memoryX:(((seed%5)-2)*.035),
+      fade:.76+.24*Math.min(1,progress*5)
+    };
   }
 
   function polishEternalPreview(ms){
     if(!isEternal()||!lines?.length||ms<entranceMs())return;
     updateIntro(ms);
     const a=activeAt(ms);if(!a)return;
-    const {i,line,progress}=a,full=caseText(line.text),written=writtenText(line,ms,progress),pending=full.slice(Math.min(full.length,written.length));
+    const {i,line,progress}=a,full=caseText(line.text),written=writtenText(line,ms,progress);
+    const pending=full.slice(Math.min(full.length,written.length));
     const far=i>1?caseText(lines[i-2].text):'',near=i>0?caseText(lines[i-1].text):'';
-    const tilt=(((i*17)%9)-4)*.14;
-    const driftX=Math.sin((progress+i*.37)*Math.PI*1.4)*.055;
-    const driftY=Math.cos((progress+i*.23)*Math.PI*1.2)*.035;
-    const fade=.72+.28*Math.min(1,progress*4);
+    const mood=lineMood(i,progress),writing=written.length<full.length&&progress<.995;
     lyricsEl.style.opacity=1;
-    lyricsEl.innerHTML=`<div class="eternal-page" style="--eternal-drift-x:${driftX.toFixed(3)}em;--eternal-drift-y:${driftY.toFixed(3)}em;--eternal-tilt:${tilt.toFixed(2)}deg;opacity:${fade.toFixed(3)}">${far?`<div class="eternal-memory memory-far">${escapeHTML(far)}</div>`:''}${near?`<div class="eternal-memory memory-near">${escapeHTML(near)}</div>`:''}<div class="eternal-current"><span class="eternal-ink-written">${escapeHTML(written)}</span><span class="eternal-caret"></span><span class="eternal-ink-pending">${escapeHTML(pending)}</span></div></div>`;
+    lyricsEl.innerHTML=`<div class="eternal-page" style="--eternal-drift-x:${mood.driftX.toFixed(3)}em;--eternal-drift-y:${mood.driftY.toFixed(3)}em;--eternal-tilt:${mood.tilt.toFixed(2)}deg;--eternal-current-tilt:${mood.currentTilt.toFixed(2)}deg;--eternal-memory-x:${mood.memoryX.toFixed(3)}em;--eternal-ink-head:${writing?1:0};opacity:${mood.fade.toFixed(3)}">${far?`<div class="eternal-memory memory-far">${escapeHTML(far)}</div>`:''}${near?`<div class="eternal-memory memory-near">${escapeHTML(near)}</div>`:''}<div class="eternal-current"><span class="eternal-ink-written">${escapeHTML(written)}</span><span class="eternal-ink-head" aria-hidden="true"></span><span class="eternal-ink-pending">${escapeHTML(pending)}</span></div></div>`;
     const meta=q('#activeMeta');if(meta)meta.textContent=`Eternal Sunshine · handwritten reveal · Lyric ${i+1} of ${lines.length}`;
   }
 
@@ -58,24 +69,68 @@
 
   function visibleRows(ctx,full,written,maxWidth){
     const rows=wrapRows(ctx,full,maxWidth),out=[];let remain=written.length;
-    for(const row of rows){if(remain<=0){out.push('');continue}const take=Math.min(row.length,remain);out.push(row.slice(0,take));remain-=take;if(remain>0)remain-=1}
+    for(const row of rows){
+      if(remain<=0){out.push('');continue}
+      const take=Math.min(row.length,remain);out.push(row.slice(0,take));remain-=take;
+      if(remain>0)remain-=1;
+    }
     return{rows,out};
+  }
+
+  function drawMemory(ctx,text,x,y,maxW,fontSize,alpha,tilt){
+    if(!text)return;
+    ctx.save();ctx.globalAlpha=alpha;ctx.font=`500 ${fontSize}px ${handFont}`;
+    const rows=wrapRows(ctx,text,maxW).slice(-2);
+    rows.forEach((row,n)=>{
+      const yy=y+n*fontSize*1.16,dx=Math.sin((n+text.length)*.73)*fontSize*.03;
+      ctx.save();ctx.translate(x+dx,yy);ctx.rotate(tilt);ctx.fillText(row,0,0);ctx.restore();
+    });
+    ctx.restore();
   }
 
   function drawEternalPolished(ctx,line,ms,w,h){
     gradientCanvas(ctx,w,h);
     const a=activeAt(ms);if(!a?.line)return;
-    const {i,line:l,progress}=a,full=caseText(l.text),written=writtenText(l,ms,progress),far=i>1?caseText(lines[i-2].text):'',near=i>0?caseText(lines[i-1].text):'';
+    const {i,line:l,progress}=a,full=caseText(l.text),written=writtenText(l,ms,progress);
+    const far=i>1?caseText(lines[i-2].text):'',near=i>0?caseText(lines[i-1].text):'';
     const sizeControl=+(q('#size')?.value||52),fs=Math.max(20,Math.round((sizeControl/620)*Math.min(w,h*.9))),maxW=w*.82;
-    const x=w*.09,y=h*(+(q('#yPos')?.value||50)/100),tilt=((((i*17)%9)-4)*.14)*Math.PI/180,driftX=Math.sin((progress+i*.37)*Math.PI*1.4)*fs*.055,driftY=Math.cos((progress+i*.23)*Math.PI*1.2)*fs*.035;
-    ctx.save();ctx.translate(x+driftX,y+driftY);ctx.rotate(tilt);ctx.translate(-(x+driftX),-(y+driftY));ctx.textAlign='left';ctx.textBaseline='top';ctx.fillStyle=q('#textColor')?.value||'#fff';ctx.shadowColor='rgba(0,0,0,.62)';ctx.shadowBlur=Math.max(2,w*.006);
-    const memoryFont=Math.max(12,Math.round(fs*.44));ctx.font=`500 ${memoryFont}px "Bradley Hand","Noteworthy","Chalkboard SE","Segoe Print",cursive`;
-    if(far){ctx.globalAlpha=.13;const rows=wrapRows(ctx,far,maxW);rows.slice(-1).forEach((r,n)=>ctx.fillText(r,x+fs*.22,y-fs*2.15+n*memoryFont*1.18))}
-    if(near){ctx.globalAlpha=.3;const rows=wrapRows(ctx,near,maxW);rows.slice(-2).forEach((r,n)=>ctx.fillText(r,x-fs*.04,y-fs*1.45+n*memoryFont*1.18))}
-    ctx.globalAlpha=1;ctx.font=`500 ${fs}px "Bradley Hand","Noteworthy","Chalkboard SE","Segoe Print",cursive`;
-    const {out}=visibleRows(ctx,full,written,maxW),lh=fs*1.12;
-    out.forEach((row,n)=>{if(!row)return;const dx=Math.sin((i+n*2.3)*1.7)*fs*.018,dy=Math.cos((i+n*.8)*1.25)*fs*.018;ctx.globalAlpha=.22;ctx.fillText(row,x+dx+.6,y+n*lh+dy+.45);ctx.globalAlpha=1;ctx.fillText(row,x+dx,y+n*lh+dy)});
-    const underlineY=y+Math.max(1,out.filter(Boolean).length)*lh+fs*.12;ctx.globalAlpha=.18;ctx.lineWidth=Math.max(1,fs*.018);ctx.beginPath();ctx.moveTo(x,underlineY);ctx.quadraticCurveTo(x+maxW*.47,underlineY+fs*.045,x+maxW*.86,underlineY-fs*.012);ctx.strokeStyle=q('#textColor')?.value||'#fff';ctx.stroke();ctx.restore();
+    const x=w*.09,y=h*(+(q('#yPos')?.value||50)/100),mood=lineMood(i,progress),tilt=mood.tilt*Math.PI/180;
+    const driftX=mood.driftX*fs,driftY=mood.driftY*fs,color=q('#textColor')?.value||'#fff';
+
+    ctx.save();
+    ctx.translate(x+driftX,y+driftY);ctx.rotate(tilt);ctx.translate(-(x+driftX),-(y+driftY));
+    ctx.textAlign='left';ctx.textBaseline='top';ctx.fillStyle=color;
+    ctx.shadowColor='rgba(0,0,0,.58)';ctx.shadowBlur=Math.max(2,w*.0055);
+
+    const memoryFont=Math.max(12,Math.round(fs*.43));
+    drawMemory(ctx,far,x+fs*.19,y-fs*2.15,maxW,memoryFont,.11,.008);
+    drawMemory(ctx,near,x-fs*.03,y-fs*1.48,maxW,memoryFont,.26,-.006);
+
+    ctx.globalAlpha=1;ctx.font=`560 ${fs}px ${handFont}`;
+    const {out}=visibleRows(ctx,full,written,maxW),lh=fs*1.09;
+    let last=null;
+    out.forEach((row,n)=>{
+      if(!row)return;
+      const dx=Math.sin((i+n*2.17)*1.31)*fs*.014,dy=Math.cos((i+n*.83)*1.17)*fs*.013;
+      const rowTilt=((((i+n*5)%7)-3)*.055)*Math.PI/180;
+      const rx=x+dx,ry=y+n*lh+dy;
+      ctx.save();ctx.translate(rx,ry);ctx.rotate(rowTilt);
+      ctx.globalAlpha=.14;ctx.fillText(row,.55,.42);
+      ctx.globalAlpha=1;ctx.fillText(row,0,0);
+      ctx.restore();
+      last={text:row,x:rx,y:ry,tilt:rowTilt};
+    });
+
+    if(last&&written.length<full.length&&progress<.995){
+      ctx.save();ctx.font=`560 ${fs}px ${handFont}`;
+      const advance=ctx.measureText(last.text).width;
+      ctx.translate(last.x,last.y);ctx.rotate(last.tilt);
+      ctx.globalAlpha=.58;
+      ctx.fillStyle=color;
+      ctx.beginPath();ctx.ellipse(advance+fs*.045,fs*.67,Math.max(1.5,fs*.042),Math.max(1,fs*.018),-.22,0,Math.PI*2);ctx.fill();
+      ctx.restore();
+    }
+    ctx.restore();
   }
 
   const baseRender=window.render;
