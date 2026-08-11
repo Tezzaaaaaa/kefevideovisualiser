@@ -48,7 +48,7 @@
   border-radius:10px!important;
 }
 
-/* Kill the sidebar layout at every viewport size. */
+/* No sidebar: stage, tool panels and inspector are stacked vertically. */
 .workspace,
 .workspace:has(.navbtn[data-tool="setup"].active),
 .workspace:has(.navbtn[data-tool="lyrics"].active),
@@ -87,6 +87,7 @@
 }
 .right{
   order:3!important;
+  display:block!important;
   position:static!important;
   top:auto!important;
   width:100%!important;
@@ -94,13 +95,22 @@
   min-width:0!important;
   max-height:none!important;
   margin:0!important;
+  padding:0!important;
   overflow:visible!important;
 }
-.workspace:has(.navbtn[data-tool="setup"].active) .right,
-.workspace:has(.navbtn[data-tool="style"].active) .right,
-.workspace:has(.navbtn[data-tool="background"].active) .right{display:none!important}
 
-/* Active editor panels become full-width work areas, not sidebar cards. */
+/* Preserve all effects/inspector controls; they now live below the preview. */
+.right > *,
+.right .panel,
+.right .body,
+.right .subsection{
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  box-sizing:border-box!important;
+}
+.right .panel{margin:0 0 12px!important}
+
 .left .panel.tool.active,
 .left .panel.tool:not([hidden]){
   width:100%!important;
@@ -175,6 +185,7 @@
   .workspace:has(.navbtn[data-tool="lyrics"].active),
   .workspace:has(.navbtn[data-tool="style"].active),
   .workspace:has(.navbtn[data-tool="background"].active){padding:64px 8px 8px!important;gap:8px!important}
+  .right{display:block!important;width:100%!important}
 }
 
 @media(max-width:560px){
