@@ -54,6 +54,18 @@
     if(opts.some(([v])=>v===current))select.value=current;
   }
 
+  function seedFromControls(key=effect()){
+    key=PROFILES[key]?key:'apple';
+    const s=state[key],p=PROFILES[key];
+    const font=$('#fontChoice')?.value;
+    if(p.fonts.some(([v])=>v===font))s.font=font;
+    const weight=$('#fontWeight')?.value;if(weight)s.weight=weight;
+    const align=$('#textAlign')?.value;if(['left','center','right'].includes(align))s.align=align;
+    const lh=Number($('#lineHeight')?.value);if(Number.isFinite(lh))s.lineHeight=String(lh);
+    const sp=Number($('#letterSpacing')?.value);if(Number.isFinite(sp))s.spacing=String(sp);
+    return s;
+  }
+
   function setSourceValues(key){
     const s=state[key],p=PROFILES[key];
     const font=$('#fontChoice');
@@ -145,6 +157,7 @@
   }
 
   window.linaSyncTypography=()=>activate(effect());
+  window.linaTypographyCapture=()=>{activeKey=effect();seedFromControls(activeKey);apply(activeKey,true);return state[activeKey]};
   window.linaTypographyProfiles=PROFILES;
   window.linaTypographyState=state;
 
@@ -153,7 +166,11 @@
     const run=()=>{
       tries++;
       if(!$('#fontChoice')||!$('#story')){if(tries<50)setTimeout(run,60);return;}
-      bind();activate(effect());
+      ensureWeightOptions();
+      activeKey=effect();
+      seedFromControls(activeKey);
+      bind();
+      activate(activeKey);
       document.documentElement.dataset.effectTypography='ready';
     };
     run();
