@@ -56,6 +56,40 @@
   button.textContent='Find my synced lyrics';
   button.dataset.linaBound='lyrics-lookup-fix';
 
+  function lookupPanel(){return $('#setupLyricsLookup')||searchBox?.closest('.subsection')}
+  function setLookupState(state,details={}){
+    const panel=lookupPanel();
+    if(panel){
+      panel.dataset.lyricsState=state;
+      panel.classList.toggle('lyrics-loaded',state==='success');
+      panel.classList.toggle('lyrics-searching',state==='loading');
+      panel.classList.toggle('lyrics-error',state==='error');
+    }
+    if(!status)return;
+
+    if(state==='loading'){
+      status.innerHTML='<span class="lyrics-state-icon" aria-hidden="true">…</span><span class="lyrics-state-copy"><b>Searching for synced lyrics</b><small>Matching the song details above.</small></span>';
+      button.textContent='Searching…';
+      return;
+    }
+    if(state==='success'){
+      const count=Math.max(0,Number(details.count)||0);
+      const artist=details.artist?` for ${details.artist}`:'';
+      status.innerHTML=`<span class="lyrics-state-icon" aria-hidden="true">✓</span><span class="lyrics-state-copy"><b>Lyrics found and loaded</b><small>${count?`${count} synced lyric lines`: 'Synced lyrics'}${artist} are ready in the Preview below.</small></span>`;
+      button.textContent='✓ Synced lyrics loaded';
+      const active=$('#activeMeta');
+      if(active)active.textContent=count?`✓ ${count} synced lyric lines ready`:'✓ Synced lyrics ready';
+      return;
+    }
+    if(state==='error'){
+      status.innerHTML=`<span class="lyrics-state-icon" aria-hidden="true">!</span><span class="lyrics-state-copy"><b>${details.title||'Lyrics not loaded'}</b><small>${details.message||'Try the search again or use the options in Lyrics.'}</small></span>`;
+      button.textContent='Find my synced lyrics';
+      return;
+    }
+    status.innerHTML='<span class="lyrics-state-icon" aria-hidden="true">♪</span><span class="lyrics-state-copy"><b>Ready to find lyrics</b><small>Add or confirm the song details above, then run the search.</small></span>';
+    button.textContent='Find my synced lyrics';
+  }
+
   const norm=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
   const score=(row,title,artist,album,duration)=>{
     let n=0;
@@ -75,10 +109,13 @@
     const artist=$('#artistInput')?.value?.trim()||'';
     const album=$('#albumInput')?.value?.trim()||'';
     const duration=Math.round(Number($('#audio')?.duration)||0);
-    if(!title){if(status)status.textContent='Add the song title above first.';return;}
+    if(!title){
+      setLookupState('error',{title:'Song title needed',message:'Add the song title above before searching.'});
+      return;
+    }
 
     button.disabled=true;
-    if(status)status.textContent='Searching synced lyrics…';
+    setLookupState('loading');
     try{
       const p=new URLSearchParams({track_name:title});
       if(artist)p.set('artist_name',artist);
@@ -87,22 +124,36 @@
       if(!r.ok)throw new Error(`Lyrics service returned ${r.status}`);
       const rows=await r.json();
       const choices=(Array.isArray(rows)?rows:[]).filter(x=>x?.syncedLyrics);
-      if(!choices.length){if(status)status.textContent='No synced lyrics found for this track.';return;}
+      if(!choices.length){
+        setLookupState('error',{title:'No synced lyrics found',message:'Check the song details or use the alternate lyric options in Lyrics.'});
+        return;
+      }
       choices.sort((a,b)=>score(b,title,artist,album,duration)-score(a,title,artist,album,duration));
       const best=choices[0];
       const text=$('#lyricsText');
       if(!text)throw new Error('Lyrics importer is unavailable.');
       text.value=best.syncedLyrics;
+      const count=best.syncedLyrics.split(/\r?\n/).filter(line=>/^\s*\[\d{1,2}:\d{2}(?:[.:]\d+)?\]/.test(line)).length;
       $('#applyPaste')?.click();
       setTimeout(()=>{
         const confirm=$('#confirmReview');
         const review=$('#reviewBox');
         if(confirm&&review&&!review.classList.contains('hidden'))confirm.click();
+        setLookupState('success',{count,artist:best.artistName||artist});
       },0);
-      if(status)status.textContent=`Synced lyrics loaded${best.artistName?` · ${best.artistName}`:''}.`;
     }catch(err){
       console.error('LINA lyric lookup failed',err);
-      if(status)status.textContent='Could not find synced lyrics right now. You can still import an LRC file in Lyrics.';
+      setLookupState('error',{title:'Could not load synced lyrics',message:'Try again, or import an LRC / SRT / VTT file from Lyrics.'});
     }finally{button.disabled=false;}
   });
+
+  for(const el of [$('#titleInput'),$('#artistInput'),$('#albumInput'),$('#audioFile')]){
+    el?.addEventListener(el?.type==='file'?'change':'input',()=>{
+      if(lookupPanel()?.dataset.lyricsState==='success')setLookupState('idle');
+    });
+  }
+
+  setTimeout(()=>{
+    if(lookupPanel()?.dataset.lyricsState!=='success')setLookupState('idle');
+  },0);
 })();
