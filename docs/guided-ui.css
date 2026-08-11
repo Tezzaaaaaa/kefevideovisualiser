@@ -1,5 +1,5 @@
 /* LINA guided workflow — two-column maximum, clear hierarchy, calm first-run controls. */
-:root{--guided-max:1080px;--preview-max:900px}
+:root{--guided-max:1080px;--preview-max:1080px}
 
 .left,.stage{
   width:100%!important;
@@ -159,7 +159,7 @@
 .review-clean-wrap #reviewBox{max-height:none!important;overflow:visible!important}
 .review-clean-wrap #reviewBox .review-list{max-height:360px!important;overflow:auto!important}
 
-/* PREVIEW: landscape stays centered and contained. */
+/* PREVIEW: use the exact same width as the workflow panels. */
 .stage{display:block!important}
 .stage-head,
 .stage-wrap,
@@ -169,7 +169,7 @@
 .simple-control-summary,
 .more-controls{
   width:100%!important;
-  max-width:var(--preview-max)!important;
+  max-width:var(--guided-max)!important;
   margin-left:auto!important;
   margin-right:auto!important;
   box-sizing:border-box!important;
@@ -182,7 +182,7 @@
   align-items:center!important;
   padding:12px!important;
 }
-#story[data-aspect="16:9"]{width:min(var(--preview-max),100%)!important;height:auto!important;aspect-ratio:16/9!important;max-height:none!important}
+#story[data-aspect="16:9"]{width:100%!important;height:auto!important;aspect-ratio:16/9!important;max-height:none!important}
 #story[data-aspect="1:1"]{width:min(680px,100%)!important;height:auto!important;aspect-ratio:1/1!important;max-height:none!important}
 #story[data-aspect="4:5"]{width:min(600px,100%)!important;height:auto!important;aspect-ratio:4/5!important;max-height:none!important}
 #story[data-aspect="9:16"]{width:min(460px,100%)!important;height:auto!important;aspect-ratio:9/16!important;max-height:none!important}
