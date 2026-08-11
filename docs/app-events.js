@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const BUILD='p21-20260811-reset-state-no-artwork';
+  const BUILD='p22-20260811-reset-state-no-artwork';
   const load=src=>new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=`${src}?v=${BUILD}`;s.onload=resolve;s.onerror=()=>reject(new Error(`Failed to load ${src}`));document.body.append(s)});
   for(const href of ['apple-motion.css','ui-solid.css','intro-layout.css','production-consolidated.css','consolidated-studio.css','setup-layout-fix.css','editor-shell.css','editor-shell-mobile-safety.css','editor-shell-density-fix.css','setup-bar-fix.css']){const css=document.createElement('link');css.rel='stylesheet';css.href=`${href}?v=${BUILD}`;document.head.append(css)}
   (async()=>{
@@ -29,6 +29,7 @@
       await load('panel-nav.js');
       await load('control-audit.js');
       await load('control-finish.js');
+      await load('setup-finalize.js');
       await load('visual-polish.js');
       await load('runtime-guard.js');
     }catch(e){
