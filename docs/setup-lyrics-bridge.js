@@ -6,7 +6,9 @@
     const input=$('#audioFile');
     const upload=input?.closest('label.upload');
     const section=upload?.closest('.setup-shell-section');
-    if(!input||!upload||!section)return false;
+    const audio=$('#audio');
+    const mediaStatus=$('#mediaStatus');
+    if(!input||!upload||!section||!audio)return false;
 
     section.classList.add('setup-audio-drop-section');
     if(upload.dataset.audioDropReady==='true')return true;
@@ -18,15 +20,62 @@
     copy.innerHTML='<span class="audio-drop-icon">♫</span><b>Drop music file here</b><span>or click anywhere here to choose audio</span>';
     upload.replaceChildren(copy,input);
 
+    let state=$('#audioLoadState');
+    if(!state){
+      state=document.createElement('div');
+      state.id='audioLoadState';
+      state.setAttribute('role','status');
+      state.setAttribute('aria-live','polite');
+      upload.after(state);
+    }
+
     const title=copy.querySelector('b');
     const helper=copy.querySelector(':scope > span:last-child');
-    const showFile=()=>{
+    const fmt=v=>{
+      v=Number.isFinite(v)?Math.max(0,v):0;
+      const m=Math.floor(v/60),s=Math.floor(v%60);
+      return `${m}:${String(s).padStart(2,'0')}`;
+    };
+
+    function setState(mode,heading,detail=''){
+      state.className=mode?`is-${mode}`:'';
+      state.innerHTML=`<div class="audio-state-icon">${mode==='success'?'✓':mode==='error'?'!':'…'}</div><div class="audio-state-copy"><b>${heading}</b><small>${detail}</small></div>`;
+      section.classList.toggle('audio-loaded',mode==='success');
+      section.classList.toggle('audio-loading',mode==='loading');
+      section.classList.toggle('audio-error',mode==='error');
+      const meta=section.querySelector(':scope > .subhead > span');
+      if(meta)meta.textContent=mode==='success'?'Ready':'Required';
+    }
+
+    function fileLabel(){
+      const file=input.files?.[0];
+      if(file?.name)return file.name;
+      const raw=String(mediaStatus?.textContent||'').trim();
+      if(raw&&!/saved project restored|no audio/i.test(raw))return raw.replace(/\s*[·•]\s*\d+:\d+\s*$/,'').trim();
+      return 'Audio';
+    }
+
+    function markReady(){
+      const name=fileLabel();
+      const duration=Number(audio.duration)||0;
+      if(title)title.textContent=name;
+      if(helper)helper.textContent='Drop another music file here or click to replace it';
+      setState('success','Audio loaded',`${name}${duration?` · ${fmt(duration)}`:''} is ready for lyrics and Preview.`);
+    }
+
+    function showFile(){
       const file=input.files?.[0];
       if(!file)return;
       if(title)title.textContent=file.name;
       if(helper)helper.textContent='Drop another music file here or click to replace it';
-    };
+      setState('loading','Loading audio…',file.name);
+      if(audio.readyState>=1&&Number(audio.duration)>0)setTimeout(markReady,0);
+    }
+
     input.addEventListener('change',showFile);
+    audio.addEventListener('loadedmetadata',markReady);
+    audio.addEventListener('durationchange',()=>{if(Number(audio.duration)>0&&(input.files?.[0]||audio.currentSrc))markReady()});
+    audio.addEventListener('error',()=>setState('error','Could not load that audio','Choose another music file.'));
     showFile();
 
     const clearDrag=()=>upload.classList.remove('is-dragging');
@@ -49,6 +98,12 @@
         input.click();
       }
     });
+
+    // Persisted/restored projects may not repopulate the browser file input.
+    setTimeout(()=>{
+      const raw=String(mediaStatus?.textContent||'').trim();
+      if((audio.currentSrc&&Number(audio.duration)>0)||(raw&&!/saved project restored|no audio/i.test(raw)))markReady();
+    },220);
     return true;
   }
 
