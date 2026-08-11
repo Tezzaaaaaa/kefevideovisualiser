@@ -10,11 +10,11 @@
   max-height:76%!important;
   transform:none!important;
   overflow:visible!important;
-  text-align:left!important;
+  text-align:var(--lina-effect-align,left)!important;
   font-family:var(--lina-effect-font,"Reenie Beanie","Waiting for the Sunrise","Segoe Print","Bradley Hand",cursive)!important;
-  font-weight:400!important;
-  letter-spacing:.005em!important;
-  line-height:1.02!important;
+  font-weight:var(--lina-effect-weight,400)!important;
+  letter-spacing:var(--lina-effect-spacing,.005em)!important;
+  line-height:var(--lina-effect-lh,1.02)!important;
   color:rgba(255,255,255,.96)!important;
   text-shadow:0 0 .35px rgba(255,255,255,.24)!important;
   caret-color:transparent!important;
@@ -38,9 +38,10 @@
   filter:none!important;
   color:rgba(255,255,255,.96)!important;
   font-family:inherit!important;
-  font-weight:400!important;
-  line-height:1.02!important;
-  letter-spacing:.005em!important;
+  font-weight:var(--lina-effect-weight,400)!important;
+  text-align:var(--lina-effect-align,left)!important;
+  line-height:var(--lina-effect-lh,1.02)!important;
+  letter-spacing:var(--lina-effect-spacing,.005em)!important;
   padding:0!important;
   margin:0 0 .08em!important;
   text-wrap:pretty!important;
@@ -66,6 +67,7 @@
 }
 
 /* Remove every legacy typing cursor/pseudo-caret when Eternal Sunshine is active. */
+#story[data-lyric-effect="eternal"] .eternal-caret,
 #story[data-lyric-effect="eternal"] #lyrics::before,
 #story[data-lyric-effect="eternal"] #lyrics::after,
 #story[data-lyric-effect="eternal"] #lyrics .apple-flow::before,
@@ -100,7 +102,6 @@
   border-right:0!important;
 }
 
-/* Keep the effect delicate on portrait frames too. */
 #story[data-aspect="9:16"][data-lyric-effect="eternal"] #lyrics,
 #story[data-aspect="4:5"][data-lyric-effect="eternal"] #lyrics,
 #story[data-aspect="1:1"][data-lyric-effect="eternal"] #lyrics{
