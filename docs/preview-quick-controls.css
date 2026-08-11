@@ -17,11 +17,16 @@
 .transport-tools{
   display:grid!important;
   grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  grid-template-rows:auto!important;
+  grid-auto-flow:column!important;
   gap:7px!important;
   margin-top:0!important;
   margin-bottom:8px!important;
 }
 #transportEdit{display:none!important}
+#transportPrevLine{grid-column:1!important;grid-row:1!important}
+#transportSync{grid-column:2!important;grid-row:1!important}
+#transportNextLine{grid-column:3!important;grid-row:1!important}
 .transport-tools .btn{width:100%!important;min-width:0!important;min-height:34px!important;padding:7px 9px!important}
 
 .preview-quick-controls{
@@ -173,6 +178,6 @@
 @media(max-width:700px){
   .quick-control-head,.quick-group-head,.quick-mini-head{display:grid!important;gap:3px!important}
   .quick-control-grid,.quick-background-actions,.quick-actions{grid-template-columns:1fr!important}
-  .transport-tools{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:5px!important}
+  .transport-tools{grid-template-columns:repeat(3,minmax(0,1fr))!important;grid-template-rows:auto!important;gap:5px!important}
   .transport-tools .btn{padding:7px 5px!important;font-size:9px!important}
 }
