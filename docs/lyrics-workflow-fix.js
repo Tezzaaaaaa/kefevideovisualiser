@@ -4,8 +4,6 @@
   const sync=$('#syncMethod');
   if(!sync)return;
 
-  // Consolidated Studio previously retired automatic lookup. Restore it and
-  // collapse the two timed-import choices into one clear import method.
   sync.querySelectorAll('option').forEach(o=>{
     if(o.value==='pasteTimed'||o.value==='fileTimed')o.remove();
   });
@@ -41,21 +39,21 @@
   }
   function syncUI(){
     const v=sync.value;
-    setVisible(searchBox,v==='search');
+    const lookupLivesInSetup=!!searchBox?.closest('[data-panel="setup"]');
+    setVisible(searchBox,lookupLivesInSetup||v==='search');
     setVisible(pasteBox,v==='importTimed');
     setVisible(fileBox,v==='importTimed');
     setVisible(manualBox,v==='manual');
   }
   sync.addEventListener('change',()=>setTimeout(syncUI,0));
 
-  // Translate old saved modes into the simplified menu.
   if(sync.value==='pasteTimed'||sync.value==='fileTimed'||!['search','importTimed','manual'].includes(sync.value))sync.value='search';
   syncUI();
 
   const button=$('#findLyricsBtn');
   const status=$('#lyricsLookupStatus');
   if(!button)return;
-  button.textContent='Find synced lyrics';
+  button.textContent='Find my synced lyrics';
   button.dataset.linaBound='lyrics-lookup-fix';
 
   const norm=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
@@ -77,7 +75,7 @@
     const artist=$('#artistInput')?.value?.trim()||'';
     const album=$('#albumInput')?.value?.trim()||'';
     const duration=Math.round(Number($('#audio')?.duration)||0);
-    if(!title){if(status)status.textContent='Add the song title in Setup first.';return;}
+    if(!title){if(status)status.textContent='Add the song title above first.';return;}
 
     button.disabled=true;
     if(status)status.textContent='Searching synced lyrics…';
@@ -95,9 +93,6 @@
       const text=$('#lyricsText');
       if(!text)throw new Error('Lyrics importer is unavailable.');
       text.value=best.syncedLyrics;
-
-      // Reuse the app's existing parser, then accept the result automatically.
-      // Review & clean remains available as an optional secondary panel.
       $('#applyPaste')?.click();
       setTimeout(()=>{
         const confirm=$('#confirmReview');
@@ -107,7 +102,7 @@
       if(status)status.textContent=`Synced lyrics loaded${best.artistName?` · ${best.artistName}`:''}.`;
     }catch(err){
       console.error('LINA lyric lookup failed',err);
-      if(status)status.textContent='Could not find synced lyrics right now. You can still import an LRC file.';
+      if(status)status.textContent='Could not find synced lyrics right now. You can still import an LRC file in Lyrics.';
     }finally{button.disabled=false;}
   });
 })();
