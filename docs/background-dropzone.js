@@ -83,10 +83,14 @@
     }
     setState('loading',`Loading background ${kind}…`,file.name);
     try{
-      const dt=new DataTransfer();
-      dt.items.add(file);
-      target.files=dt.files;
-      target.dispatchEvent(new Event('change',{bubbles:true}));
+      if(typeof window.setBgFile==='function'){
+        window.setBgFile(file,kind);
+      }else{
+        const dt=new DataTransfer();
+        dt.items.add(file);
+        target.files=dt.files;
+        target.dispatchEvent(new Event('change',{bubbles:true}));
+      }
       setTimeout(()=>confirmMedia(file,kind),0);
     }catch(err){
       console.error('LINA background drop failed',err);
@@ -133,7 +137,6 @@
       unified.value='';
     },0));
 
-    // Restore a clear success indication for persisted projects too.
     setTimeout(()=>{
       const media=$('#bg')?.querySelector('video,img');
       const text=status.textContent.trim();
