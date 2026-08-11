@@ -37,7 +37,7 @@
 
   function wordWriteWindow(w){
     const d=Math.max(90,Number(w?.duration)||260);
-    return Math.max(160,Math.min(720,d*.62));
+    return Math.max(220,Math.min(900,d*.78));
   }
 
   function pageFor(i){
@@ -57,11 +57,14 @@
     return{start,end};
   }
 
-  function revealOpacity(ms,w,charIndex,charCount){
+  /* Each glyph is revealed as ink travelling across the letter, not as a typed character. */
+  function handwritingState(ms,w,charIndex,charCount){
     const write=wordWriteWindow(w);
-    const spread=charCount<=1?0:(charIndex/(charCount-1))*Math.max(0,write-145);
+    const spread=charCount<=1?0:(charIndex/(charCount-1))*Math.max(0,write-210);
     const at=(Number(w?.start)||0)+offset+spread;
-    return ease((ms-at)/155);
+    const ink=ease((ms-at)/210);
+    const opacity=ease((ms-at)/145);
+    return{ink,opacity};
   }
 
   function eraseOpacity(ms,page,lineIndex,wordIndex,charIndex){
@@ -82,7 +85,7 @@
     const story=$('#story');
     if(!lyrics||!story)return;
 
-    story.dataset.eternalMotion='true';
+    story.dataset.eternalMotion='handwriting';
     lyrics.classList.add('eternal-running');
 
     const i=typeof ci==='function'?ci(ms):0;
@@ -103,17 +106,18 @@
         const w=us[wi]||{text:span.textContent,start:line.start,duration:line.duration};
         const chars=splitWord(span,w.text);
         chars.forEach((ch,ci2)=>{
-          const reveal=revealOpacity(ms,w,ci2,chars.length);
+          const hand=handwritingState(ms,w,ci2,chars.length);
           const erase=eraseOpacity(ms,page,li,wi,ci2);
-          const o=clamp01(reveal*erase);
+          const o=clamp01(hand.opacity*erase);
           const seed=hash01(li,wi,ci2);
-          const entering=1-reveal;
+          const entering=1-hand.ink;
           const leaving=1-erase;
+          ch.style.setProperty('--es-ink',`${(hand.ink*100).toFixed(2)}%`);
           ch.style.setProperty('--es-o',o.toFixed(4));
-          ch.style.setProperty('--es-blur',`${(entering*1.35+leaving*.85).toFixed(2)}px`);
-          ch.style.setProperty('--es-y',`${(entering*1.8+leaving*(seed-.5)*1.1).toFixed(2)}px`);
-          ch.style.setProperty('--es-r',`${((seed-.5)*(entering+leaving)*1.1).toFixed(2)}deg`);
-          ch.style.setProperty('--es-s',(.985+.015*reveal-.012*leaving).toFixed(4));
+          ch.style.setProperty('--es-blur',`${(entering*.72+leaving*.65).toFixed(2)}px`);
+          ch.style.setProperty('--es-y',`${(entering*.55+leaving*(seed-.5)*.8).toFixed(2)}px`);
+          ch.style.setProperty('--es-r',`${((seed-.5)*(entering+leaving)*.55).toFixed(2)}deg`);
+          ch.style.setProperty('--es-s',(.992+.008*hand.ink-.008*leaving).toFixed(4));
         });
       });
     }
