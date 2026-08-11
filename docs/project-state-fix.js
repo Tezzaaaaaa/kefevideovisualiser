@@ -2,6 +2,7 @@
 (()=>{
   const $=s=>document.querySelector(s);
   const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+  let resetting=false;
 
   function removeTrackArtwork(){
     const track=$('.consolidated-track');
@@ -74,6 +75,16 @@
     }catch{}
   }
 
+  async function resetProject(){
+    if(resetting)return;
+    resetting=true;
+    clearProjectMemoryAndUI();
+    try{localStorage.removeItem(SAVE_KEY)}catch{}
+    await clearPersistedMediaBounded();
+    try{localStorage.removeItem(SAVE_KEY)}catch{}
+    location.reload();
+  }
+
   removeTrackArtwork();
 
   if(typeof restoreSavedProject==='function'){
@@ -87,16 +98,16 @@
     };
   }
 
+  window.linaResetProject=resetProject;
+  document.documentElement.dataset.projectResetOwner='canonical-v1';
+
   const reset=$('#resetBtn');
-  reset?.addEventListener('click',async e=>{
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    if(reset.dataset.resetting==='true')return;
-    reset.dataset.resetting='true';
-    clearProjectMemoryAndUI();
-    try{localStorage.removeItem(SAVE_KEY)}catch{}
-    await clearPersistedMediaBounded();
-    try{localStorage.removeItem(SAVE_KEY)}catch{}
-    location.reload();
-  },true);
+  if(reset){
+    reset.dataset.linaOwner='canonical';
+    reset.addEventListener('click',e=>{
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      void resetProject();
+    },true);
+  }
 })();
