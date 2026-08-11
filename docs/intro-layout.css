@@ -1,14 +1,34 @@
 #story[data-aspect="16:9"] .title-card{display:none;place-items:center;padding:5% 7%}
 #story[data-aspect="16:9"] .title-card.on{display:grid}
 .title-card[hidden]{display:none!important}
-#story[data-aspect="16:9"] .share-card{width:min(82%,900px);display:grid;grid-template-columns:minmax(150px,32%) minmax(0,1fr);grid-template-rows:auto auto auto;column-gap:clamp(18px,3vw,42px);row-gap:8px;align-items:center;text-align:left;padding:clamp(18px,3vw,34px);border-radius:clamp(18px,2.4vw,30px)}
-#story[data-aspect="16:9"] .intro-art{grid-column:1;grid-row:1/4;width:100%;height:auto;aspect-ratio:1/1;object-fit:cover;margin:0;align-self:center;border-radius:clamp(14px,1.8vw,24px)}
-#story[data-aspect="16:9"] .title-name,#story[data-aspect="16:9"] .title-artist,#story[data-aspect="16:9"] .title-album{grid-column:2;min-width:0;text-align:left;margin:0}
+
+/* Text-only is the default. Do not reserve an artwork column unless real artwork is visible. */
+#story[data-aspect="16:9"] .share-card{
+  width:min(68%,680px);
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  grid-template-rows:auto auto auto;
+  row-gap:8px;
+  align-items:center;
+  text-align:left;
+  padding:clamp(18px,3vw,34px);
+  border-radius:clamp(18px,2.4vw,30px)
+}
+#story[data-aspect="16:9"] .share-card:has(.intro-art.on){
+  width:min(82%,900px);
+  grid-template-columns:minmax(150px,32%) minmax(0,1fr);
+  column-gap:clamp(18px,3vw,42px)
+}
+#story[data-aspect="16:9"] .intro-art{display:none;grid-column:1;grid-row:1/4;width:100%;height:auto;aspect-ratio:1/1;object-fit:cover;margin:0;align-self:center;border-radius:clamp(14px,1.8vw,24px)}
+#story[data-aspect="16:9"] .intro-art.on{display:block}
+#story[data-aspect="16:9"] .title-name,#story[data-aspect="16:9"] .title-artist,#story[data-aspect="16:9"] .title-album{grid-column:1;min-width:0;text-align:left;margin:0}
+#story[data-aspect="16:9"] .share-card:has(.intro-art.on) .title-name,#story[data-aspect="16:9"] .share-card:has(.intro-art.on) .title-artist,#story[data-aspect="16:9"] .share-card:has(.intro-art.on) .title-album{grid-column:2}
 #story[data-aspect="16:9"] .title-name{grid-row:1;align-self:end;font-size:clamp(28px,3.8vw,62px);line-height:1.02}
 #story[data-aspect="16:9"] .title-artist{grid-row:2;align-self:center;font-size:clamp(16px,1.9vw,30px)}
 #story[data-aspect="16:9"] .title-album{grid-row:3;align-self:start;font-size:clamp(13px,1.35vw,22px)}
 #story:not([data-aspect="16:9"]) .share-card{display:flex;flex-direction:column;text-align:left}
-#story:not([data-aspect="16:9"]) .intro-art{align-self:center}
+#story:not([data-aspect="16:9"]) .intro-art{display:none;align-self:center}
+#story:not([data-aspect="16:9"]) .intro-art.on{display:block}
 .title-card,.title-card *{pointer-events:none}
 .title-card{z-index:3}
 .lyrics{z-index:4}
