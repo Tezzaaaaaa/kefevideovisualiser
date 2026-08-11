@@ -25,10 +25,11 @@
   margin:0!important;
 }
 
-/* Retire the old read-only summary and separate effect card. */
+/* Quick settings is the only first-run effect/settings bar. */
 #simpleControlSummary,
 #previewEffectSwitcher,
-.preview-effect-switcher{display:none!important}
+.preview-effect-switcher,
+.consolidated-effects{display:none!important}
 
 .preview-quick-controls{
   display:grid!important;
