@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const BUILD='p58-20260811-layout-reset-fix';
+  const BUILD='p59-20260811-runtime-stabilisation';
   const load=src=>new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=`${src}?v=${BUILD}`;s.onload=resolve;s.onerror=()=>reject(new Error(`Failed to load ${src}`));document.body.append(s)});
   for(const href of ['apple-motion.css','ui-solid.css','intro-layout.css','production-consolidated.css','consolidated-studio.css','editor-shell.css','editor-shell-mobile-safety.css','editor-shell-density-fix.css','setup-shell.css','guided-ui.css','setup-lyrics-bridge.css','background-dropzone.css','effect-typography.css','eternal-sunshine-effect.css','preview-quick-controls.css']){const css=document.createElement('link');css.rel='stylesheet';css.href=`${href}?v=${BUILD}`;document.head.append(css)}
   (async()=>{
@@ -20,11 +20,16 @@
       await load('apple-motion.js');
       await load('apple-subword.js');
       await load('production-motion-bridge.js');
+
+      // Capture the stable Apple renderer before the multi-effect dispatcher is installed.
+      window.linaAppleBaseRender=window.render;
+      window.linaAppleBaseDrawApple=window.drawApple;
+      window.linaAppleBaseDrawIntro=window.drawIntro;
       window.linaConsolidatedActivate?.();
-      await load('preview-runtime.js');
-      await load('preview-recovery.js');
-      window.invalidateLinaMotion?.(true);
-      render(audio.currentTime*1000);
+      window.linaEffectBaseRender=window.render;
+      window.linaEffectBaseDrawApple=window.drawApple;
+      window.linaEffectBaseDrawIntro=window.drawIntro;
+
       await load('setup-shell.js');
       await load('control-audit.js');
       await load('control-finish.js');
@@ -33,17 +38,20 @@
       await load('setup-lyrics-bridge.js');
       await load('background-dropzone.js');
       await load('effect-typography.js');
+
+      // Effect modules are pure enhancers now; canonical-runtime owns render().
       await load('eternal-sunshine-effect.js');
       await load('apple-letter-highlight.js');
+      await load('canonical-runtime.js');
+
       await load('preview-quick-controls.js');
-      await load('layout-reset-fix.js');
       await load('style-effect-selector.js');
       await load('visual-polish.js');
-      await load('runtime-guard.js');
       await load('transport-lock.js');
+      await load('runtime-guard.js');
     }catch(e){
       console.error('LINA bootstrap failed',e);
-      const s=document.querySelector('#topStatus');if(s)s.textContent='LINA failed to start — refresh once.';
+      const s=document.querySelector('#topStatus');if(s)s.textContent='LINA failed to start.';
     }
   })();
 })();
