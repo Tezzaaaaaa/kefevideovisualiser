@@ -2,6 +2,23 @@
 (()=>{
   const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 
+  function addGuide(panel,title,text){
+    const body=panel?.querySelector('.body');
+    if(!body||body.querySelector(':scope > .step-guide'))return;
+    const guide=document.createElement('div');
+    guide.className='step-guide';
+    guide.innerHTML=`<b>${title}</b><span>${text}</span>`;
+    body.prepend(guide);
+  }
+
+  function renameSubsection(section,title,meta){
+    if(!section)return;
+    const head=section.querySelector(':scope > .subhead');
+    const b=head?.querySelector('b'),m=head?.querySelector('span');
+    if(b&&title)b.textContent=title;
+    if(m&&meta!==undefined)m.textContent=meta;
+  }
+
   function firstLyricTime(){
     try{
       const list=typeof lines!=='undefined'&&Array.isArray(lines)?lines:[];
@@ -19,15 +36,23 @@
     try{window.invalidateLinaMotion?.(true)}catch{}
   }
 
+  function guideSetup(){
+    const panel=$('[data-panel="setup"]');
+    if(!panel||panel.dataset.guidedSetup==='true')return false;
+    panel.dataset.guidedSetup='true';
+    addGuide(panel,'Start with the song','1. Add the audio file. 2. Check the song details. 3. Choose whether you want a short title intro. Then press Next.');
+    const sections=$$('[data-panel="setup"] .setup-shell-section');
+    renameSubsection(sections[0],'1. Add audio','Required');
+    renameSubsection(sections[1],'2. Check song details','Used for lyrics search');
+    renameSubsection(sections[2],'3. Intro','Optional');
+    return true;
+  }
+
   function simplifyLyrics(){
     const panel=$('[data-panel="lyrics"]'),body=panel?.querySelector('.body'),sync=$('#syncMethod');
     if(!panel||!body||!sync||panel.dataset.guidedLyrics==='true')return false;
     panel.dataset.guidedLyrics='true';
-
-    const guide=document.createElement('div');
-    guide.className='first-run-guide';
-    guide.innerHTML='<b>Start here</b><span>Use the recommended button below. LINA will find synced lyrics and show them in the preview. You only need the other options if automatic lookup cannot find your song.</span>';
-    body.prepend(guide);
+    addGuide(panel,'Add the lyrics','Recommended: press “Find my synced lyrics”. LINA will search using the song details from Setup and show the lyrics in the preview below.');
 
     const source=sync.closest('.subsection');
     const syncField=sync.closest('.field');
@@ -38,16 +63,12 @@
     const manualTiming=$('#manualTimingBox');
 
     if(source){
-      const head=source.querySelector('.subhead');
-      const b=head?.querySelector('b'),m=head?.querySelector('span');
-      if(b)b.textContent='Add lyrics';
-      if(m)m.textContent='Recommended: automatic';
+      renameSubsection(source,'1. Find synced lyrics','Recommended');
       if(searchBox){
         const btn=$('#findLyricsBtn');
         if(btn)btn.textContent='Find my synced lyrics';
         source.append(searchBox);
       }
-
       let other=source.querySelector('.other-lyrics-methods');
       if(!other){
         other=document.createElement('details');
@@ -64,17 +85,19 @@
       [pasteBox,fileBox,manualBox,manualTiming].forEach(el=>{if(el)otherBody.append(el)});
     }
 
-    const advanced=document.createElement('details');
-    advanced.className='advanced-lyrics-settings';
-    advanced.innerHTML='<summary>Advanced lyric settings</summary><div class="advanced-lyrics-body"></div>';
+    let advanced=body.querySelector(':scope > .advanced-lyrics-settings');
+    if(!advanced){
+      advanced=document.createElement('details');
+      advanced.className='advanced-lyrics-settings';
+      advanced.innerHTML='<summary>Advanced lyric settings</summary><div class="advanced-lyrics-body"></div>';
+      body.append(advanced);
+    }
     const advancedBody=advanced.querySelector('.advanced-lyrics-body');
-    const subsections=$$('[data-panel="lyrics"] .subsection');
-    subsections.forEach(sec=>{
-      const label=sec.querySelector('.subhead b')?.textContent?.trim();
+    $$('[data-panel="lyrics"] .subsection').forEach(sec=>{
+      const label=sec.querySelector(':scope > .subhead b')?.textContent?.trim();
       if(label==='Lyric phrasing'||label==='Lyrics entrance')advancedBody.append(sec);
     });
     const clear=$('#clearLyrics');if(clear)advancedBody.append(clear);
-    body.append(advanced);
 
     if(!(typeof lines!=='undefined'&&Array.isArray(lines)&&lines.length)){
       sync.value='search';
@@ -83,25 +106,75 @@
     return true;
   }
 
-  function clarifyStyle(){
+  function guideStyle(){
+    const panel=$('[data-panel="style"]');
+    if(!panel||panel.dataset.guidedStyle==='true')return false;
+    panel.dataset.guidedStyle='true';
+    addGuide(panel,'Choose how the lyrics look','Start by choosing one lyric effect. Then adjust typography only if you want to. Placement controls are optional.');
+
     const effects=$('.consolidated-effects');
-    if(!effects||effects.dataset.guidedEffects==='true')return false;
-    effects.dataset.guidedEffects='true';
-    const note=document.createElement('div');
-    note.className='effect-guide';
-    note.textContent='Choose one lyric look. Your selection is shown immediately in the preview below.';
-    const picker=effects.querySelector('.effect-picker');
-    effects.insertBefore(note,picker||null);
-    $$('.effect-option').forEach(btn=>{
-      btn.setAttribute('aria-pressed',btn.classList.contains('active')?'true':'false');
-      btn.addEventListener('click',()=>setTimeout(()=>$$('.effect-option').forEach(x=>x.setAttribute('aria-pressed',x.classList.contains('active')?'true':'false')),0));
+    if(effects){
+      renameSubsection(effects,'1. Choose lyric effect','Pick one');
+      if(!effects.querySelector('.effect-guide')){
+        const note=document.createElement('div');
+        note.className='effect-guide';
+        note.textContent='Choose Apple Music, Charli xcx · Apple, or Eternal Sunshine. The preview below updates immediately.';
+        const picker=effects.querySelector('.effect-picker');
+        effects.insertBefore(note,picker||null);
+      }
+      $$('.effect-option').forEach(btn=>{
+        btn.setAttribute('aria-pressed',btn.classList.contains('active')?'true':'false');
+        btn.addEventListener('click',()=>setTimeout(()=>$$('.effect-option').forEach(x=>x.setAttribute('aria-pressed',x.classList.contains('active')?'true':'false')),0));
+      });
+    }
+
+    const typography=$$('[data-panel="style"] .subsection').find(sec=>/Typography/i.test(sec.querySelector('.subhead b')?.textContent||''));
+    renameSubsection(typography,'2. Typography','Optional');
+
+    const transform=$('.consolidated-transform');
+    if(transform){
+      renameSubsection(transform,'3. Placement & size','Optional');
+      if(!transform.closest('.style-advanced-wrap')){
+        const details=document.createElement('details');
+        details.className='style-advanced-wrap';
+        details.innerHTML='<summary>Fine-tune placement & size</summary><div class="style-advanced-body"></div>';
+        transform.before(details);
+        details.querySelector('.style-advanced-body').append(transform);
+      }
+    }
+    return true;
+  }
+
+  function guideBackground(){
+    const panel=$('[data-panel="background"]');
+    if(!panel||panel.dataset.guidedBackground==='true')return false;
+    panel.dataset.guidedBackground='true';
+    addGuide(panel,'Set the background','1. Choose an image or video. 2. Frame it. 3. Adjust readability if the lyrics need more contrast. Everything else is optional.');
+
+    const sections=$$('[data-panel="background"] .subsection');
+    const custom=sections.find(sec=>/Custom background/i.test(sec.querySelector('.subhead b')?.textContent||''));
+    const frame=sections.find(sec=>/Frame & crop/i.test(sec.querySelector('.subhead b')?.textContent||''));
+    const video=sections.find(sec=>/Video timing/i.test(sec.querySelector('.subhead b')?.textContent||''));
+    const readability=sections.find(sec=>/Readability/i.test(sec.querySelector('.subhead b')?.textContent||''));
+    const treatment=$('.consolidated-background');
+    renameSubsection(custom,'1. Choose background','Image or video');
+    renameSubsection(frame,'2. Frame it','Position & crop');
+    renameSubsection(readability,'3. Make lyrics readable','Optional');
+    renameSubsection(video,'Video timing','Only when using video');
+    renameSubsection(treatment,'Colour treatment','Optional');
+
+    [video,treatment].forEach((sec,i)=>{
+      if(!sec||sec.closest('.background-advanced-wrap'))return;
+      const details=document.createElement('details');
+      details.className='background-advanced-wrap';
+      details.innerHTML=`<summary>${i===0?'Video options':'Colour options'}</summary><div class="background-advanced-body"></div>`;
+      sec.before(details);
+      details.querySelector('.background-advanced-body').append(sec);
     });
     return true;
   }
 
-  function selectedEffectName(){
-    return $('.effect-option.active b')?.textContent?.trim()||'Apple Music';
-  }
+  function selectedEffectName(){return $('.effect-option.active b')?.textContent?.trim()||'Apple Music'}
 
   function updateSummary(){
     const summary=$('#simpleControlSummary');
@@ -109,12 +182,36 @@
     const size=$('#size')?.value||'52';
     const context=$('#contextMode')?.selectedOptions?.[0]?.textContent?.replace(/\s+—.*$/,'')||'3 lines';
     const aspect=$('#aspect')?.value||'9:16';
-    summary.innerHTML=`<span><b>Effect</b> ${selectedEffectName()}</span><span><b>Text</b> ${size}</span><span><b>Lyrics</b> ${context}</span><span><b>Frame</b> ${aspect}</span>`;
+    let bg='Default';
+    const bgStatus=$('#bgStatus')?.textContent?.trim()||'';
+    if(bgStatus&&!/No custom background/i.test(bgStatus))bg='Custom media';
+    summary.innerHTML=`<span><b>Effect</b> ${selectedEffectName()}</span><span><b>Text size</b> ${size}</span><span><b>Lyrics</b> ${context}</span><span><b>Frame</b> ${aspect}</span><span><b>Background</b> ${bg}</span>`;
+  }
+
+  function guideReview(){
+    const panel=$('[data-panel="review"]');
+    if(!panel||panel.dataset.guidedReview==='true')return false;
+    panel.dataset.guidedReview='true';
+    addGuide(panel,'Final check','Your choices are already applied. Review lyric cleanup only if something looks wrong, then use the preview and playback controls below.');
+    const overview=panel.querySelector('.review-overview');
+    if(overview){
+      renameSubsection(overview,'Ready to preview','Your selections are applied');
+      const status=overview.querySelector('.statusbox');
+      if(status)status.textContent='Nothing else is required here. Play the video below. Open Review & clean only if a lyric line needs fixing.';
+    }
+    const reviewBox=$('#reviewBox');
+    if(reviewBox&&!reviewBox.closest('.review-clean-wrap')){
+      const details=document.createElement('details');
+      details.className='review-clean-wrap';
+      details.innerHTML='<summary>Review & clean lyrics</summary><div class="review-clean-body"></div>';
+      reviewBox.before(details);
+      details.querySelector('.review-clean-body').append(reviewBox);
+    }
+    return true;
   }
 
   function simplifyBottomControls(){
-    const stage=$('.stage');
-    const tools=$('.transport-tools');
+    const stage=$('.stage'),tools=$('.transport-tools');
     if(!stage||!tools||stage.dataset.guidedControls==='true')return false;
     stage.dataset.guidedControls='true';
 
@@ -135,14 +232,14 @@
     const previewControls=$('.preview-controls');
     const inspector=$('.right');
     const exportBlock=$('.stage-export');
+    if(edit)moreBody.append(edit);
     if(previewControls)moreBody.append(previewControls);
-    if(edit)moreBody.prepend(edit);
     if(exportBlock)moreBody.append(exportBlock);
     if(inspector)moreBody.append(inspector);
 
     updateSummary();
     ['input','change','click'].forEach(type=>document.addEventListener(type,e=>{
-      if(e.target.closest?.('.effect-option,#size,#contextMode,#aspect'))setTimeout(updateSummary,0);
+      if(e.target.closest?.('.effect-option,#size,#contextMode,#aspect,#bgImageFile,#bgVideoFile,#removeBg'))setTimeout(updateSummary,0);
     }));
     return true;
   }
@@ -150,27 +247,26 @@
   function bindGuidance(){
     if(document.documentElement.dataset.guidedUiBound==='true')return;
     document.documentElement.dataset.guidedUiBound='true';
-
     document.addEventListener('click',e=>{
       if(e.target.closest('#nav [data-tool="lyrics"]'))setTimeout(revealFirstLyric,80);
-      if(e.target.closest('#findLyricsBtn,#applyPaste,#confirmReview'))setTimeout(revealFirstLyric,180);
+      if(e.target.closest('#findLyricsBtn,#applyPaste,#confirmReview'))setTimeout(revealFirstLyric,220);
     });
-    $('#lyricsFile')?.addEventListener('change',()=>setTimeout(revealFirstLyric,220));
+    $('#lyricsFile')?.addEventListener('change',()=>setTimeout(revealFirstLyric,260));
   }
 
   function init(){
     let tries=0;
     const run=()=>{
       tries++;
-      const a=simplifyLyrics();
-      const b=clarifyStyle();
-      const c=simplifyBottomControls();
+      guideSetup();
+      simplifyLyrics();
+      guideStyle();
+      guideBackground();
+      guideReview();
+      simplifyBottomControls();
       bindGuidance();
-      if((!a&&!$('[data-panel="lyrics"]')||!b&&!$('.consolidated-effects')||!c&&!$('.stage'))&&tries<50)setTimeout(run,60);
-      else if(tries<12&&(!document.documentElement.dataset.guidedUiReady)){
-        document.documentElement.dataset.guidedUiReady='true';
-        setTimeout(()=>{simplifyLyrics();clarifyStyle();simplifyBottomControls();},120);
-      }
+      if(tries<20&&(!document.documentElement.dataset.guidedUiReady))setTimeout(run,80);
+      else document.documentElement.dataset.guidedUiReady='true';
     };
     run();
   }
