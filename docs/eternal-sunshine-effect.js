@@ -4,13 +4,18 @@
   const baseRender=window.render;
   if(typeof baseRender!=='function')return;
 
-  const PAGE_LINES=5;
   let raf=0;
 
   const clamp01=x=>Math.max(0,Math.min(1,x));
   const ease=x=>{x=clamp01(x);return x*x*(3-2*x)};
   const active=()=>($('#quickEffect')?.value||$('#styleEffectSelect')?.value||$('#lyricEffect')?.value||$('#story')?.dataset.lyricEffect||'apple')==='eternal';
   const hash01=(a,b,c)=>{let x=((a+1)*73856093)^((b+1)*19349663)^((c+1)*83492791);x=(x^(x>>>13))*1274126177;return((x^(x>>>16))>>>0)/4294967295};
+
+  function selectedCount(){
+    const value=$('#contextMode')?.value||'5';
+    if(value==='current')return 1;
+    return Math.max(1,Math.min(9,Number(value)||5));
+  }
 
   function splitWord(span,text){
     const raw=String(text||'');
@@ -41,8 +46,9 @@
   }
 
   function pageFor(i){
-    const start=Math.floor(Math.max(0,i)/PAGE_LINES)*PAGE_LINES;
-    return{start,end:Math.min(lines.length-1,start+PAGE_LINES-1)};
+    const count=selectedCount();
+    const start=Math.floor(Math.max(0,i)/count)*count;
+    return{start,end:Math.min(lines.length-1,start+count-1),count};
   }
 
   function pageEraseWindow(page){
@@ -141,7 +147,7 @@
   $('#audio')?.addEventListener('play',ensureTick);
   $('#audio')?.addEventListener('seeked',()=>{try{window.render?.($('#audio').currentTime*1000)}catch{}});
   document.addEventListener('change',e=>{
-    if(['quickEffect','styleEffectSelect','lyricEffect'].includes(e.target?.id)){
+    if(['quickEffect','styleEffectSelect','lyricEffect','contextMode','quickLyricsView'].includes(e.target?.id)){
       if(active()){
         document.fonts?.load?.('32px "Reenie Beanie"').catch(()=>{});
         setTimeout(()=>{try{window.invalidateLinaMotion?.(true);window.render?.((Number($('#audio')?.currentTime)||0)*1000);ensureTick()}catch{}},0);
