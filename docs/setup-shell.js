@@ -73,27 +73,9 @@
   }
 
   function ensureReviewStep(){
-    const left=q('.left');
-    const background=q('[data-panel="background"]');
-    if(!left||!background)return false;
-
-    let review=q('[data-panel="review"]');
-    if(!review){
-      review=document.createElement('section');
-      review.className='panel tool';
-      review.dataset.panel='review';
-      review.hidden=true;
-      review.setAttribute('aria-hidden','true');
-      review.innerHTML='<h2>Review</h2><div class="body"><div class="subsection review-overview"><div class="subhead"><b>Review</b><span>Final check</span></div><div class="statusbox">Check your imported lyrics if needed, then preview the finished result below.</div></div></div>';
-      background.after(review);
-    }
-
-    const reviewBox=q('#reviewBox');
-    const body=review.querySelector('.body');
-    if(reviewBox&&body&&reviewBox.parentElement!==body)body.append(reviewBox);
-
     const nav=q('#nav');
-    if(nav&&!nav.querySelector('[data-tool="review"]')){
+    if(!nav)return false;
+    if(!nav.querySelector('[data-tool="review"]')){
       const button=document.createElement('button');
       button.className='navbtn';
       button.dataset.tool='review';
@@ -101,6 +83,8 @@
       button.innerHTML='<span class="step">5</span>Review';
       nav.append(button);
     }
+    // Review is the production-controls destination, not another form panel.
+    q('[data-panel="review"]')?.remove();
     return true;
   }
 
@@ -108,8 +92,43 @@
     const controls=q('.flow-controls');
     const body=panel?.querySelector('.body');
     if(!controls||!body)return;
+    controls.style.display='';
     controls.classList.add('workflow-inline');
     body.append(controls);
+  }
+
+  function markNav(id,index){
+    qa('#nav .navbtn[data-tool]').forEach((button,i)=>{
+      const active=button.dataset.tool===id;
+      button.classList.toggle('active',active);
+      button.classList.toggle('done',i<index);
+      button.setAttribute('aria-selected',active?'true':'false');
+      button.tabIndex=0;
+    });
+  }
+
+  function goToReviewControls(index){
+    qa('.tool[data-panel]').forEach(panel=>{
+      panel.classList.remove('active');
+      panel.hidden=true;
+      panel.setAttribute('aria-hidden','true');
+      panel.style.display='none';
+    });
+    markNav('review',index);
+
+    const controls=q('.flow-controls');
+    if(controls)controls.style.display='none';
+    const status=q('#stepStatus');
+    if(status)status.textContent=`Step ${index+1} of ${STEPS.length}`;
+
+    document.documentElement.dataset.reviewDestination='quick-controls';
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      const target=q('#previewQuickControls')||q('.transport')||q('.stage');
+      if(target){
+        target.style.scrollMarginTop='112px';
+        target.scrollIntoView({behavior:'smooth',block:'start'});
+      }
+    }));
   }
 
   function showPanel(step){
@@ -117,6 +136,12 @@
     const id=STEPS[index];
     window.activeStep=index;
 
+    if(id==='review'){
+      goToReviewControls(index);
+      return;
+    }
+
+    document.documentElement.dataset.reviewDestination='';
     qa('.tool[data-panel]').forEach(panel=>{
       const active=panel.dataset.panel===id;
       panel.classList.toggle('active',active);
@@ -125,13 +150,7 @@
       panel.style.display=active?'block':'none';
     });
 
-    qa('#nav .navbtn[data-tool]').forEach((button,i)=>{
-      const active=button.dataset.tool===id;
-      button.classList.toggle('active',active);
-      button.classList.toggle('done',i<index);
-      button.setAttribute('aria-selected',active?'true':'false');
-      button.tabIndex=0;
-    });
+    markNav(id,index);
 
     const panel=q(`.tool[data-panel="${id}"]`);
     moveWorkflowControls(panel);
@@ -141,7 +160,7 @@
     const prev=q('#prevStep');
     const next=q('#nextStep');
     if(prev)prev.disabled=index===0;
-    if(next)next.textContent=index===STEPS.length-1?'Preview':'Next';
+    if(next)next.textContent='Next';
 
     window.scrollTo({top:0,behavior:'auto'});
   }
@@ -161,8 +180,7 @@
       if(e.target.closest('#nextStep')){
         e.preventDefault();
         const current=Math.max(0,STEPS.indexOf(q('#nav .navbtn.active')?.dataset.tool||'setup'));
-        if(current<STEPS.length-1)showPanel(STEPS[current+1]);
-        else q('.stage')?.scrollIntoView({behavior:'smooth',block:'start'});
+        showPanel(STEPS[Math.min(STEPS.length-1,current+1)]);
       }
     },true);
   }
