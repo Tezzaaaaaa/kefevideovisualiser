@@ -33,12 +33,13 @@ jobs:
           set -euo pipefail
           required=(
             docs/index.html
+            docs/app-source.html
             docs/style.css
             docs/app-events.js
             docs/app-core-safe.js
             docs/app-media-safe.js
-            docs/app-export-safe.js
             docs/app-events-safe.js
+            docs/ffmpeg-export.js
             docs/media-lifecycle.js
             docs/apple-timing.js
             docs/apple-motion.js
@@ -47,7 +48,8 @@ jobs:
             docs/preview-recovery.js
             docs/apple-motion.css
             docs/ui-solid.css
-            docs/panel-nav.js
+            docs/setup-shell.js
+            docs/setup-shell.css
             docs/intro-layout.js
             docs/intro-layout.css
             docs/runtime-guard.js
@@ -62,14 +64,15 @@ jobs:
           grep -q 'app-events.js' docs/index.html || { echo 'index.html does not load the LINA bootstrap'; exit 1; }
           grep -q 'app-core-safe.js' docs/app-events.js || { echo 'bootstrap does not load canonical core'; exit 1; }
           grep -q 'app-media-safe.js' docs/app-events.js || { echo 'bootstrap does not load canonical media'; exit 1; }
-          grep -q 'app-export-safe.js' docs/app-events.js || { echo 'bootstrap does not load export runtime'; exit 1; }
+          grep -q 'ffmpeg-export.js' docs/app-events.js || { echo 'bootstrap does not load export runtime'; exit 1; }
           grep -q 'media-lifecycle.js' docs/app-events.js || { echo 'bootstrap does not load media lifecycle layer'; exit 1; }
           grep -q 'apple-timing.js' docs/app-events.js || { echo 'bootstrap does not load timing repair layer'; exit 1; }
           grep -q 'apple-motion.js' docs/app-events.js || { echo 'bootstrap does not load Apple motion engine'; exit 1; }
           grep -q 'apple-subword.js' docs/app-events.js || { echo 'bootstrap does not load sub-word motion layer'; exit 1; }
           grep -q 'preview-runtime.js' docs/app-events.js || { echo 'bootstrap does not load hardened preview runtime'; exit 1; }
           grep -q 'preview-recovery.js' docs/app-events.js || { echo 'bootstrap does not load preview recovery runtime'; exit 1; }
-          grep -q 'panel-nav.js' docs/app-events.js || { echo 'bootstrap does not load stable panel navigation'; exit 1; }
+          grep -q 'setup-shell.js' docs/app-events.js || { echo 'bootstrap does not load rebuilt setup shell'; exit 1; }
+          grep -q 'setup-shell.css' docs/app-events.js || { echo 'bootstrap does not load rebuilt setup styling'; exit 1; }
           grep -q 'intro-layout.js' docs/app-events.js || { echo 'bootstrap does not load adaptive intro layout'; exit 1; }
           grep -q 'intro-layout.css' docs/app-events.js || { echo 'bootstrap does not load adaptive intro styling'; exit 1; }
           grep -q 'runtime-guard.js' docs/app-events.js || { echo 'bootstrap does not load runtime guard'; exit 1; }
