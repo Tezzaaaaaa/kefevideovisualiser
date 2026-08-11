@@ -1,0 +1,82 @@
+/* LINA preview quick controls: one aligned width, four real dropdowns, safe reversible layout. */
+:root{--lina-preview-width:960px}
+
+.stage-head,
+.stage-wrap,
+#previewQuickControls,
+.transport,
+.transport-tools,
+.more-controls,
+.preview-controls,
+.stage-export{
+  width:min(100%,var(--lina-preview-width))!important;
+  max-width:var(--lina-preview-width)!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+  box-sizing:border-box!important;
+}
+
+/* Landscape preview must line up exactly with the controls above/below it. */
+#story[data-aspect="16:9"]{
+  width:100%!important;
+  max-width:none!important;
+  height:auto!important;
+  aspect-ratio:16/9!important;
+  margin:0!important;
+}
+
+/* Retire the old read-only summary and separate effect card. */
+#simpleControlSummary,
+#previewEffectSwitcher,
+.preview-effect-switcher{display:none!important}
+
+.preview-quick-controls{
+  display:grid!important;
+  gap:10px!important;
+  padding:12px!important;
+  margin-top:8px!important;
+  border:1px solid var(--border)!important;
+  border-radius:12px!important;
+  background:rgba(255,255,255,.03)!important;
+}
+.quick-control-head{display:flex!important;align-items:baseline!important;justify-content:space-between!important;gap:12px!important}
+.quick-control-head b{font-size:11px!important}
+.quick-control-head span{font-size:9px!important;color:var(--muted)!important}
+.quick-control-grid{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:8px!important;
+}
+.quick-control-grid label{display:grid!important;gap:5px!important;min-width:0!important}
+.quick-control-grid label>span{font-size:9px!important;color:var(--muted)!important}
+.quick-control-grid select{
+  width:100%!important;
+  min-width:0!important;
+  min-height:40px!important;
+  box-sizing:border-box!important;
+  border-radius:9px!important;
+}
+#quickResetLayout{justify-self:start!important;min-height:36px!important}
+
+/* Freeform geometry caused the broken/clipped layouts. Keep it out of first-run UI. */
+.style-advanced-wrap,
+.consolidated-transform{display:none!important}
+#lyrics{
+  cursor:default!important;
+  touch-action:auto!important;
+  max-width:88%!important;
+}
+#story[data-lyric-effect="apple"] .lyrics,
+#story[data-lyric-effect="charli"] .lyrics,
+#story[data-lyric-effect="eternal"] .lyrics{
+  left:8%!important;
+  width:84%!important;
+  max-width:84%!important;
+  overflow:visible!important;
+}
+
+@media(max-width:700px){
+  .quick-control-head{display:grid!important;gap:3px!important}
+  .quick-control-grid{grid-template-columns:1fr!important}
+  #quickResetLayout{width:100%!important}
+}
