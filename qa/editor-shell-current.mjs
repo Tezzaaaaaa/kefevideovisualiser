@@ -15,14 +15,14 @@ for(const [browserName,type] of browsers){
 
     const state=await page.evaluate(()=>{
       const b=s=>document.querySelector(s)?.getBoundingClientRect()||null;
-      const css=(s,p)=>getComputedStyle(document.querySelector(s))[p];
+      const css=(s,p)=>{const el=document.querySelector(s);return el?getComputedStyle(el)[p]:null};
       const tools=['#transportPrevLine','#transportSync','#transportNextLine'].map(b);
       return{
         workspace:{display:css('.workspace','display'),direction:css('.workspace','flexDirection')},
         navCount:document.querySelectorAll('#nav .navbtn[data-tool]').length,
         left:b('.left'),stage:b('.stage'),stageHead:b('.stage-head'),stageWrap:b('.stage-wrap'),transport:b('.transport'),tools:b('.transport-tools'),quick:b('#previewQuickControls'),
         oldPreviewParent:document.querySelector('.preview-controls')?.parentElement?.id||'',oldExportParent:document.querySelector('.stage-export')?.parentElement?.id||'',
-        editDisplay:css('#transportEdit','display'),toolBoxes:tools,
+        editDisplay:css('#transportEdit','display'),editExists:!!document.querySelector('#transportEdit'),toolBoxes:tools,
         quickGroups:document.querySelectorAll('#previewQuickControls > .quick-group').length,
         advancedOpen:document.querySelector('#quickAdvanced')?.open||false,
         fineOwnsInspector:!!document.querySelector('#quickFineTiming .quick-fine-body .right'),
@@ -38,7 +38,7 @@ for(const [browserName,type] of browsers){
     assert.ok(state.stageHead.y<=state.stageWrap.y&&state.stageWrap.y<state.transport.y&&state.transport.y<state.tools.y&&state.tools.y<state.quick.y,`${browserName}/${vpName}: Preview/transport/control order regressed`);
     assert.equal(state.oldPreviewParent,'linaQuickSourceStash',`${browserName}/${vpName}: legacy preview controls escaped the hidden source stash`);
     assert.equal(state.oldExportParent,'linaQuickSourceStash',`${browserName}/${vpName}: legacy output controls escaped the hidden source stash`);
-    assert.equal(state.editDisplay,'none',`${browserName}/${vpName}: obsolete Edit transport button returned`);
+    assert.ok(!state.editExists||state.editDisplay==='none',`${browserName}/${vpName}: obsolete Edit transport button returned`);
     assert.equal(state.quickGroups,5,`${browserName}/${vpName}: priority Quick Settings groups changed`);
     assert.equal(state.advancedOpen,false,`${browserName}/${vpName}: Advanced controls should start collapsed`);
     assert.equal(state.fineOwnsInspector,true,`${browserName}/${vpName}: detailed lyric inspector is not inside Fine timing`);
