@@ -32,6 +32,23 @@
     try{window.render?.((Number($('#audio')?.currentTime)||0)*1000)}catch{}
   }
 
+  function buildTitleToggle(anchor){
+    if($('#previewTitleToggle'))return;
+    const source=$('#showTitle');
+    const row=document.createElement('label');
+    row.id='previewTitleToggle';
+    row.className='preview-title-toggle';
+    row.innerHTML='<span><b>Title card</b><small>Show title, artist and album at the start</small></span><input id="previewTitleToggleInput" type="checkbox">';
+    anchor.after(row);
+    const input=$('#previewTitleToggleInput');
+    input.checked=source?.checked!==false;
+    input.addEventListener('change',()=>{
+      if(source){source.checked=input.checked;fire(source,'change')}
+      try{window.render?.((Number($('#audio')?.currentTime)||0)*1000)}catch{}
+    });
+    source?.addEventListener('change',()=>{if(input.checked!==source.checked)input.checked=source.checked});
+  }
+
   function build(){
     const stageWrap=$('.stage-wrap');
     if(!stageWrap||$('#previewQuickControls'))return false;
@@ -52,12 +69,13 @@
       </div>
       <button id="quickResetLayout" class="btn subtle" type="button">Reset lyric layout</button>`;
 
-    // Playback belongs immediately under the preview. Quick settings follow playback.
     const transport=$('.transport');
     const transportTools=$('.transport-tools');
-    if(transportTools)transportTools.after(box);
-    else if(transport)transport.after(box);
-    else stageWrap.after(box);
+    const playbackAnchor=transportTools||transport||stageWrap;
+    buildTitleToggle(playbackAnchor);
+    const titleToggle=$('#previewTitleToggle');
+    if(titleToggle)titleToggle.after(box);
+    else playbackAnchor.after(box);
 
     const effect=$('#previewEffectSelect');
     const size=$('#size');
@@ -94,7 +112,6 @@
       if(e.target===effect||e.target===context||e.target===aspect)setTimeout(sync,0);
     });
 
-    // Free page scrolling should never alter lyric geometry.
     const story=$('#story');
     if(story&&story.dataset.geometryLocked!=='true'){
       story.dataset.geometryLocked='true';
@@ -103,7 +120,6 @@
       }
     }
 
-    // Start from a sane, centred preset instead of restoring accidental geometry.
     setTimeout(resetLayout,20);
     return true;
   }
