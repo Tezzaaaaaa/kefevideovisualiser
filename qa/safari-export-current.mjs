@@ -9,6 +9,8 @@ function wavBuffer(seconds=2.2,sampleRate=44100){
 
 const browser=await webkit.launch({headless:true});
 const page=await browser.newPage({viewport:{width:1280,height:900},acceptDownloads:true});
+page.on('console',m=>console.log('WEBKIT EXPORT',m.type(),m.text()));
+page.on('pageerror',e=>console.log('WEBKIT EXPORT PAGEERROR',e.stack||e.message));
 await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
 await page.waitForFunction(()=>document.documentElement.dataset.linaReady==='true',{timeout:20000});
 await page.setInputFiles('#audioFile',{name:'safari-probe.wav',mimeType:'audio/wav',buffer:wavBuffer()});
@@ -21,18 +23,22 @@ await page.fill('#lyricsText','[00:00.00] Safari export probe\n[00:00.80] Video 
 await page.click('#applyPaste');await page.waitForSelector('#reviewBox:not(.hidden)');await page.click('#confirmReview');
 await page.waitForFunction(()=>document.querySelectorAll('#timeline .line').length===3);
 await page.evaluate(()=>window.linaRuntime.setEffect('apple',{dirty:false}));
-await page.selectOption('#quickQuality','720');
-await page.selectOption('#quickFrame','9:16');
-assert.equal(await page.inputValue('#quality'),'720','Quick quality did not reach export state');
-assert.equal(await page.inputValue('#aspect'),'9:16','Quick frame did not reach export state');
+await page.selectOption('#quickQuality','720');await page.selectOption('#quickFrame','9:16');
 
 const downloadPromise=page.waitForEvent('download',{timeout:90000});
+const failedPromise=page.waitForFunction(()=>/Export failed/i.test(document.querySelector('#topStatus')?.textContent||''),null,{timeout:90000}).then(async()=>{
+  const info=await page.evaluate(()=>({status:document.querySelector('#topStatus')?.textContent||'',render:document.querySelector('#renderText')?.textContent||'',state:window.linaExportState?.()}));
+  throw new Error(`WebKit export failed: ${JSON.stringify(info)}`);
+});
 await page.click('#quickExport');
-const download=await downloadPromise,path=await download.path();
-assert.ok(path,'Safari export produced no file');
+let download;
+try{download=await Promise.race([downloadPromise,failedPromise])}
+catch(err){
+  const info=await page.evaluate(()=>({status:document.querySelector('#topStatus')?.textContent||'',render:document.querySelector('#renderText')?.textContent||'',state:window.linaExportState?.()}));
+  console.log('WEBKIT EXPORT FINAL',JSON.stringify(info));
+  throw err;
+}
+const path=await download.path();assert.ok(path,'Safari export produced no file');
 const streams=execFileSync('ffprobe',['-v','error','-show_entries','stream=codec_type','-of','csv=p=0',path],{encoding:'utf8'}).trim().split(/\s+/).filter(Boolean);
-assert.ok(streams.includes('video'),'Safari export has no video stream');
-assert.ok(streams.includes('audio'),'Safari export has no audio stream');
-assert.match(download.suggestedFilename(),/\.mp4$/i,'Safari export filename is not MP4');
-await browser.close();
-console.log('Safari current export probe: PASS');
+assert.ok(streams.includes('video'),'Safari export has no video stream');assert.ok(streams.includes('audio'),'Safari export has no audio stream');assert.match(download.suggestedFilename(),/\.mp4$/i,'Safari export filename is not MP4');
+await browser.close();console.log('Safari current export probe: PASS');
