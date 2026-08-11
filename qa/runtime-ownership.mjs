@@ -8,7 +8,7 @@ for(const [name,type] of targets){
   const browser=await type.launch({headless:true});
   const page=await browser.newPage({viewport:{width:1440,height:1000}});
   const pageErrors=[];
-  page.on('pageerror',e=>pageErrors.push(e.message));
+  page.on('pageerror',e=>{const item={message:e.message,stack:e.stack||''};pageErrors.push(item);console.log(`${name} PAGEERROR`,item.stack||item.message)});
   await page.goto(base,{waitUntil:'networkidle'});
   await page.waitForFunction(()=>window.linaRuntime&&document.querySelector('#quickResetLayout')?.dataset.linaOwner==='canonical',{timeout:15000});
 
@@ -120,7 +120,7 @@ for(const [name,type] of targets){
   assert.deepEqual([effectState.hidden,effectState.story,effectState.studio,effectState.quick,effectState.style],Array(5).fill('eternal'),`${name}: effect state diverged`);
   assert.equal(effectState.sameRender,true,`${name}: effect state change replaced renderer`);
 
-  assert.deepEqual(pageErrors,[],`${name}: page errors: ${pageErrors.join(' | ')}`);
+  assert.deepEqual(pageErrors,[],`${name}: page errors: ${pageErrors.map(x=>x.message).join(' | ')}`);
   await browser.close();
 }
 
