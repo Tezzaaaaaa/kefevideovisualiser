@@ -21,10 +21,13 @@ await page.fill('#lyricsText','[00:00.00] Safari export probe\n[00:00.80] Video 
 await page.click('#applyPaste');await page.waitForSelector('#reviewBox:not(.hidden)');await page.click('#confirmReview');
 await page.waitForFunction(()=>document.querySelectorAll('#timeline .line').length===3);
 await page.evaluate(()=>window.linaRuntime.setEffect('apple',{dirty:false}));
-await page.selectOption('#quality','720');await page.selectOption('#aspect','9:16');
+await page.selectOption('#quickQuality','720');
+await page.selectOption('#quickFrame','9:16');
+assert.equal(await page.inputValue('#quality'),'720','Quick quality did not reach export state');
+assert.equal(await page.inputValue('#aspect'),'9:16','Quick frame did not reach export state');
 
 const downloadPromise=page.waitForEvent('download',{timeout:90000});
-await page.click('#exportBtn');
+await page.click('#quickExport');
 const download=await downloadPromise,path=await download.path();
 assert.ok(path,'Safari export produced no file');
 const streams=execFileSync('ffprobe',['-v','error','-show_entries','stream=codec_type','-of','csv=p=0',path],{encoding:'utf8'}).trim().split(/\s+/).filter(Boolean);
