@@ -1,0 +1,33 @@
+/* One effect selector under Preview; the old three-card picker stays out of the workflow. */
+.effect-picker-retired{display:none!important}
+.preview-effect-switcher{
+  width:100%!important;
+  max-width:var(--preview-max,960px)!important;
+  margin:8px auto 0!important;
+  padding:10px 12px!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) minmax(220px,320px)!important;
+  gap:12px!important;
+  align-items:center!important;
+  box-sizing:border-box!important;
+  border:1px solid var(--border)!important;
+  border-radius:12px!important;
+  background:rgba(255,255,255,.03)!important;
+}
+.preview-effect-copy{display:grid!important;gap:3px!important;min-width:0!important}
+.preview-effect-copy b{font-size:11px!important}
+.preview-effect-copy span{font-size:10px!important;color:var(--muted)!important}
+.preview-effect-field{display:grid!important;grid-template-columns:auto minmax(0,1fr)!important;gap:8px!important;align-items:center!important}
+.preview-effect-field>span{font-size:9px!important;color:var(--muted)!important;white-space:nowrap!important}
+#previewEffectSelect{width:100%!important;min-height:38px!important;border-radius:9px!important}
+
+/* Style now edits the selected effect rather than asking the user to choose from three cards. */
+[data-panel="style"] .step-guide span::after{content:' Choose the effect directly under Preview, then use this tab only to fine-tune how that selected effect looks.'}
+
+/* Mouse wheel over the visual preview is reserved for normal page scrolling. */
+#story{overscroll-behavior:auto!important}
+
+@media(max-width:700px){
+  .preview-effect-switcher{grid-template-columns:1fr!important}
+  .preview-effect-field{grid-template-columns:1fr!important}
+}
