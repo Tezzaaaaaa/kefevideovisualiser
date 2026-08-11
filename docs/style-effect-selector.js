@@ -4,7 +4,7 @@
   const EFFECTS={apple:'Apple Music',charli:'Charli xcx · Apple',eternal:'Eternal Sunshine'};
 
   function currentEffect(){
-    return $('#quickEffect')?.value||$('#lyricEffect')?.value||$('#story')?.dataset.lyricEffect||'apple';
+    return window.linaRuntime?.getEffect?.()||$('#quickEffect')?.value||$('#lyricEffect')?.value||$('#story')?.dataset.lyricEffect||'apple';
   }
 
   function syncCopy(value=currentEffect()){
@@ -31,6 +31,11 @@
   }
 
   function applyEffect(value){
+    if(window.linaRuntime?.setEffect){
+      window.linaRuntime.setEffect(value);
+      setTimeout(()=>syncCopy(value),0);
+      return;
+    }
     const quick=$('#quickEffect');
     if(quick){
       quick.value=value;
