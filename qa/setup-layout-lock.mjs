@@ -46,6 +46,12 @@ for(const [name,type] of browsers){
 
     for(const selector of controls)await assertUsable(page,name,vpName,selector);
 
+    const albumBox=await page.locator('#albumInput').boundingBox();
+    assert.ok(albumBox&&albumBox.width>=150,`${name}/${vpName}: Track identity edit column is still squeezed (${albumBox?.width||0}px)`);
+    const trackBounds=await page.locator('.consolidated-track').evaluate(el=>{const r=el.getBoundingClientRect();return{left:r.left,right:r.right}});
+    const fieldsBounds=await page.locator('.consolidated-track .track-fields').evaluate(el=>{const r=el.getBoundingClientRect();return{left:r.left,right:r.right}});
+    assert.ok(fieldsBounds.left>=trackBounds.left-1&&fieldsBounds.right<=trackBounds.right+1,`${name}/${vpName}: Track identity fields overflow the Setup panel`);
+
     const retiredSearch=await page.locator('.legacy-lookup-retired').count();
     assert.ok(retiredSearch>=1,`${name}/${vpName}: retired lookup unexpectedly returned to active Setup`);
 
@@ -57,7 +63,7 @@ for(const [name,type] of browsers){
       assert.ok(leftWidth>=viewport.width-40,`${name}/${vpName}: Setup column is still squeezed (${leftWidth}px)`);
     }else{
       const leftWidth=await page.locator('.left').evaluate(el=>el.getBoundingClientRect().width);
-      assert.ok(leftWidth>=290,`${name}/${vpName}: Setup column too narrow (${leftWidth}px)`);
+      assert.ok(leftWidth>=350,`${name}/${vpName}: Setup column too narrow (${leftWidth}px)`);
     }
 
     await page.close();
