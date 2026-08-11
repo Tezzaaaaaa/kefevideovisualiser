@@ -34,6 +34,9 @@ jobs:
           node --check qa/runtime-ownership.mjs
           node --check qa/current-control-matrix.mjs
           node --check qa/safari-export-current.mjs
+          test ! -e docs/production-controls.js
+          test ! -e docs/control-audit.js
+          test ! -e docs/control-finish.js
           test ! -e docs/preview-runtime.js
           test ! -e docs/preview-recovery.js
           test ! -e docs/layout-reset-fix.js
