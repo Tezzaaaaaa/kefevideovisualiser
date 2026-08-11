@@ -1,4 +1,4 @@
-/* LINA intro card: text only. Title + Artist + optional Album, never clipped. */
+/* LINA intro: text only. Title + Artist + optional Album, never clipped. */
 .title-card[hidden]{display:none!important}
 .title-card{z-index:3;pointer-events:none}
 .title-card *{pointer-events:none}
@@ -8,6 +8,7 @@
 .title-card{display:none;place-items:center;padding:5% 7%}
 .title-card.on{display:grid}
 
+/* No visible card/container: only the three text lines render. */
 .share-card{
   width:min(86%,820px)!important;
   max-width:86%!important;
@@ -17,8 +18,18 @@
   gap:7px!important;
   align-content:center!important;
   text-align:left!important;
-  padding:clamp(18px,3vw,32px)!important;
-  border-radius:clamp(18px,2.4vw,28px)!important;
+  padding:0!important;
+  margin:0!important;
+  border:0!important;
+  border-radius:0!important;
+  outline:0!important;
+  background:transparent!important;
+  background-color:transparent!important;
+  background-image:none!important;
+  box-shadow:none!important;
+  filter:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
   box-sizing:border-box!important;
   overflow:visible!important;
 }
@@ -29,6 +40,10 @@
   width:100%!important;
   max-width:100%!important;
   margin:0!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
   text-align:left!important;
   overflow:visible!important;
   text-overflow:clip!important;
