@@ -27,7 +27,7 @@ for(const [name,type] of targets){
   }));
   assert.equal(ownership.renderOwner,'canonical-v1',`${name}: canonical render owner missing`);
   assert.equal(ownership.effectOwner,'canonical-v1',`${name}: canonical effect owner missing`);
-  assert.equal(ownership.layoutOwner,'canonical-v1',`${name}: canonical layout owner missing`);
+  assert.equal(ownership.layoutOwner,'canonical-v2-hard-reset',`${name}: hard canonical layout owner missing`);
   assert.match(ownership.transportOwner||'',/^canonical/,`${name}: canonical transport owner missing`);
   assert.equal(ownership.sameRender,true,`${name}: render() was wrapped after canonical runtime`);
   assert.equal(ownership.previewRuntime,false,`${name}: retired preview-runtime still loaded`);
@@ -83,7 +83,7 @@ for(const [name,type] of targets){
     document.querySelector('#lyrics').style.top='70%';
   });
   await page.click('#quickResetLayout');
-  await page.waitForTimeout(140);
+  await page.waitForTimeout(300);
   const reset=await page.evaluate(()=>({
     x:window.linaConsolidatedState.x,y:window.linaConsolidatedState.y,scale:window.linaConsolidatedState.scale,rot:window.linaConsolidatedState.rot,
     size:document.querySelector('#size').value,yPos:document.querySelector('#yPos').value,view:document.querySelector('#contextMode').value,
