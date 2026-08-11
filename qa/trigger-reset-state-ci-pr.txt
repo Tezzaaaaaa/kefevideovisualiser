@@ -1,1 +1,1 @@
-CI trigger for p21 reset-state/no-artwork verification.
+CI trigger for p22 reset-state/no-artwork verification.
