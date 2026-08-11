@@ -9,13 +9,14 @@
 
   async function waitForCanonicalOwnership(){
     for(let i=0;i<80;i++){
-      const reset=$('#resetLyricsBtn'),quick=$('#quickEffect'),style=$('#styleEffectSelect');
+      const reset=$('#resetProjectVisible'),quick=$('#quickEffect'),style=$('#styleEffectSelect');
       const ready=window.linaRuntime&&window.linaAuditSystem&&
-        reset?.dataset.linaOwner==='direct-v2'&&quick?.dataset.linaOwner==='canonical'&&style?.dataset.linaOwner==='canonical'&&
+        reset?.dataset.linaOwner==='project-hard-v2'&&quick?.dataset.linaOwner==='canonical'&&style?.dataset.linaOwner==='canonical'&&
         String(document.documentElement.dataset.transportOwner||'').startsWith('canonical')&&
         document.documentElement.dataset.exportOwner==='canonical-v1'&&
         document.documentElement.dataset.controlsOwner==='canonical-v1'&&
-        document.documentElement.dataset.uiOwner==='canonical-v1';
+        document.documentElement.dataset.uiOwner==='canonical-v1'&&
+        document.documentElement.dataset.projectResetOwner==='hard-v2';
       if(ready)return true;
       await sleep(25);
     }
@@ -25,7 +26,7 @@
   async function verify(){
     document.documentElement.dataset.linaReady='checking';
     await waitForCanonicalOwnership();
-    const requiredIds=['nav','play','stop','audioFile','lyricsText','story','lyrics','exportBtn','resetLyricsBtn','quickEffect','styleEffectSelect'];
+    const requiredIds=['nav','play','stop','audioFile','lyricsText','story','lyrics','exportBtn','resetProjectVisible','quickEffect','styleEffectSelect'];
     const missing=requiredIds.filter(id=>!document.getElementById(id));
     const requiredFns=['goStep','parseTimed','render','exportVideo','restoreSavedProject'];
     const missingFns=requiredFns.filter(n=>typeof window[n]!=='function');
@@ -51,10 +52,10 @@
     if(document.documentElement.dataset.controlsOwner!=='canonical-v1')failures.push('controls-owner');
     if(document.documentElement.dataset.uiOwner!=='canonical-v1')failures.push('ui-owner');
     if(document.documentElement.dataset.exportOwner!=='canonical-v1')failures.push('export-owner');
-    if(document.documentElement.dataset.projectResetOwner!=='canonical-v1')failures.push('project-reset-owner');
+    if(document.documentElement.dataset.projectResetOwner!=='hard-v2')failures.push('project-reset-owner');
     if(!String(document.documentElement.dataset.transportOwner||'').startsWith('canonical'))failures.push('transport-owner');
-    if($('#resetLyricsBtn')?.dataset.linaOwner!=='direct-v2'||typeof window.linaDirectResetV2!=='function')failures.push('direct-reset-v2');
-    if($('#quickResetLayout')||$('#linaFreshReset'))failures.push('retired-reset-control');
+    if($('#resetProjectVisible')?.dataset.linaOwner!=='project-hard-v2'||typeof window.linaResetProject!=='function')failures.push('full-project-reset');
+    if($('#quickResetLayout')||$('#linaFreshReset')||$('#resetLyricsBtn')||$('#resetBtn'))failures.push('retired-reset-control');
     if($('#rightsConfirm'))failures.push('retired-rights-control');
 
     const audit=window.linaAuditSystem?.();
