@@ -3,11 +3,11 @@
   const $=s=>document.querySelector(s);
   const VALID_EFFECTS=new Set(['apple','charli','eternal']);
   const DEFAULTS={
-    apple:{align:'left',lineHeight:'1.02',spacing:'-0.02',view:'5'},
-    charli:{align:'center',lineHeight:'0.84',spacing:'-0.055',view:'current'},
-    eternal:{align:'left',lineHeight:'1.02',spacing:'0.005',view:'5'}
+    apple:{font:'apple-system',weight:'700',align:'left',lineHeight:'1.02',spacing:'-0.02',view:'5',color:'#ffffff',letterCase:'original',glow:'100'},
+    charli:{font:'charli-condensed',weight:'900',align:'center',lineHeight:'0.84',spacing:'-0.055',view:'current',color:'#ffffff',letterCase:'original',glow:'100'},
+    eternal:{font:'eternal-reenie',weight:'400',align:'left',lineHeight:'1.02',spacing:'0.005',view:'5',color:'#ffffff',letterCase:'original',glow:'100'}
   };
-  const state={rendering:false,snapshotRestored:false,lastEffect:null,lastMs:0};
+  const state={rendering:false,snapshotRestored:false,lastEffect:null,lastMs:0,resetCount:0};
   const appleRender=window.linaAppleBaseRender||window.render;
   const effectRender=window.linaEffectBaseRender||window.render;
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
@@ -20,6 +20,17 @@
     const style=$('#styleEffectSelect')?.value;
     for(const value of [hidden,studio,story,quick,style])if(VALID_EFFECTS.has(value))return value;
     return 'apple';
+  }
+
+  function studioState(){
+    if(!window.linaConsolidatedState)window.linaConsolidatedState={effect:getEffect(),x:0,y:0,scale:1,rot:0};
+    const s=window.linaConsolidatedState;
+    if(!VALID_EFFECTS.has(s.effect))s.effect=getEffect();
+    if(!Number.isFinite(Number(s.x)))s.x=0;
+    if(!Number.isFinite(Number(s.y)))s.y=0;
+    if(!Number.isFinite(Number(s.scale))||Number(s.scale)<=0)s.scale=1;
+    if(!Number.isFinite(Number(s.rot)))s.rot=0;
+    return s;
   }
 
   function contextForValue(value){
@@ -39,8 +50,8 @@
   }
 
   function syncEffectUI(value){
-    const studio=window.linaConsolidatedState;
-    if(studio)studio.effect=value;
+    const studio=studioState();
+    studio.effect=value;
     const hidden=$('#lyricEffect');if(hidden&&hidden.value!==value)hidden.value=value;
     const story=$('#story');if(story)story.dataset.lyricEffect=value;
     const quick=$('#quickEffect');if(quick&&quick.value!==value)quick.value=value;
@@ -49,13 +60,14 @@
   }
 
   function applyTransformState(){
-    const studio=window.linaConsolidatedState;
-    const lyrics=$('#lyrics');
-    if(!studio||!lyrics)return;
+    const studio=studioState(),lyrics=$('#lyrics');
+    if(!lyrics)return;
     lyrics.style.setProperty('--lina-drag-x',`${Number(studio.x)||0}px`);
     lyrics.style.setProperty('--lina-drag-y',`${Number(studio.y)||0}px`);
     lyrics.style.setProperty('--lina-scale',String(Number(studio.scale)||1));
     lyrics.style.setProperty('--lina-rotation',`${Number(studio.rot)||0}deg`);
+    if($('#studioScale'))$('#studioScale').value=String(Math.round((Number(studio.scale)||1)*100));
+    if($('#studioRotation'))$('#studioRotation').value=String(Number(studio.rot)||0);
     if($('#studioScaleVal'))$('#studioScaleVal').textContent=`${Math.round((Number(studio.scale)||1)*100)}%`;
     if($('#studioRotationVal'))$('#studioRotationVal').textContent=`${Number(studio.rot||0).toFixed(1).replace('.0','')}°`;
   }
@@ -149,10 +161,22 @@
   }
 
   function setControl(id,value){const el=$('#'+id);if(el)el.value=String(value)}
+  function copySelect(source,target){
+    if(!source||!target)return;
+    const value=source.value;
+    target.replaceChildren(...[...source.options].map(o=>{const n=document.createElement('option');n.value=o.value;n.textContent=o.textContent;n.disabled=o.disabled;n.hidden=o.hidden;return n}));
+    target.value=value;
+  }
 
   function captureLayout(){
-    const studio=window.linaConsolidatedState||{},key=getEffect();
-    return{key,size:$('#size')?.value,y:$('#yPos')?.value,view:$('#contextMode')?.value,align:$('#textAlign')?.value,lineHeight:$('#lineHeight')?.value,spacing:$('#letterSpacing')?.value,x:Number(studio.x)||0,yDrag:Number(studio.y)||0,scale:Number(studio.scale)||1,rot:Number(studio.rot)||0};
+    const studio=studioState(),key=getEffect();
+    return{
+      key,size:$('#size')?.value,y:$('#yPos')?.value,view:$('#contextMode')?.value,
+      font:$('#fontChoice')?.value,weight:$('#fontWeight')?.value,align:$('#textAlign')?.value,
+      lineHeight:$('#lineHeight')?.value,spacing:$('#letterSpacing')?.value,color:$('#textColor')?.value,
+      letterCase:$('#letterCase')?.value,glow:$('#glow')?.value,
+      x:Number(studio.x)||0,yDrag:Number(studio.y)||0,scale:Number(studio.scale)||1,rot:Number(studio.rot)||0
+    };
   }
 
   function syncLayoutMirrors(){
@@ -160,6 +184,13 @@
     if($('#sizeVal'))$('#sizeVal').textContent=size;
     const quickSize=$('#quickSize');
     if(quickSize?.options?.length){const values=[...quickSize.options].map(o=>Number(o.value)).filter(Number.isFinite),n=Number(size)||52,best=values.reduce((a,b)=>Math.abs(b-n)<Math.abs(a-n)?b:a,values[0]??n);quickSize.value=String(best)}
+
+    const font=$('#fontChoice'),quickFont=$('#quickFont');if(font&&quickFont){copySelect(font,quickFont);quickFont.value=font.value}
+    const weight=$('#fontWeight')?.value;if(weight&&$('#quickWeight'))$('#quickWeight').value=weight;
+    const letterCase=$('#letterCase')?.value;if(letterCase&&$('#quickCase'))$('#quickCase').value=letterCase;
+    const color=$('#textColor')?.value||'#ffffff';if($('#quickTextColor'))$('#quickTextColor').value=color;
+    const glow=String($('#glow')?.value||'100');if($('#glowVal'))$('#glowVal').textContent=`${glow}%`;if($('#quickGlow'))$('#quickGlow').value=glow;if($('#quickGlowVal'))$('#quickGlowVal').textContent=`${glow}%`;
+
     const y=String($('#yPos')?.value||'50');if($('#quickY'))$('#quickY').value=y;if($('#quickYVal'))$('#quickYVal').textContent=`${y}%`;
     const view=$('#contextMode')?.value;if(view&&$('#quickLyricsView'))$('#quickLyricsView').value=view;
     const align=$('#textAlign')?.value;if(align&&$('#quickAlign'))$('#quickAlign').value=align;
@@ -168,27 +199,71 @@
   }
 
   function applyLayoutValues(values,{dirty=false,redraw=true}={}){
-    const key=VALID_EFFECTS.has(values.key)?values.key:getEffect(),studio=window.linaConsolidatedState;
-    if(studio){studio.x=Number(values.x)||0;studio.y=Number(values.yDrag)||0;studio.scale=Number(values.scale)||1;studio.rot=Number(values.rot)||0}
-    setControl('studioScale',Math.round((Number(values.scale)||1)*100));setControl('studioRotation',Number(values.rot)||0);
-    setControl('size',values.size??safeSize(key));setControl('yPos',values.y??'50');setControl('contextMode',values.view??DEFAULTS[key].view);setControl('textAlign',values.align??DEFAULTS[key].align);setControl('lineHeight',values.lineHeight??DEFAULTS[key].lineHeight);setControl('letterSpacing',values.spacing??DEFAULTS[key].spacing);
+    const key=VALID_EFFECTS.has(values.key)?values.key:getEffect(),d=DEFAULTS[key],studio=studioState();
+    const resolved={
+      size:String(values.size??safeSize(key)),y:String(values.y??'50'),view:String(values.view??d.view),
+      font:String(values.font??d.font),weight:String(values.weight??d.weight),align:String(values.align??d.align),
+      lineHeight:String(values.lineHeight??d.lineHeight),spacing:String(values.spacing??d.spacing),color:String(values.color??d.color),
+      letterCase:String(values.letterCase??d.letterCase),glow:String(values.glow??d.glow),
+      x:Number(values.x)||0,yDrag:Number(values.yDrag)||0,scale:Number(values.scale)||1,rot:Number(values.rot)||0
+    };
+
+    studio.effect=key;studio.x=resolved.x;studio.y=resolved.yDrag;studio.scale=resolved.scale;studio.rot=resolved.rot;
+    setControl('studioScale',Math.round(resolved.scale*100));setControl('studioRotation',resolved.rot);
+    setControl('size',resolved.size);setControl('yPos',resolved.y);setControl('contextMode',resolved.view);
+    setControl('fontChoice',resolved.font);setControl('fontWeight',resolved.weight);setControl('textAlign',resolved.align);
+    setControl('lineHeight',resolved.lineHeight);setControl('letterSpacing',resolved.spacing);setControl('textColor',resolved.color);
+    setControl('letterCase',resolved.letterCase);setControl('glow',resolved.glow);
 
     const typography=window.linaTypographyState?.[key];
-    if(typography){typography.align=String(values.align??DEFAULTS[key].align);typography.lineHeight=String(values.lineHeight??DEFAULTS[key].lineHeight);typography.spacing=String(values.spacing??DEFAULTS[key].spacing)}
+    if(typography){typography.font=resolved.font;typography.weight=resolved.weight;typography.align=resolved.align;typography.lineHeight=resolved.lineHeight;typography.spacing=resolved.spacing}
 
-    const lyrics=$('#lyrics');
-    if(lyrics){lyrics.style.fontSize=`${values.size??safeSize(key)}px`;lyrics.style.top=`${values.y??50}%`;lyrics.style.textAlign=String(values.align??DEFAULTS[key].align);lyrics.style.lineHeight=String(values.lineHeight??DEFAULTS[key].lineHeight);lyrics.style.letterSpacing=`${values.spacing??DEFAULTS[key].spacing}em`}
+    const root=document.documentElement,lyrics=$('#lyrics');
+    root.style.setProperty('--lyric-weight',resolved.weight);
+    root.style.setProperty('--lyric-lh',resolved.lineHeight);
+    root.style.setProperty('--accent',resolved.color);
+    if(lyrics){
+      lyrics.style.fontSize=`${resolved.size}px`;
+      lyrics.style.top=`${resolved.y}%`;
+      lyrics.style.textAlign=resolved.align;
+      lyrics.style.fontWeight=resolved.weight;
+      lyrics.style.lineHeight=resolved.lineHeight;
+      lyrics.style.letterSpacing=`${resolved.spacing}em`;
+      lyrics.style.textTransform=resolved.letterCase==='upper'?'uppercase':resolved.letterCase==='lower'?'lowercase':'none';
+      lyrics.style.setProperty('--lina-drag-x',`${resolved.x}px`);
+      lyrics.style.setProperty('--lina-drag-y',`${resolved.yDrag}px`);
+      lyrics.style.setProperty('--lina-scale',String(resolved.scale));
+      lyrics.style.setProperty('--lina-rotation',`${resolved.rot}deg`);
+      lyrics.classList.remove('lyric-backdrop-soft','lyric-backdrop-solid');
+    }
+
+    try{window.linaSyncTypography?.()}catch{}
+    try{window.linaCanonicalControls?.applyCase?.(false)}catch{}
     applyTransformState();syncLayoutMirrors();
-    try{window.linaSyncTypography?.()}catch{}try{window.linaQuickSettingsSync?.()}catch{}try{window.invalidateLinaMotion?.(true)}catch{}
+    try{window.invalidateLinaMotion?.(true)}catch{}
+    try{window.linaQuickSettingsSync?.()}catch{}
     syncLayoutMirrors();
-    if(redraw)requestAnimationFrame(()=>render((Number($('#audio')?.currentTime)||0)*1000));
+    if(redraw)render((Number($('#audio')?.currentTime)||0)*1000);
     if(dirty)try{markDirty?.()}catch{}
+    return resolved;
   }
 
   function resetLayout(){
-    const key=getEffect(),d=DEFAULTS[key];
-    applyLayoutValues({key,size:safeSize(key),y:'50',view:d.view,align:d.align,lineHeight:d.lineHeight,spacing:d.spacing,x:0,yDrag:0,scale:1,rot:0},{dirty:true,redraw:true});
-    try{status?.('Lyric layout reset.')}catch{}
+    const key=getEffect(),d=DEFAULTS[key],values={
+      key,size:safeSize(key),y:'50',view:d.view,font:d.font,weight:d.weight,align:d.align,
+      lineHeight:d.lineHeight,spacing:d.spacing,color:d.color,letterCase:d.letterCase,glow:d.glow,
+      x:0,yDrag:0,scale:1,rot:0
+    };
+    const apply=()=>applyLayoutValues(values,{dirty:false,redraw:true});
+    apply();
+    requestAnimationFrame(apply);
+    setTimeout(apply,80);
+    setTimeout(apply,220);
+    state.resetCount+=1;
+    document.documentElement.dataset.lastLyricReset=String(state.resetCount);
+    try{markDirty?.()}catch{}
+    try{status?.(`${key==='charli'?'Charli xcx · Apple':key==='eternal'?'Eternal Sunshine':'Apple Music'} lyric styling and layout reset.`)}catch{}
+    return values;
   }
 
   const initialLayout=captureLayout();
@@ -219,12 +294,13 @@
   const observer=new MutationObserver(()=>installControlOwnership());observer.observe(document.documentElement,{subtree:true,childList:true});
   let tries=0;const ownershipTimer=setInterval(()=>{tries++;installControlOwnership();if(tries>100&&$('#quickResetLayout')&&$('#styleEffectSelect')){clearInterval(ownershipTimer);observer.disconnect()}},60);
 
+  studioState();
   window.render=render;
   window.linaRuntime={
-    version:'canonical-v1',render,setEffect,getEffect,resetLayout,selectedContext,contextForValue,ensureBackground,applyLayoutValues,captureLayout,state,
-    selfTest(){const modes=['current','3','5','7','9'].map(contextForValue);return{renderOwner:document.documentElement.dataset.renderOwner,effect:getEffect(),appleBase:typeof appleRender==='function',charliBase:typeof effectRender==='function',appleEnhancer:!!window.linaAppleLetterHighlight,eternalEnhancer:!!window.linaEternalSunshine,contextModes:modes.map(x=>x.total),resetOwner:$('#quickResetLayout')?.dataset.linaOwner||'pending'}}
+    version:'canonical-v2-hard-reset',render,setEffect,getEffect,resetLayout,selectedContext,contextForValue,ensureBackground,applyLayoutValues,captureLayout,state,defaults:DEFAULTS,
+    selfTest(){const modes=['current','3','5','7','9'].map(contextForValue);return{renderOwner:document.documentElement.dataset.renderOwner,effect:getEffect(),appleBase:typeof appleRender==='function',charliBase:typeof effectRender==='function',appleEnhancer:!!window.linaAppleLetterHighlight,eternalEnhancer:!!window.linaEternalSunshine,contextModes:modes.map(x=>x.total),resetOwner:$('#quickResetLayout')?.dataset.linaOwner||'pending',resetCount:state.resetCount}}
   };
   window.linaResetLyricLayout=resetLayout;
-  document.documentElement.dataset.renderOwner='canonical-v1';document.documentElement.dataset.effectOwner='canonical-v1';document.documentElement.dataset.layoutOwner='canonical-v1';
+  document.documentElement.dataset.renderOwner='canonical-v1';document.documentElement.dataset.effectOwner='canonical-v1';document.documentElement.dataset.layoutOwner='canonical-v2-hard-reset';
   syncEffectUI(getEffect());requestAnimationFrame(()=>render((Number($('#audio')?.currentTime)||0)*1000));
 })();
