@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Reenie+Beanie&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Covered+By+Your+Grace&family=Reenie+Beanie&family=Waiting+for+the+Sunrise&display=swap');
 
 /* Eternal Sunshine: quiet handwritten page, no Apple-style lift/glow. */
 #story[data-lyric-effect="eternal"] #lyrics{
@@ -11,7 +11,7 @@
   transform:none!important;
   overflow:visible!important;
   text-align:left!important;
-  font-family:"Reenie Beanie","Waiting for the Sunrise","Segoe Print","Bradley Hand",cursive!important;
+  font-family:var(--lina-effect-font,"Reenie Beanie","Waiting for the Sunrise","Segoe Print","Bradley Hand",cursive)!important;
   font-weight:400!important;
   letter-spacing:.005em!important;
   line-height:1.02!important;
