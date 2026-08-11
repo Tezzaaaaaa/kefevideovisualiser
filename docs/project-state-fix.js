@@ -1,6 +1,7 @@
 'use strict';
 (()=>{
   const $=s=>document.querySelector(s);
+  const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 
   function removeTrackArtwork(){
     const track=$('.consolidated-track');
@@ -63,6 +64,16 @@
     try{setBgSource(null)}catch{}
   }
 
+  async function clearPersistedMediaBounded(){
+    if(typeof clearSavedMedia!=='function')return;
+    try{
+      await Promise.race([
+        Promise.resolve().then(()=>clearSavedMedia()),
+        wait(900)
+      ]);
+    }catch{}
+  }
+
   removeTrackArtwork();
 
   if(typeof restoreSavedProject==='function'){
@@ -80,9 +91,11 @@
   reset?.addEventListener('click',async e=>{
     e.preventDefault();
     e.stopImmediatePropagation();
+    if(reset.dataset.resetting==='true')return;
+    reset.dataset.resetting='true';
     clearProjectMemoryAndUI();
     try{localStorage.removeItem(SAVE_KEY)}catch{}
-    try{await clearSavedMedia()}catch{}
+    await clearPersistedMediaBounded();
     try{localStorage.removeItem(SAVE_KEY)}catch{}
     location.reload();
   },true);
