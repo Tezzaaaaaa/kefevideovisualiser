@@ -1,0 +1,2 @@
+p60-20260811-canonical-runtime-lock7
+Final current-state validation after aligning lyric import QA.
