@@ -4,9 +4,25 @@ import { chromium } from 'playwright';
 const base='http://127.0.0.1:4173/';
 const browser=await chromium.launch({headless:true});
 const page=await browser.newPage({viewport:{width:1100,height:800}});
+const errors=[];
+page.on('pageerror',e=>errors.push(String(e?.stack||e)));
+page.on('console',m=>{if(m.type()==='error')errors.push(`console: ${m.text()}`)});
 
 await page.goto(base,{waitUntil:'networkidle'});
-await page.waitForFunction(()=>document.documentElement.dataset.linaReady==='true',null,{timeout:20000});
+try{
+  await page.waitForFunction(()=>document.documentElement.dataset.linaReady==='true',null,{timeout:20000});
+}catch(e){
+  const diag=await page.evaluate(()=>({
+    dataset:{...document.documentElement.dataset},
+    topStatus:document.querySelector('#topStatus')?.textContent||'',
+    setupStructure:document.documentElement.dataset.setupStructure||'',
+    scripts:[...document.scripts].map(s=>s.src).filter(Boolean),
+    album:!!document.querySelector('#albumInput'),
+    artwork:!!document.querySelector('#userArtworkFile'),
+  }));
+  console.error('RESET STARTUP DIAGNOSTIC',JSON.stringify({diag,errors},null,2));
+  throw e;
+}
 await page.waitForFunction(()=>document.querySelector('#albumInput')&&!document.querySelector('.consolidated-track #userArtworkFile'),null,{timeout:10000});
 
 await page.locator('#titleInput').fill('Reset Test Song');
