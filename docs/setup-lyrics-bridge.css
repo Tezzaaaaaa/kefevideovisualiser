@@ -1,4 +1,4 @@
-/* Setup: audio + song details together, automatic lyric lookup immediately below. */
+/* Setup: audio, song details and automatic lyric lookup stay in one clean flow. */
 [data-panel="setup"]>.body{
   display:grid!important;
   grid-template-columns:repeat(2,minmax(0,1fr))!important;
@@ -6,9 +6,68 @@
 }
 [data-panel="setup"]>.body>.step-guide,
 [data-panel="setup"]>.body>.flow-controls,
+[data-panel="setup"]>.body>.setup-audio-drop-section,
 [data-panel="setup"]>.body>.setup-lyrics-lookup{
   grid-column:1/-1!important;
 }
+
+/* One large audio target instead of another button. */
+.setup-audio-drop-section{
+  width:100%!important;
+  min-width:0!important;
+}
+.setup-audio-drop-section>.upload.audio-dropzone{
+  width:100%!important;
+  min-height:126px!important;
+  display:grid!important;
+  place-items:center!important;
+  padding:20px!important;
+  box-sizing:border-box!important;
+  border:1px dashed #4a4a56!important;
+  border-radius:12px!important;
+  background:rgba(255,255,255,.022)!important;
+  cursor:pointer!important;
+  transition:border-color .14s ease,background .14s ease,transform .14s ease!important;
+}
+.setup-audio-drop-section>.upload.audio-dropzone:hover,
+.setup-audio-drop-section>.upload.audio-dropzone.is-dragging{
+  border-color:#8f8f9b!important;
+  background:rgba(255,255,255,.05)!important;
+}
+.setup-audio-drop-section>.upload.audio-dropzone.is-dragging{
+  transform:scale(.998)!important;
+}
+.audio-drop-copy{
+  display:grid!important;
+  justify-items:center!important;
+  gap:5px!important;
+  text-align:center!important;
+  pointer-events:none!important;
+}
+.audio-drop-icon{
+  display:grid!important;
+  place-items:center!important;
+  width:34px!important;
+  height:34px!important;
+  border-radius:50%!important;
+  background:rgba(255,255,255,.06)!important;
+  font-size:15px!important;
+  line-height:1!important;
+}
+.audio-drop-copy b{
+  color:var(--text)!important;
+  font-size:13px!important;
+  line-height:1.2!important;
+}
+.audio-drop-copy span{
+  color:var(--muted)!important;
+  font-size:9px!important;
+  line-height:1.4!important;
+}
+.setup-audio-drop-section #mediaStatus{
+  margin-top:0!important;
+}
+
 .setup-lyrics-lookup{
   display:grid!important;
   gap:8px!important;
@@ -36,5 +95,7 @@
   [data-panel="setup"]>.body{grid-template-columns:1fr!important}
   [data-panel="setup"]>.body>.step-guide,
   [data-panel="setup"]>.body>.flow-controls,
+  [data-panel="setup"]>.body>.setup-audio-drop-section,
   [data-panel="setup"]>.body>.setup-lyrics-lookup{grid-column:1!important}
+  .setup-audio-drop-section>.upload.audio-dropzone{min-height:108px!important;padding:16px!important}
 }
