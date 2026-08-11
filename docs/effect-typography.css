@@ -1,0 +1,10 @@
+/* Typography follows the effect chosen under Preview. */
+#story[data-lyric-effect="apple"] .lyrics{
+  font-family:var(--lina-effect-font,-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Arial,sans-serif)!important;
+}
+#story[data-lyric-effect="charli"] .charli-card{
+  font-family:var(--lina-effect-font,"Arial Narrow","Helvetica Neue Condensed","Helvetica Neue",Arial,sans-serif)!important;
+}
+#story[data-lyric-effect="eternal"] .eternal-page{
+  font-family:var(--lina-effect-font,"Bradley Hand","Noteworthy","Chalkboard SE","Segoe Print",cursive)!important;
+}
