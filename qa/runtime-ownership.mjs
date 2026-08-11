@@ -20,6 +20,9 @@ for(const [name,type] of targets){
     sameRender:window.render===window.linaRuntime.render,
     previewRuntime:!!window.linaPreviewRuntime,
     previewRecovery:!!window.linaPreviewRecovery,
+    quickEffectOwner:document.querySelector('#quickEffect')?.dataset.linaOwner,
+    styleEffectOwner:document.querySelector('#styleEffectSelect')?.dataset.linaOwner,
+    resetOwner:document.querySelector('#quickResetLayout')?.dataset.linaOwner,
     self:window.linaRuntime.selfTest()
   }));
   assert.equal(ownership.renderOwner,'canonical-v1',`${name}: canonical render owner missing`);
@@ -29,6 +32,9 @@ for(const [name,type] of targets){
   assert.equal(ownership.sameRender,true,`${name}: render() was wrapped after canonical runtime`);
   assert.equal(ownership.previewRuntime,false,`${name}: retired preview-runtime still loaded`);
   assert.equal(ownership.previewRecovery,false,`${name}: retired preview-recovery still loaded`);
+  assert.equal(ownership.quickEffectOwner,'canonical',`${name}: Quick Settings effect is not canonically owned`);
+  assert.equal(ownership.styleEffectOwner,'canonical',`${name}: Style effect is not canonically owned`);
+  assert.equal(ownership.resetOwner,'canonical',`${name}: Reset Layout is not canonically owned`);
   assert.deepEqual(ownership.self.contextModes,[1,3,5,7,9],`${name}: context parser regression`);
 
   await page.evaluate(()=>{
@@ -37,28 +43,33 @@ for(const [name,type] of targets){
     sourceBase=sourceLines.map(x=>({...x,words:x.words.map(w=>({...w}))}));
     window.linaRuntime.setEffect('apple',{dirty:false,redraw:false});
     window.invalidateLinaMotion?.(true);
+    window.render(4000);
   });
 
+  // Test the public Lyrics View control, not just its parser.
   for(const [mode,count] of [['current',1],['3',3],['5',5],['7',7],['9',9]]){
-    await page.evaluate(([m])=>{document.querySelector('#contextMode').value=m;window.invalidateLinaMotion?.(true);window.render(4000)},[mode]);
+    await page.selectOption('#quickLyricsView',mode);
+    await page.evaluate(()=>window.render(4000));
+    const sourceMode=await page.inputValue('#contextMode');
+    assert.equal(sourceMode,mode,`${name}: Quick Lyrics View ${mode} did not update canonical source`);
     const visible=await page.locator('#lyrics .apple-line').evaluateAll(nodes=>nodes.filter(el=>getComputedStyle(el).visibility!=='hidden').length);
     assert.equal(visible,count,`${name}: Lyrics View ${mode} rendered ${visible}, expected ${count}`);
   }
 
-  const renderStable=await page.evaluate(async()=>{
-    const ref=window.render;
-    for(const effect of ['eternal','charli','apple']){
-      window.linaRuntime.setEffect(effect,{dirty:false,redraw:false});
-      window.render(4000);
-      await new Promise(r=>requestAnimationFrame(r));
-      if(window.render!==ref)return false;
-    }
-    return true;
-  });
-  assert.equal(renderStable,true,`${name}: effect switching replaced canonical render()`);
+  const renderRef=await page.evaluate(()=>window.render);
+  await page.selectOption('#quickEffect','eternal');
+  await page.waitForTimeout(30);
+  assert.equal(await page.inputValue('#lyricEffect'),'eternal',`${name}: Quick effect did not reach canonical state`);
+  assert.equal(await page.evaluate(()=>window.render===window.linaRuntime.render),true,`${name}: Quick effect replaced canonical render()`);
+  await page.selectOption('#styleEffectSelect','charli');
+  await page.waitForTimeout(30);
+  assert.equal(await page.inputValue('#lyricEffect'),'charli',`${name}: Style effect did not reach canonical state`);
+  assert.equal(await page.evaluate(()=>window.render===window.linaRuntime.render),true,`${name}: Style effect replaced canonical render()`);
+  await page.selectOption('#quickEffect','apple');
+  await page.waitForTimeout(30);
+  assert.equal(await page.evaluate(()=>window.render===window.linaRuntime.render),true,`${name}: Apple effect replaced canonical render()`);
 
   await page.evaluate(()=>{
-    window.linaRuntime.setEffect('apple',{dirty:false,redraw:false});
     const s=window.linaConsolidatedState;s.x=120;s.y=-40;s.scale=1.4;s.rot=8;
     document.querySelector('#size').value='68';
     document.querySelector('#yPos').value='70';
@@ -66,25 +77,32 @@ for(const [name,type] of targets){
     document.querySelector('#textAlign').value='right';
     document.querySelector('#lineHeight').value='1.25';
     document.querySelector('#letterSpacing').value='0.05';
-    window.linaRuntime.resetLayout();
+    document.querySelector('#lyrics').style.fontSize='68px';
+    document.querySelector('#lyrics').style.top='70%';
   });
+  await page.click('#quickResetLayout');
   await page.waitForTimeout(140);
   const reset=await page.evaluate(()=>({
     x:window.linaConsolidatedState.x,y:window.linaConsolidatedState.y,scale:window.linaConsolidatedState.scale,rot:window.linaConsolidatedState.rot,
     size:document.querySelector('#size').value,yPos:document.querySelector('#yPos').value,view:document.querySelector('#contextMode').value,
     align:document.querySelector('#textAlign').value,lineHeight:document.querySelector('#lineHeight').value,spacing:document.querySelector('#letterSpacing').value,
-    fontSize:document.querySelector('#lyrics').style.fontSize,quickY:document.querySelector('#quickY')?.value,
-    resetOwner:document.querySelector('#quickResetLayout')?.dataset.linaOwner
+    fontSize:document.querySelector('#lyrics').style.fontSize,top:document.querySelector('#lyrics').style.top,
+    quickY:document.querySelector('#quickY')?.value,quickView:document.querySelector('#quickLyricsView')?.value,
+    resetOwner:document.querySelector('#quickResetLayout')?.dataset.linaOwner,
+    sameRender:window.render===window.linaRuntime.render
   }));
   assert.deepEqual([reset.x,reset.y,reset.scale,reset.rot],[0,0,1,0],`${name}: transform reset failed`);
   assert.equal(reset.yPos,'50',`${name}: vertical reset failed`);
+  assert.equal(reset.top,'50%',`${name}: preview vertical style did not reset`);
   assert.equal(reset.view,'5',`${name}: Lyrics View reset failed`);
+  assert.equal(reset.quickView,'5',`${name}: Quick Lyrics View mirror did not reset`);
   assert.equal(reset.align,'left',`${name}: alignment reset failed`);
   assert.equal(reset.lineHeight,'1.02',`${name}: line-height reset failed`);
   assert.equal(reset.spacing,'-0.02',`${name}: letter-spacing reset failed`);
   assert.equal(reset.fontSize,`${reset.size}px`,`${name}: preview font size did not follow reset value`);
   assert.equal(reset.quickY,'50',`${name}: Quick Settings mirror did not follow reset`);
   assert.equal(reset.resetOwner,'canonical',`${name}: reset button lost canonical ownership`);
+  assert.equal(reset.sameRender,true,`${name}: reset replaced canonical render()`);
 
   const effectState=await page.evaluate(()=>{
     window.linaRuntime.setEffect('eternal',{dirty:false,redraw:false});
@@ -100,6 +118,8 @@ for(const [name,type] of targets){
   assert.deepEqual([effectState.hidden,effectState.story,effectState.studio,effectState.quick,effectState.style],Array(5).fill('eternal'),`${name}: effect state diverged`);
   assert.equal(effectState.sameRender,true,`${name}: effect state change replaced renderer`);
 
+  // Keep the reference alive in the test so engines cannot optimize the ownership check away.
+  assert.ok(renderRef,`${name}: initial render reference missing`);
   assert.deepEqual(pageErrors,[],`${name}: page errors: ${pageErrors.join(' | ')}`);
   await browser.close();
 }
