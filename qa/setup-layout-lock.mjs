@@ -35,12 +35,13 @@ for(const [name,type] of browsers){
     const page=await browser.newPage({viewport});
     await page.goto(base,{waitUntil:'networkidle'});
     await page.waitForFunction(()=>document.documentElement.dataset.linaReady==='true',null,{timeout:20000});
-    await page.waitForFunction(()=>document.documentElement.dataset.setupStructure==='v2',null,{timeout:10000});
+    await page.waitForFunction(()=>document.documentElement.dataset.setupStructure==='v3',null,{timeout:10000});
     await page.click('#nav [data-tool="setup"]');
 
     await page.locator('.flow-controls').evaluate(el=>el.classList.add('workflow-floating'));
-    const position=await page.locator('.flow-controls').evaluate(el=>getComputedStyle(el).position);
-    assert.notEqual(position,'fixed',`${name}/${vpName}: workflow controls became a fixed overlay`);
+    const flowState=await page.locator('.flow-controls').evaluate(el=>({position:getComputedStyle(el).position,display:getComputedStyle(el).display}));
+    assert.notEqual(flowState.position,'fixed',`${name}/${vpName}: workflow controls became a fixed overlay`);
+    assert.equal(flowState.display,'none',`${name}/${vpName}: redundant Back/Next workflow controls are visible`);
 
     const setupOverflow=await page.locator('[data-panel="setup"]').evaluate(el=>getComputedStyle(el).overflow);
     assert.notEqual(setupOverflow,'hidden',`${name}/${vpName}: Setup panel clips its controls`);
@@ -71,11 +72,36 @@ for(const [name,type] of browsers){
     assert.ok(retiredSearch>=1,`${name}/${vpName}: retired lookup unexpectedly returned to active Setup`);
 
     if(viewport.width<=900){
-      const shell=await page.locator('.workspace').evaluate(el=>({display:getComputedStyle(el).display,direction:getComputedStyle(el).flexDirection}));
+      const shell=await page.locator('.workspace').evaluate(el=>({display:getComputedStyle(el).display,direction:getComputedStyle(el).flexDirection,box:el.getBoundingClientRect()}));
       assert.equal(shell.display,'flex',`${name}/${vpName}: narrow workspace is not the locked single-column flex shell`);
       assert.equal(shell.direction,'column',`${name}/${vpName}: narrow workspace is not column ordered`);
-      const leftWidth=await page.locator('.left').evaluate(el=>el.getBoundingClientRect().width);
-      assert.ok(leftWidth>=viewport.width-20,`${name}/${vpName}: Setup column is still squeezed (${leftWidth}px)`);
+      assert.ok(Math.abs(shell.box.width-viewport.width)<=24,`${name}/${vpName}: workspace does not use viewport width (${shell.box.width}px of ${viewport.width}px)`);
+      assert.ok(shell.box.left<=12,`${name}/${vpName}: workspace has unexplained left offset (${shell.box.left}px)`);
+
+      const leftBox=await page.locator('.left').boundingBox();
+      const setupBox=await page.locator('[data-panel="setup"]').boundingBox();
+      assert.ok(leftBox&&leftBox.width>=viewport.width-24,`${name}/${vpName}: Setup column is still squeezed (${leftBox?.width||0}px)`);
+      assert.ok(setupBox&&setupBox.width>=viewport.width-24,`${name}/${vpName}: Setup panel is still squeezed (${setupBox?.width||0}px)`);
+      assert.ok(leftBox.left<=12,`${name}/${vpName}: Setup has unexplained left offset (${leftBox.left}px)`);
+
+      const navBox=await page.locator('#nav').boundingBox();
+      assert.ok(navBox&&setupBox&&navBox.y+navBox.height<=setupBox.y+2,`${name}/${vpName}: navigation overlaps Setup panel`);
+
+      const docWidth=await page.evaluate(()=>document.documentElement.scrollWidth);
+      assert.ok(docWidth<=viewport.width+2,`${name}/${vpName}: horizontal page overflow ${docWidth}>${viewport.width}`);
+
+      if(viewport.width>=400){
+        assert.ok(albumBox&&albumBox.width>=200,`${name}/${vpName}: Album / release is still squeezed (${albumBox?.width||0}px)`);
+      }
+
+      if(viewport.width<=560){
+        const introBox=await intro.boundingBox();
+        const introChildren=await intro.locator(':scope > label').evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect();return{width:r.width,left:r.left,right:r.right}}));
+        assert.ok(introBox,`${name}/${vpName}: intro settings have no box`);
+        for(const row of introChildren){
+          assert.ok(row.width>=introBox.width-4,`${name}/${vpName}: phone intro control is not full-width (${row.width}px vs ${introBox.width}px)`);
+        }
+      }
     }else{
       const leftWidth=await page.locator('.left').evaluate(el=>el.getBoundingClientRect().width);
       assert.ok(leftWidth>=430,`${name}/${vpName}: Setup column too narrow (${leftWidth}px)`);
