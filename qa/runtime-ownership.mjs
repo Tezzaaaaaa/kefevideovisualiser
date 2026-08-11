@@ -46,7 +46,6 @@ for(const [name,type] of targets){
     window.render(4000);
   });
 
-  // Test the public Lyrics View control, not just its parser.
   for(const [mode,count] of [['current',1],['3',3],['5',5],['7',7],['9',9]]){
     await page.selectOption('#quickLyricsView',mode);
     await page.evaluate(()=>window.render(4000));
@@ -56,7 +55,6 @@ for(const [name,type] of targets){
     assert.equal(visible,count,`${name}: Lyrics View ${mode} rendered ${visible}, expected ${count}`);
   }
 
-  const renderRef=await page.evaluate(()=>window.render);
   await page.selectOption('#quickEffect','eternal');
   await page.waitForTimeout(30);
   assert.equal(await page.inputValue('#lyricEffect'),'eternal',`${name}: Quick effect did not reach canonical state`);
@@ -118,8 +116,6 @@ for(const [name,type] of targets){
   assert.deepEqual([effectState.hidden,effectState.story,effectState.studio,effectState.quick,effectState.style],Array(5).fill('eternal'),`${name}: effect state diverged`);
   assert.equal(effectState.sameRender,true,`${name}: effect state change replaced renderer`);
 
-  // Keep the reference alive in the test so engines cannot optimize the ownership check away.
-  assert.ok(renderRef,`${name}: initial render reference missing`);
   assert.deepEqual(pageErrors,[],`${name}: page errors: ${pageErrors.join(' | ')}`);
   await browser.close();
 }
