@@ -4,6 +4,7 @@
 .stage-head,
 .stage-wrap,
 #previewQuickControls,
+#previewTitleToggle,
 .transport,
 .transport-tools,
 .more-controls,
@@ -37,6 +38,30 @@
 .transport-tools{
   margin-top:0!important;
   margin-bottom:8px!important;
+}
+
+.preview-title-toggle{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:14px!important;
+  min-height:48px!important;
+  padding:10px 12px!important;
+  margin-bottom:8px!important;
+  border:1px solid var(--border)!important;
+  border-radius:12px!important;
+  background:rgba(255,255,255,.03)!important;
+  cursor:pointer!important;
+}
+.preview-title-toggle>span{display:grid!important;gap:3px!important;min-width:0!important}
+.preview-title-toggle b{font-size:11px!important;color:var(--text)!important}
+.preview-title-toggle small{font-size:9px!important;line-height:1.35!important;color:var(--muted)!important}
+.preview-title-toggle input{
+  width:20px!important;
+  height:20px!important;
+  min-width:20px!important;
+  margin:0!important;
+  accent-color:#fff!important;
 }
 
 .preview-quick-controls{
