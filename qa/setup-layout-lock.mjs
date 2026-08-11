@@ -88,7 +88,7 @@ for(const [name,type] of browsers){
       const setupBox=await page.locator('[data-panel="setup"]').boundingBox();
       assert.ok(leftBox&&leftBox.width>=viewport.width-24,`${name}/${vpName}: Setup column is still squeezed (${leftBox?.width||0}px)`);
       assert.ok(setupBox&&setupBox.width>=viewport.width-24,`${name}/${vpName}: Setup panel is still squeezed (${setupBox?.width||0}px)`);
-      assert.ok(leftBox.left<=12,`${name}/${vpName}: Setup has unexplained left offset (${leftBox.left}px)`);
+      assert.ok(leftBox.x<=12,`${name}/${vpName}: Setup has unexplained left offset (${leftBox.x}px)`);
 
       const navBox=await page.locator('#nav').boundingBox();
       assert.ok(navBox&&setupBox&&navBox.y+navBox.height<=setupBox.y+2,`${name}/${vpName}: navigation overlaps Setup panel`);
