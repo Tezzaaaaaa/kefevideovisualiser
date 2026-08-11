@@ -12,7 +12,6 @@
   const showTitle=$('#showTitle');if(showTitle){const label=showTitle.closest('.toggle')?.querySelector('span');if(label)label.textContent='Show title + artist at start';mark(showTitle)}
   const duration=$('#titleDuration');if(duration){duration.onchange=()=>{redraw();dirty()};mark(duration)}
   const album=$('#albumInput');if(album){album.oninput=()=>{selectedSong={...(selectedSong||{}),collectionName:album.value};redraw();dirty()};mark(album)}
-  const introArtToggle=$('#userArtworkIntro');if(introArtToggle){introArtToggle.onchange=()=>{if($('#showArtworkIntro'))$('#showArtworkIntro').checked=introArtToggle.checked;$('#introArt')?.classList.toggle('on',introArtToggle.checked&&!!$('#introArt')?.src);redraw();dirty()};mark(introArtToggle)}
 
   function syncEntranceUI(){
     const select=$('#lyricsEntrance'),wrap=$('#customEntranceWrap');
@@ -28,8 +27,8 @@
 
   const checks=[
     ['audioFile','onchange'],['lyricsFile','onchange'],['bgImageFile','onchange'],['bgVideoFile','onchange'],
-    ['autosaveToggle','onchange'],['syncMethod','onchange'],['seek','oninput'],['useArtworkBg2','onchange'],
-    ['letterCase',null],['userArtworkFile','onchange'],['userArtworkIntro','onchange'],['albumInput','oninput'],['titleDuration','onchange'],
+    ['autosaveToggle','onchange'],['syncMethod','onchange'],['seek','oninput'],
+    ['letterCase',null],['albumInput','oninput'],['titleDuration','onchange'],
     ['size',null],['yPos',null],['textColor',null],['glow',null],['offset',null],['contextMode',null],['lyricsEntrance',null],
     ['aspect',null],['quality',null],['safeToggle',null],['cropX',null],['cropY',null],['cropZoom',null],['bgFit',null],['dim',null],['blur',null]
   ];
