@@ -9,7 +9,7 @@
 <body>
 <script>
 (async()=>{
-  const BUILD='p49-20260811-clickable-preview';
+  const BUILD='p50-20260811-review-production-controls';
   try{
     const response=await fetch(`app-source.html?v=${BUILD}`,{cache:'no-store'});
     if(!response.ok)throw new Error(`HTTP ${response.status}`);
