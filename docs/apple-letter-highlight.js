@@ -26,17 +26,19 @@
 
   function restorePlain(){
     document.querySelectorAll('.apple-word[data-apple-letter-text]').forEach(span=>{
-      if(!span.querySelector(':scope > .apple-char'))return;
-      span.textContent=span.dataset.appleLetterText||'';
+      if(span.querySelector(':scope > .apple-char'))span.textContent=span.dataset.appleLetterText||'';
       delete span.dataset.appleLetterText;
       span.classList.remove('apple-word-active');
+      span.style.removeProperty('--apple-word-presence');
     });
   }
 
   function applyLetters(ms){
     if(!active())return restorePlain();
-    if(!Array.isArray(window.lines||lines)||!(window.lines||lines).length)return;
+    const story=$('#story');
+    if(story)story.dataset.lyricEffect='apple';
     const allLines=window.lines||lines;
+    if(!Array.isArray(allLines)||!allLines.length)return;
     const glowSetting=Math.max(0,Math.min(1,(Number($('#glow')?.value)||0)/100));
 
     document.querySelectorAll('.apple-line[data-line]').forEach(lineEl=>{
