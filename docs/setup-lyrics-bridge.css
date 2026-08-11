@@ -15,6 +15,9 @@
 .setup-audio-drop-section{
   width:100%!important;
   min-width:0!important;
+  display:grid!important;
+  gap:10px!important;
+  transition:border-color .18s ease,background .18s ease,box-shadow .18s ease!important;
 }
 .setup-audio-drop-section>.upload.audio-dropzone{
   width:100%!important;
@@ -54,7 +57,75 @@
 }
 .audio-drop-copy b{color:var(--text)!important;font-size:13px!important;line-height:1.2!important}
 .audio-drop-copy span{color:var(--muted)!important;font-size:9px!important;line-height:1.4!important}
-.setup-audio-drop-section #mediaStatus{margin-top:0!important}
+
+/* Preserve runtime status for code, but replace the tiny strip with the proper success card. */
+.setup-audio-drop-section #mediaStatus{display:none!important}
+#audioLoadState{
+  display:none!important;
+  min-height:72px!important;
+  margin:0!important;
+  padding:13px 15px!important;
+  grid-template-columns:38px minmax(0,1fr)!important;
+  gap:12px!important;
+  align-items:center!important;
+  box-sizing:border-box!important;
+  border:1px solid #30303a!important;
+  border-radius:12px!important;
+  background:#0c0c10!important;
+  color:#f7f7fa!important;
+}
+#audioLoadState.is-loading,
+#audioLoadState.is-success,
+#audioLoadState.is-error{display:grid!important}
+.audio-state-icon{
+  width:38px!important;
+  height:38px!important;
+  display:grid!important;
+  place-items:center!important;
+  border-radius:50%!important;
+  background:rgba(255,255,255,.07)!important;
+  font-size:18px!important;
+  font-weight:900!important;
+  line-height:1!important;
+}
+.audio-state-copy{display:grid!important;gap:4px!important;min-width:0!important}
+.audio-state-copy b{color:#fff!important;font-size:13px!important;line-height:1.2!important;font-weight:850!important}
+.audio-state-copy small{color:#a9a9b3!important;font-size:10px!important;line-height:1.45!important;overflow-wrap:anywhere!important}
+
+.setup-audio-drop-section.audio-loading{
+  border-color:#555562!important;
+  background:rgba(255,255,255,.04)!important;
+}
+.setup-audio-drop-section.audio-loading .audio-state-icon{animation:linaLyricsPulse 1s ease-in-out infinite alternate!important}
+
+.setup-audio-drop-section.audio-loaded{
+  border-color:#4d9b67!important;
+  background:rgba(77,155,103,.10)!important;
+  box-shadow:0 0 0 1px rgba(77,155,103,.10),0 14px 34px rgba(0,0,0,.18)!important;
+}
+.setup-audio-drop-section.audio-loaded>.upload.audio-dropzone{
+  border-color:#4d9b67!important;
+  background:rgba(37,92,56,.18)!important;
+}
+.setup-audio-drop-section.audio-loaded #audioLoadState{
+  min-height:86px!important;
+  border-color:#4d9b67!important;
+  background:rgba(37,92,56,.30)!important;
+}
+.setup-audio-drop-section.audio-loaded .audio-state-icon{
+  background:#e8fff0!important;
+  color:#123d20!important;
+}
+.setup-audio-drop-section.audio-loaded .audio-state-copy b{
+  font-size:15px!important;
+  color:#f0fff4!important;
+}
+.setup-audio-drop-section.audio-loaded .audio-state-copy small{color:#c8e8d1!important;font-size:10.5px!important}
+.setup-audio-drop-section.audio-loaded>.subhead>span{color:#9fe0b5!important;font-weight:750!important}
+
+.setup-audio-drop-section.audio-error{border-color:#835757!important;background:rgba(131,87,87,.08)!important}
+.setup-audio-drop-section.audio-error #audioLoadState{border-color:#835757!important}
+.setup-audio-drop-section.audio-error .audio-state-icon{background:rgba(176,91,91,.18)!important;color:#ffd9d9!important}
 
 .setup-lyrics-lookup{
   display:grid!important;
@@ -160,6 +231,6 @@
   [data-panel="setup"]>.body>.setup-audio-drop-section,
   [data-panel="setup"]>.body>.setup-lyrics-lookup{grid-column:1!important}
   .setup-audio-drop-section>.upload.audio-dropzone{min-height:108px!important;padding:16px!important}
-  .setup-lyrics-lookup #lyricsLookupStatus{grid-template-columns:34px minmax(0,1fr)!important;padding:12px!important}
-  .lyrics-state-icon{width:34px!important;height:34px!important;font-size:16px!important}
+  #audioLoadState,.setup-lyrics-lookup #lyricsLookupStatus{grid-template-columns:34px minmax(0,1fr)!important;padding:12px!important}
+  .audio-state-icon,.lyrics-state-icon{width:34px!important;height:34px!important;font-size:16px!important}
 }
