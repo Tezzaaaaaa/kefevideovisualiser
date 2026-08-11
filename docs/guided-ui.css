@@ -1,9 +1,7 @@
-/* LINA guided workflow — consistent widths, clear hierarchy, calm first-run controls. */
-:root{--guided-max:1080px;--preview-max:960px}
+/* LINA guided workflow — two-column maximum, clear hierarchy, calm first-run controls. */
+:root{--guided-max:1080px;--preview-max:900px}
 
-/* Keep each workflow step readable instead of stretching controls across the monitor. */
-.left,
-.stage{
+.left,.stage{
   width:100%!important;
   max-width:var(--guided-max)!important;
   margin-left:auto!important;
@@ -30,7 +28,6 @@
 .step-guide b{font-size:13px!important;line-height:1.2!important}
 .step-guide span{font-size:10px!important;line-height:1.5!important;color:var(--muted)!important;max-width:760px!important}
 
-/* Every control group reads as one intentional card. */
 .left .subsection,
 .style-advanced-wrap,
 .background-advanced-wrap,
@@ -43,10 +40,7 @@
   background:rgba(255,255,255,.025)!important;
   box-sizing:border-box!important;
 }
-.left .subsection{
-  padding:14px!important;
-  margin:0!important;
-}
+.left .subsection{padding:14px!important;margin:0!important}
 .left .subhead{margin-bottom:8px!important}
 .left .subhead b{font-size:12px!important}
 .left .subhead span{font-size:9px!important}
@@ -69,25 +63,27 @@
 .left .field input[type=number],
 .left .field select{min-height:40px!important}
 
-/* SETUP: three obvious steps, not three giant stretched fields. */
+/* SETUP: two columns maximum. */
 [data-panel="setup"]>.body{
   display:grid!important;
-  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
   gap:12px!important;
 }
 [data-panel="setup"]>.body>.step-guide,
 [data-panel="setup"]>.body>.flow-controls{grid-column:1/-1!important}
 [data-panel="setup"] .setup-shell-section{min-height:0!important}
+[data-panel="setup"] .setup-shell-section:nth-of-type(3){grid-column:1/-1!important}
 
 /* LYRICS: one recommended action, everything else secondary. */
 [data-panel="lyrics"]>.body{
   display:grid!important;
   grid-template-columns:1fr!important;
-  max-width:860px!important;
+  max-width:820px!important;
 }
 #searchLyricsBox{display:grid!important;gap:8px!important;padding-top:6px!important}
 #searchLyricsBox.hidden{display:none!important}
 #findLyricsBtn{min-height:48px!important;font-size:12px!important;font-weight:800!important}
+
 .other-lyrics-methods>summary,
 .advanced-lyrics-settings>summary,
 .style-advanced-wrap>summary,
@@ -129,6 +125,7 @@
 .review-clean-body,
 .more-controls-body{
   display:grid!important;
+  grid-template-columns:1fr!important;
   gap:10px!important;
   padding:12px!important;
   border-top:1px solid var(--border)!important;
@@ -139,40 +136,34 @@
 .background-advanced-body>.subsection,
 .review-clean-body>.subsection{border:0!important;padding:4px!important;background:transparent!important}
 
-/* STYLE: effect choice is visually first and unmistakable. */
-[data-panel="style"]>.body{max-width:960px!important}
-.consolidated-effects{order:-5!important}
+/* STYLE: only settings for the currently selected effect. */
+[data-panel="style"]>.body{max-width:900px!important}
+.consolidated-effects{display:none!important}
 .effect-guide{font-size:10px!important;line-height:1.45!important;color:var(--muted)!important;margin:0 0 10px!important}
-.consolidated-effects .effect-picker{
-  display:grid!important;
-  grid-template-columns:repeat(3,minmax(0,1fr))!important;
-  gap:10px!important;
-  overflow:visible!important;
-}
-.consolidated-effects .effect-option{
-  min-width:0!important;
-  min-height:92px!important;
-  padding:11px!important;
-  border-radius:11px!important;
-  text-align:left!important;
-}
-.consolidated-effects .effect-option.active{
-  outline:2px solid currentColor!important;
-  outline-offset:2px!important;
-}
-.consolidated-effects .effect-option b{font-size:11px!important}
-.consolidated-effects .effect-option span{font-size:9px!important;line-height:1.35!important}
 
-/* BACKGROUND + REVIEW: linear, compact, easy to scan. */
+/* Any internal grids are capped at two columns. */
+.grid2,
+.transform-grid,
+.crop-grid,
+.preview-control-grid,
+.export-row,
+.export-grid{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:10px!important;
+}
+
+/* BACKGROUND + REVIEW remain linear and compact. */
 [data-panel="background"]>.body,
-[data-panel="review"]>.body{max-width:900px!important}
+[data-panel="review"]>.body{max-width:860px!important}
 .review-clean-wrap #reviewBox{max-height:none!important;overflow:visible!important}
 .review-clean-wrap #reviewBox .review-list{max-height:360px!important;overflow:auto!important}
 
-/* PREVIEW: landscape must not fill the whole browser width. */
+/* PREVIEW: landscape stays centered and contained. */
 .stage{display:block!important}
 .stage-head,
 .stage-wrap,
+.preview-effect-switcher,
 .transport,
 .transport-tools,
 .simple-control-summary,
@@ -191,44 +182,26 @@
   align-items:center!important;
   padding:12px!important;
 }
-#story[data-aspect="16:9"]{
-  width:min(var(--preview-max),100%)!important;
-  height:auto!important;
-  aspect-ratio:16/9!important;
-  max-height:none!important;
-}
-#story[data-aspect="1:1"]{
-  width:min(700px,100%)!important;
-  height:auto!important;
-  aspect-ratio:1/1!important;
-  max-height:none!important;
-}
-#story[data-aspect="4:5"]{
-  width:min(620px,100%)!important;
-  height:auto!important;
-  aspect-ratio:4/5!important;
-  max-height:none!important;
-}
-#story[data-aspect="9:16"]{
-  width:min(470px,100%)!important;
-  height:auto!important;
-  aspect-ratio:9/16!important;
-  max-height:none!important;
-}
+#story[data-aspect="16:9"]{width:min(var(--preview-max),100%)!important;height:auto!important;aspect-ratio:16/9!important;max-height:none!important}
+#story[data-aspect="1:1"]{width:min(680px,100%)!important;height:auto!important;aspect-ratio:1/1!important;max-height:none!important}
+#story[data-aspect="4:5"]{width:min(600px,100%)!important;height:auto!important;aspect-ratio:4/5!important;max-height:none!important}
+#story[data-aspect="9:16"]{width:min(460px,100%)!important;height:auto!important;aspect-ratio:9/16!important;max-height:none!important}
 
-/* The visible playback strip contains only the controls a new user needs. */
+/* Visible playback area: never more than two columns. */
 .transport{margin-top:8px!important}
 .transport-tools{
   display:grid!important;
-  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
   gap:7px!important;
   margin-top:7px!important;
 }
 .transport-tools #transportEdit{display:none!important}
 .transport-tools .btn{width:100%!important;min-width:0!important}
+.transport-tools .btn:last-child:nth-child(odd){grid-column:1/-1!important}
+
 .simple-control-summary{
   display:grid!important;
-  grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
   gap:6px!important;
   padding:9px!important;
   margin-top:8px!important;
@@ -247,39 +220,35 @@
   color:var(--muted)!important;
 }
 .simple-control-summary b{font-size:9px!important;color:var(--text)!important}
+.simple-control-summary span:last-child:nth-child(odd){grid-column:1/-1!important}
 .more-controls{margin-top:8px!important}
 .more-controls-body>.preview-controls,
 .more-controls-body>.stage-export,
-.more-controls-body>.right{
-  width:100%!important;
-  max-width:none!important;
-  margin:0!important;
-}
+.more-controls-body>.right{width:100%!important;max-width:none!important;margin:0!important}
 .more-controls-body>.right{display:block!important;position:static!important;max-height:none!important;overflow:visible!important}
 .more-controls-body .right .panel{margin:0 0 10px!important}
 .advanced-only-control{width:auto!important;justify-self:start!important}
 
-/* Navigation and Next/Back remain visually separate from content. */
 .flow-controls.workflow-inline{
   border-top:1px solid var(--border)!important;
   margin-top:2px!important;
   padding-top:12px!important;
 }
 
-@media(max-width:1000px){
+@media(max-width:760px){
   [data-panel="setup"]>.body{grid-template-columns:1fr!important}
   [data-panel="setup"]>.body>.step-guide,
-  [data-panel="setup"]>.body>.flow-controls{grid-column:1!important}
-  .simple-control-summary{grid-template-columns:repeat(2,minmax(0,1fr))!important}
-  .simple-control-summary span:last-child{grid-column:1/-1!important}
+  [data-panel="setup"]>.body>.flow-controls,
+  [data-panel="setup"] .setup-shell-section:nth-of-type(3){grid-column:1!important}
+  .grid2,.transform-grid,.crop-grid,.preview-control-grid,.export-row,.export-grid{grid-template-columns:1fr!important}
+  .transport-tools{grid-template-columns:1fr!important}
+  .simple-control-summary{grid-template-columns:1fr!important}
+  .transport-tools .btn:last-child:nth-child(odd),
+  .simple-control-summary span:last-child:nth-child(odd){grid-column:auto!important}
 }
 
 @media(max-width:700px){
   :root{--preview-max:100%}
   .left,.stage{max-width:100%!important}
-  .consolidated-effects .effect-picker{grid-template-columns:1fr!important}
-  .transport-tools{grid-template-columns:1fr!important}
-  .simple-control-summary{grid-template-columns:1fr!important}
-  .simple-control-summary span:last-child{grid-column:auto!important}
   #story[data-aspect="16:9"],#story[data-aspect="1:1"],#story[data-aspect="4:5"],#story[data-aspect="9:16"]{width:100%!important}
 }
