@@ -51,7 +51,13 @@
         <label><span>Frame</span><select id="quickFrame"></select></label>
       </div>
       <button id="quickResetLayout" class="btn subtle" type="button">Reset lyric layout</button>`;
-    stageWrap.after(box);
+
+    // Playback belongs immediately under the preview. Quick settings follow playback.
+    const transport=$('.transport');
+    const transportTools=$('.transport-tools');
+    if(transportTools)transportTools.after(box);
+    else if(transport)transport.after(box);
+    else stageWrap.after(box);
 
     const effect=$('#previewEffectSelect');
     const size=$('#size');
