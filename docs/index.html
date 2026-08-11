@@ -9,7 +9,7 @@
 <body>
 <script>
 (async()=>{
-  const BUILD='p53-20260811-prioritized-production-controls';
+  const BUILD='p54-20260811-lyrics-view-fix';
   try{
     const response=await fetch(`app-source.html?v=${BUILD}`,{cache:'no-store'});
     if(!response.ok)throw new Error(`HTTP ${response.status}`);
