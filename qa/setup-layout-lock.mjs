@@ -9,7 +9,7 @@ const viewports=[
   ['tablet',{width:820,height:1000}],
   ['mobile',{width:430,height:850}],
 ];
-const controls=['#albumInput','#titleInput','#artistInput','label[for="userArtworkFile"]','label.upload:has(#audioFile)'];
+const controls=['#albumInput','#titleInput','#artistInput','label.upload:has(#audioFile)'];
 
 async function assertUsable(page,name,viewport,selector){
   const el=page.locator(selector);
@@ -35,7 +35,11 @@ for(const [name,type] of browsers){
     const page=await browser.newPage({viewport});
     await page.goto(base,{waitUntil:'networkidle'});
     await page.waitForFunction(()=>document.documentElement.dataset.linaReady==='true',null,{timeout:20000});
-    await page.waitForFunction(()=>document.documentElement.dataset.setupStructure==='v3',null,{timeout:10000});
+    await page.waitForFunction(()=>{
+      const intro=document.querySelector('.consolidated-track .track-intro-settings');
+      const track=document.querySelector('.consolidated-track');
+      return !!intro&&!!intro.querySelector('#showTitle')&&!!intro.querySelector('#titleDuration')&&!track?.querySelector('#userArtworkFile')&&!track?.querySelector('#userArtworkIntro');
+    },null,{timeout:10000});
     await page.click('#nav [data-tool="setup"]');
 
     await page.locator('.flow-controls').evaluate(el=>el.classList.add('workflow-floating'));
@@ -48,10 +52,12 @@ for(const [name,type] of browsers){
 
     for(const selector of controls)await assertUsable(page,name,vpName,selector);
 
-    const intro=page.locator('.consolidated-track .track-intro-settings');
+    const track=page.locator('.consolidated-track');
+    const intro=track.locator('.track-intro-settings');
     assert.equal(await intro.count(),1,`${name}/${vpName}: repaired intro settings row is missing`);
     assert.equal(await intro.locator('#showTitle').count(),1,`${name}/${vpName}: title toggle was not moved into full-width intro row`);
     assert.equal(await intro.locator('#titleDuration').count(),1,`${name}/${vpName}: intro duration was not moved into full-width intro row`);
+    assert.equal(await track.locator('.track-art,#userArtworkFile,#userArtworkIntro,label[for="userArtworkFile"]').count(),0,`${name}/${vpName}: artwork controls returned to Track Identity`);
 
     const albumBox=await page.locator('#albumInput').boundingBox();
     assert.ok(albumBox&&albumBox.width>=150,`${name}/${vpName}: Track identity edit column is still squeezed (${albumBox?.width||0}px)`);
@@ -64,8 +70,8 @@ for(const [name,type] of browsers){
     }).map(el=>({tag:el.tagName,id:el.id||'',className:el.className||'',left:el.getBoundingClientRect().left,right:el.getBoundingClientRect().right})),setupBounds);
     assert.deepEqual(visibleSetupOverflow,[],`${name}/${vpName}: visible Setup controls overflow panel: ${JSON.stringify(visibleSetupOverflow)}`);
 
-    const trackBounds=await page.locator('.consolidated-track').evaluate(el=>{const r=el.getBoundingClientRect();return{left:r.left,right:r.right}});
-    const fieldsBounds=await page.locator('.consolidated-track .track-fields').evaluate(el=>{const r=el.getBoundingClientRect();return{left:r.left,right:r.right}});
+    const trackBounds=await track.evaluate(el=>{const r=el.getBoundingClientRect();return{left:r.left,right:r.right}});
+    const fieldsBounds=await track.locator('.track-fields').evaluate(el=>{const r=el.getBoundingClientRect();return{left:r.left,right:r.right}});
     assert.ok(fieldsBounds.left>=trackBounds.left-1&&fieldsBounds.right<=trackBounds.right+1,`${name}/${vpName}: Track identity fields overflow the Setup panel`);
 
     const retiredSearch=await page.locator('.legacy-lookup-retired').count();
