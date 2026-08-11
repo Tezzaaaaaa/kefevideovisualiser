@@ -14,9 +14,7 @@
     return el;
   }
 
-  function preserveTitleToggle(){
-    const toggle=q('#showTitle');
-    if(!toggle)return;
+  function hiddenStash(){
     let stash=q('#linaHiddenControlStash');
     if(!stash){
       stash=document.createElement('div');
@@ -25,7 +23,18 @@
       stash.setAttribute('aria-hidden','true');
       document.body.append(stash);
     }
-    stash.append(toggle);
+    return stash;
+  }
+
+  function preserveIntroControls(){
+    const stash=hiddenStash();
+    const toggle=q('#showTitle');
+    const duration=q('#titleDuration');
+    if(toggle)stash.append(toggle);
+    if(duration){
+      duration.value=duration.value||'4';
+      stash.append(duration);
+    }
   }
 
   function rebuildSetup(){
@@ -37,11 +46,10 @@
     const titleLabel=q('#titleInput')?.closest('label');
     const artistLabel=q('#artistInput')?.closest('label');
     const albumLabel=q('#albumInput')?.closest('label');
-    const durationLabel=q('#titleDuration')?.closest('label');
 
-    if(!audioUpload||!titleLabel||!artistLabel||!albumLabel||!durationLabel)return false;
+    if(!audioUpload||!titleLabel||!artistLabel||!albumLabel)return false;
 
-    preserveTitleToggle();
+    preserveIntroControls();
 
     const audio=section('Audio','Start here');
     audio.append(audioUpload);
@@ -53,17 +61,7 @@
     detailsGrid.append(titleLabel,artistLabel,albumLabel);
     details.append(detailsGrid);
 
-    const intro=section('Intro','Optional');
-    const introGrid=document.createElement('div');
-    introGrid.className='setup-intro-grid';
-    introGrid.append(durationLabel);
-    intro.append(introGrid);
-    const helper=document.createElement('div');
-    helper.className='helper';
-    helper.textContent='Audio and lyrics stay user supplied.';
-    intro.append(helper);
-
-    body.replaceChildren(audio,details,intro);
+    body.replaceChildren(audio,details);
 
     q('#useArtworkBg2')?.closest('.subsection')?.remove();
     qa('#userArtworkFile,#userArtworkPreview,#artworkEmpty,#userArtworkIntro,#showArtworkIntro,#useArtworkBg,#pickedArt,#introArt').forEach(el=>el.remove());
