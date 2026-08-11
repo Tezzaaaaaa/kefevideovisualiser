@@ -75,7 +75,7 @@
 
   function bindSize(){
     const source=$('#size'),quick=$('#quickSize');if(!source||!quick)return;
-    const values=[26,32,38,44,52,60,68,76];
+    const values=[26,30,32,34,36,38,42,44,48,52,60,68,76];
     quick.replaceChildren(...values.map(v=>{const o=document.createElement('option');o.value=String(v);o.textContent=v<=26?`Small · ${v}`:v<=38?`Medium · ${v}`:v<=52?`Large · ${v}`:v<=68?`Extra large · ${v}`:`Maximum · ${v}`;return o;}));
     const sync=()=>{const n=Number(source.value)||Number(safeSize()),best=values.reduce((a,b)=>Math.abs(b-n)<Math.abs(a-n)?b:a,values[0]);quick.value=String(best)};
     quick.addEventListener('change',()=>{source.value=quick.value;fire(source,'input');fire(source,'change')});
