@@ -22,7 +22,7 @@ for(const [browserName,type] of browsers){
       return{
         workspace:{display:getComputedStyle(workspace).display,direction:getComputedStyle(workspace).flexDirection},
         sections:setup?.querySelectorAll('.setup-shell-section').length||0,
-        audio:!!setup?.querySelector('#audioFile'),title:!!setup?.querySelector('#titleInput'),artist:!!setup?.querySelector('#artistInput'),album:!!setup?.querySelector('#albumInput'),
+        audio:!!setup?.querySelector('#audioFile'),title:!!setup?.querySelector('#titleInput'),artist:!!setup?.querySelector('#artistInput'),album:!!setup?.querySelector('#albumInput'),lyricsLookup:!!setup?.querySelector('#findLyricsBtn'),
         titleInSetup:!!setup?.querySelector('#showTitle,#titleDuration'),
         titleInStash:!!document.querySelector('#linaHiddenControlStash #showTitle')&&!!document.querySelector('#linaHiddenControlStash #titleDuration'),
         artwork:document.querySelectorAll('#userArtworkFile,#userArtworkIntro,label[for="userArtworkFile"],.track-art').length,
@@ -32,8 +32,8 @@ for(const [browserName,type] of browsers){
     });
 
     assert.deepEqual(state.workspace,{display:'flex',direction:'column'},`${browserName}/${vpName}: workspace is not vertical`);
-    assert.equal(state.sections,2,`${browserName}/${vpName}: Setup should contain Audio + Track details only`);
-    assert.ok(state.audio&&state.title&&state.artist&&state.album,`${browserName}/${vpName}: required Setup controls missing`);
+    assert.equal(state.sections,3,`${browserName}/${vpName}: Setup should contain Audio + Track details + synced lyrics`);
+    assert.ok(state.audio&&state.title&&state.artist&&state.album&&state.lyricsLookup,`${browserName}/${vpName}: required Setup controls missing`);
     assert.equal(state.titleInSetup,false,`${browserName}/${vpName}: title-card controls returned to Setup`);
     assert.equal(state.titleInStash,true,`${browserName}/${vpName}: title-card source controls missing`);
     assert.equal(state.artwork,0,`${browserName}/${vpName}: retired artwork controls returned`);
