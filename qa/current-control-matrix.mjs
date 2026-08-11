@@ -26,7 +26,10 @@ for(const [name,type] of targets){
   await page.waitForFunction(()=>Number(document.querySelector('#audio')?.duration)>1.5);
 
   await page.click('#nav [data-tool="lyrics"]');
-  await page.selectOption('#syncMethod','pasteTimed');await page.fill('#lyricsText',timed);await page.click('#applyPaste');
+  await page.locator('.other-lyrics-methods').evaluate(el=>el.open=true);
+  await page.selectOption('#syncMethod','importTimed');
+  await page.waitForSelector('#pasteTimedBox:not(.hidden)');
+  await page.fill('#lyricsText',timed);await page.click('#applyPaste');
   await page.waitForSelector('#reviewBox:not(.hidden)');await page.click('#confirmReview');
   await page.waitForFunction(()=>document.querySelectorAll('#timeline .line').length===3);
 
