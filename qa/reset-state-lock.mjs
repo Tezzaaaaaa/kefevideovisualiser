@@ -8,6 +8,8 @@ const page=await browser.newPage({viewport:{width:1100,height:800}});
 await page.goto(base,{waitUntil:'networkidle'});
 await page.waitForFunction(()=>document.documentElement.dataset.linaReady==='true',null,{timeout:20000});
 await page.waitForFunction(()=>document.querySelector('#albumInput')&&!document.querySelector('.consolidated-track #userArtworkFile'),null,{timeout:10000});
+assert.equal(await page.evaluate(()=>typeof window.linaResetProject),'function','canonical project reset action is missing');
+assert.equal(await page.evaluate(()=>document.documentElement.dataset.projectResetOwner),'canonical-v1','project reset owner is not canonical');
 
 await page.locator('#titleInput').fill('Reset Test Song');
 await page.locator('#artistInput').fill('Reset Test Artist');
@@ -24,8 +26,8 @@ assert.equal(savedBefore.controls?.artistInput,'Reset Test Artist','artist was n
 assert.equal(savedBefore.controls?.albumInput,'Reset Test Album','album was not autosaved before reset');
 
 await Promise.all([
-  page.waitForNavigation({waitUntil:'networkidle',timeout:20000}),
-  page.locator('#resetBtn').click(),
+  page.waitForNavigation({waitUntil:'domcontentloaded',timeout:10000}),
+  page.evaluate(()=>{void window.linaResetProject();}),
 ]);
 await page.waitForFunction(()=>document.documentElement.dataset.linaReady==='true',null,{timeout:20000});
 await page.waitForFunction(()=>document.querySelector('#albumInput')&&!document.querySelector('.consolidated-track #userArtworkFile'),null,{timeout:10000});
