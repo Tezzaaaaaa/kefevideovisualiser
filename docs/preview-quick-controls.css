@@ -1,97 +1,20 @@
-/* LINA preview quick controls: one aligned width, four real dropdowns, safe reversible layout. */
+/* LINA Quick Settings: comprehensive but calm, two-column maximum. */
 :root{--lina-preview-width:1080px}
 
-.stage-head,
-.stage-wrap,
-#previewQuickControls,
-#previewTitleControls,
-.transport,
-.transport-tools,
-.more-controls,
-.preview-controls,
-.stage-export{
+.stage-head,.stage-wrap,.transport,.transport-tools,#previewQuickControls{
   width:min(100%,var(--lina-preview-width))!important;
   max-width:var(--lina-preview-width)!important;
   margin-left:auto!important;
   margin-right:auto!important;
   box-sizing:border-box!important;
 }
+#story[data-aspect="16:9"]{width:100%!important;max-width:none!important;height:auto!important;aspect-ratio:16/9!important;margin:0!important}
 
-#story[data-aspect="16:9"]{
-  width:100%!important;
-  max-width:none!important;
-  height:auto!important;
-  aspect-ratio:16/9!important;
-  margin:0!important;
-}
+#simpleControlSummary,#previewEffectSwitcher,.preview-effect-switcher,.consolidated-effects,#previewTitleControls,#linaQuickSourceStash{display:none!important}
 
-#simpleControlSummary,
-#previewEffectSwitcher,
-.preview-effect-switcher,
-.consolidated-effects{display:none!important}
-
-/* Playback sits directly under the visual preview. */
-.transport{
-  margin-top:8px!important;
-  margin-bottom:6px!important;
-}
-.transport-tools{
-  margin-top:0!important;
-  margin-bottom:8px!important;
-}
-
-.preview-title-controls{
-  display:grid!important;
-  grid-template-columns:minmax(0,1fr) minmax(150px,210px)!important;
-  gap:8px!important;
-  align-items:stretch!important;
-  margin-bottom:8px!important;
-}
-.preview-title-toggle,
-.preview-title-duration{
-  min-height:52px!important;
-  padding:10px 12px!important;
-  border:1px solid var(--border)!important;
-  border-radius:12px!important;
-  background:rgba(255,255,255,.03)!important;
-  box-sizing:border-box!important;
-}
-.preview-title-toggle{
-  display:flex!important;
-  align-items:center!important;
-  justify-content:space-between!important;
-  gap:14px!important;
-  cursor:pointer!important;
-}
-.preview-title-toggle>span{display:grid!important;gap:3px!important;min-width:0!important}
-.preview-title-toggle b{font-size:11px!important;color:var(--text)!important}
-.preview-title-toggle small{font-size:9px!important;line-height:1.35!important;color:var(--muted)!important}
-.preview-title-toggle input{
-  width:20px!important;
-  height:20px!important;
-  min-width:20px!important;
-  margin:0!important;
-  accent-color:#fff!important;
-}
-.preview-title-duration{
-  display:grid!important;
-  grid-template-columns:1fr!important;
-  gap:5px!important;
-  align-content:center!important;
-}
-.preview-title-duration>span{font-size:9px!important;color:var(--muted)!important}
-.preview-title-duration #titleDuration{
-  width:100%!important;
-  min-width:0!important;
-  min-height:34px!important;
-  border:1px solid #34343d!important;
-  border-radius:9px!important;
-  background:#141419!important;
-  color:#f7f7fa!important;
-  -webkit-text-fill-color:#f7f7fa!important;
-  color-scheme:dark!important;
-  opacity:1!important;
-}
+/* Playback remains the first thing directly below Preview. */
+.transport{margin-top:8px!important;margin-bottom:6px!important}
+.transport-tools{margin-top:0!important;margin-bottom:8px!important}
 
 .preview-quick-controls{
   display:grid!important;
@@ -99,29 +22,48 @@
   padding:12px!important;
   margin-top:0!important;
   border:1px solid var(--border)!important;
-  border-radius:12px!important;
-  background:rgba(255,255,255,.03)!important;
+  border-radius:14px!important;
+  background:rgba(255,255,255,.025)!important;
 }
-.quick-control-head{display:flex!important;align-items:baseline!important;justify-content:space-between!important;gap:12px!important}
-.quick-control-head b{font-size:11px!important}
-.quick-control-head span{font-size:9px!important;color:var(--muted)!important}
+.quick-control-head,.quick-group-head{
+  display:flex!important;
+  align-items:baseline!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+}
+.quick-control-head{padding:1px 2px 3px!important}
+.quick-control-head b{font-size:12px!important}
+.quick-control-head span,.quick-group-head span{font-size:9px!important;color:var(--muted)!important}
+
+.quick-group{
+  display:grid!important;
+  gap:9px!important;
+  padding:10px!important;
+  border:1px solid rgba(255,255,255,.07)!important;
+  border-radius:11px!important;
+  background:rgba(255,255,255,.018)!important;
+}
+.quick-group-head b{font-size:10px!important}
 .quick-control-grid{
   display:grid!important;
   grid-template-columns:repeat(2,minmax(0,1fr))!important;
   gap:8px!important;
 }
-.quick-control-grid label{display:grid!important;gap:5px!important;min-width:0!important}
-.quick-control-grid label>span{font-size:9px!important;color:var(--muted)!important}
+.quick-control-grid>label{
+  display:grid!important;
+  gap:5px!important;
+  min-width:0!important;
+  align-content:start!important;
+}
+.quick-control-grid>label>span{font-size:9px!important;color:var(--muted)!important}
+.quick-control-grid>label>span b{font-size:9px!important;color:var(--text)!important}
+.quick-wide{grid-column:1/-1!important}
 
-/* Selected dropdown values must stay readable on every browser. */
-[data-panel] select,
-#previewQuickControls select,
-#previewTitleControls select,
-.more-controls select,
-.right select{
+/* Selected values stay readable in every browser. */
+[data-panel] select,#previewQuickControls select,.right select{
   width:100%!important;
   min-width:0!important;
-  min-height:40px!important;
+  min-height:38px!important;
   box-sizing:border-box!important;
   border-radius:9px!important;
   border:1px solid #34343d!important;
@@ -131,54 +73,68 @@
   color-scheme:dark!important;
   opacity:1!important;
 }
-[data-panel] select option,
-#previewQuickControls select option,
-#previewTitleControls select option,
-.more-controls select option,
-.right select option{
+[data-panel] select option,#previewQuickControls select option,.right select option{background:#141419!important;color:#f7f7fa!important}
+[data-panel] select:focus,#previewQuickControls select:focus,.right select:focus{border-color:#777781!important;outline:2px solid rgba(255,255,255,.14)!important;outline-offset:1px!important}
+
+.quick-range input[type="range"]{width:100%!important;min-width:0!important;margin:3px 0 0!important}
+.quick-colour input[type="color"]{
+  width:100%!important;
+  min-height:38px!important;
+  padding:4px!important;
+  border:1px solid #34343d!important;
+  border-radius:9px!important;
   background:#141419!important;
-  color:#f7f7fa!important;
+  box-sizing:border-box!important;
 }
-[data-panel] select:focus,
-#previewQuickControls select:focus,
-#previewTitleControls select:focus,
-.more-controls select:focus,
-.right select:focus{
-  border-color:#777781!important;
-  outline:2px solid rgba(255,255,255,.14)!important;
-  outline-offset:1px!important;
+.quick-toggle{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  min-height:54px!important;
+  padding:8px 10px!important;
+  border:1px solid #2f2f36!important;
+  border-radius:9px!important;
+  background:#141419!important;
 }
-[data-panel] select:disabled,
-#previewQuickControls select:disabled,
-#previewTitleControls select:disabled,
-.more-controls select:disabled,
-.right select:disabled{
-  color:#a9a9b2!important;
-  -webkit-text-fill-color:#a9a9b2!important;
-  opacity:1!important;
-}
+.quick-toggle>span{display:grid!important;gap:2px!important;min-width:0!important}
+.quick-toggle>span b{font-size:10px!important;color:var(--text)!important}
+.quick-toggle>span small{font-size:8px!important;line-height:1.3!important;color:var(--muted)!important}
+.quick-toggle input{width:19px!important;height:19px!important;min-width:19px!important;margin:0!important;accent-color:#fff!important}
 
-#quickResetLayout{justify-self:start!important;min-height:36px!important}
+.quick-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+.quick-actions .btn{width:100%!important;min-height:38px!important}
 
-.style-advanced-wrap,
-.consolidated-transform{display:none!important}
-#lyrics{
-  cursor:default!important;
-  touch-action:auto!important;
-  max-width:88%!important;
+.quick-fine{
+  border:1px solid rgba(255,255,255,.07)!important;
+  border-radius:11px!important;
+  background:rgba(255,255,255,.018)!important;
+  overflow:hidden!important;
 }
-#story[data-lyric-effect="apple"] .lyrics,
-#story[data-lyric-effect="charli"] .lyrics,
-#story[data-lyric-effect="eternal"] .lyrics{
-  left:8%!important;
-  width:84%!important;
-  max-width:84%!important;
-  overflow:visible!important;
+.quick-fine>summary{
+  cursor:pointer!important;
+  list-style:none!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:10px!important;
+  padding:11px 12px!important;
+  font-size:10px!important;
+  font-weight:760!important;
 }
+.quick-fine>summary::-webkit-details-marker{display:none!important}
+.quick-fine>summary::after{content:'›';font-size:16px;color:var(--muted);transform:rotate(90deg)}
+.quick-fine[open]>summary::after{transform:rotate(-90deg)}
+.quick-fine-body{display:grid!important;grid-template-columns:1fr!important;gap:8px!important;padding:10px!important;border-top:1px solid var(--border)!important}
+.quick-fine-body>.right{display:block!important;position:static!important;width:100%!important;max-width:none!important;max-height:none!important;overflow:visible!important;margin:0!important;padding:0!important}
+.quick-fine-body>.right .panel{width:100%!important;max-width:none!important;margin:0 0 8px!important}
+
+.style-advanced-wrap,.consolidated-transform{display:none!important}
+#lyrics{cursor:default!important;touch-action:auto!important;max-width:88%!important}
+#story[data-lyric-effect="apple"] .lyrics,#story[data-lyric-effect="charli"] .lyrics{left:8%!important;width:84%!important;max-width:84%!important;overflow:visible!important}
 
 @media(max-width:700px){
-  .preview-title-controls{grid-template-columns:1fr!important}
-  .quick-control-head{display:grid!important;gap:3px!important}
-  .quick-control-grid{grid-template-columns:1fr!important}
-  #quickResetLayout{width:100%!important}
+  .quick-control-head,.quick-group-head{display:grid!important;gap:3px!important}
+  .quick-control-grid,.quick-actions{grid-template-columns:1fr!important}
+  .quick-wide{grid-column:1!important}
 }
