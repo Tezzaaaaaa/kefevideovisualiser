@@ -1,0 +1,2 @@
+p62-20260812-hard-lyric-reset
+Temporary PR-only trigger for exact-state visible Reset validation.
