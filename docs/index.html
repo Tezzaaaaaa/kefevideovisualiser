@@ -9,7 +9,7 @@
 <body>
 <script>
 (async()=>{
-  const BUILD='p27-20260811-entry-cache-reset';
+  const BUILD='p29-20260811-lyrics-workflow';
   try{
     const response=await fetch(`app-source.html?v=${BUILD}`,{cache:'no-store'});
     if(!response.ok)throw new Error(`HTTP ${response.status}`);
