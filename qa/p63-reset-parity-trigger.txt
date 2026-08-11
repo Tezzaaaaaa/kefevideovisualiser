@@ -1,0 +1,2 @@
+p63-20260812-reset-control-parity
+Temporary exact-state trigger for visible Reset parity validation.
