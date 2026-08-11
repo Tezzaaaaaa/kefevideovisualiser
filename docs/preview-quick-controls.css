@@ -1,4 +1,4 @@
-/* LINA Quick Settings: comprehensive but calm, two-column maximum. */
+/* LINA production controls: most-needed first, compact, two-column maximum. */
 :root{--lina-preview-width:1080px}
 
 .stage-head,.stage-wrap,.transport,.transport-tools,#previewQuickControls{
@@ -12,20 +12,28 @@
 
 #simpleControlSummary,#previewEffectSwitcher,.preview-effect-switcher,.consolidated-effects,#previewTitleControls,#linaQuickSourceStash{display:none!important}
 
-/* Playback remains the first thing directly below Preview. */
+/* Transport is always first and stays compact. */
 .transport{margin-top:8px!important;margin-bottom:6px!important}
-.transport-tools{margin-top:0!important;margin-bottom:8px!important}
+.transport-tools{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:7px!important;
+  margin-top:0!important;
+  margin-bottom:8px!important;
+}
+#transportEdit{display:none!important}
+.transport-tools .btn{width:100%!important;min-width:0!important;min-height:34px!important;padding:7px 9px!important}
 
 .preview-quick-controls{
   display:grid!important;
-  gap:10px!important;
-  padding:12px!important;
+  gap:9px!important;
+  padding:11px!important;
   margin-top:0!important;
   border:1px solid var(--border)!important;
   border-radius:14px!important;
-  background:rgba(255,255,255,.025)!important;
+  background:rgba(255,255,255,.022)!important;
 }
-.quick-control-head,.quick-group-head{
+.quick-control-head,.quick-group-head,.quick-mini-head{
   display:flex!important;
   align-items:baseline!important;
   justify-content:space-between!important;
@@ -33,33 +41,51 @@
 }
 .quick-control-head{padding:1px 2px 3px!important}
 .quick-control-head b{font-size:12px!important}
-.quick-control-head span,.quick-group-head span{font-size:9px!important;color:var(--muted)!important}
+.quick-control-head span,.quick-group-head span,.quick-mini-head span{font-size:9px!important;color:var(--muted)!important}
 
 .quick-group{
   display:grid!important;
-  gap:9px!important;
+  gap:8px!important;
   padding:10px!important;
-  border:1px solid rgba(255,255,255,.07)!important;
+  border:1px solid rgba(255,255,255,.075)!important;
   border-radius:11px!important;
-  background:rgba(255,255,255,.018)!important;
+  background:rgba(255,255,255,.016)!important;
 }
-.quick-group-head b{font-size:10px!important}
+.quick-group-head b{font-size:10.5px!important}
+.quick-mini-head{padding-top:2px!important}
+.quick-mini-head b{font-size:9.5px!important;color:#d9d9df!important}
+
 .quick-control-grid{
   display:grid!important;
   grid-template-columns:repeat(2,minmax(0,1fr))!important;
   gap:8px!important;
 }
-.quick-control-grid>label{
+.quick-control-grid>label,
+#quickBackgroundGroup .field{
   display:grid!important;
   gap:5px!important;
   min-width:0!important;
   align-content:start!important;
+  margin:0!important;
 }
-.quick-control-grid>label>span{font-size:9px!important;color:var(--muted)!important}
-.quick-control-grid>label>span b{font-size:9px!important;color:var(--text)!important}
-.quick-wide{grid-column:1/-1!important}
+.quick-control-grid>label>span,
+#quickBackgroundGroup .field>span{font-size:9px!important;color:var(--muted)!important}
+.quick-control-grid>label>span b,
+#quickBackgroundGroup .field>span b{font-size:9px!important;color:var(--text)!important}
 
-/* Selected values stay readable in every browser. */
+/* Background controls are one coherent group instead of two detached panels. */
+.quick-background-frame,.quick-background-readable{align-items:end!important}
+.quick-background-frame>label:nth-child(2){grid-column:1/-1!important}
+.quick-background-actions{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:8px!important;
+  padding-top:1px!important;
+}
+.quick-background-actions .btn{width:100%!important;min-height:36px!important}
+#quickBackgroundGroup #removeBg{border-color:rgba(255,255,255,.11)!important;color:#c8c8cf!important}
+
+/* Selected values remain readable in every browser. */
 [data-panel] select,#previewQuickControls select,.right select{
   width:100%!important;
   min-width:0!important;
@@ -76,7 +102,8 @@
 [data-panel] select option,#previewQuickControls select option,.right select option{background:#141419!important;color:#f7f7fa!important}
 [data-panel] select:focus,#previewQuickControls select:focus,.right select:focus{border-color:#777781!important;outline:2px solid rgba(255,255,255,.14)!important;outline-offset:1px!important}
 
-.quick-range input[type="range"]{width:100%!important;min-width:0!important;margin:3px 0 0!important}
+#previewQuickControls input[type="range"],
+#quickBackgroundGroup input[type="range"]{width:100%!important;min-width:0!important;margin:3px 0 0!important}
 .quick-colour input[type="color"]{
   width:100%!important;
   min-height:38px!important;
@@ -101,14 +128,13 @@
 .quick-toggle>span b{font-size:10px!important;color:var(--text)!important}
 .quick-toggle>span small{font-size:8px!important;line-height:1.3!important;color:var(--muted)!important}
 .quick-toggle input{width:19px!important;height:19px!important;min-width:19px!important;margin:0!important;accent-color:#fff!important}
+#quickTitleDuration:disabled{opacity:.4!important;cursor:not-allowed!important}
 
-.quick-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
-.quick-actions .btn{width:100%!important;min-height:38px!important}
-
+/* Advanced controls stay available but do not compete with everyday editing. */
 .quick-fine{
   border:1px solid rgba(255,255,255,.07)!important;
   border-radius:11px!important;
-  background:rgba(255,255,255,.018)!important;
+  background:rgba(255,255,255,.014)!important;
   overflow:hidden!important;
 }
 .quick-fine>summary{
@@ -118,23 +144,37 @@
   align-items:center!important;
   justify-content:space-between!important;
   gap:10px!important;
-  padding:11px 12px!important;
+  padding:10px 11px!important;
   font-size:10px!important;
   font-weight:760!important;
 }
 .quick-fine>summary::-webkit-details-marker{display:none!important}
 .quick-fine>summary::after{content:'›';font-size:16px;color:var(--muted);transform:rotate(90deg)}
 .quick-fine[open]>summary::after{transform:rotate(-90deg)}
-.quick-fine-body{display:grid!important;grid-template-columns:1fr!important;gap:8px!important;padding:10px!important;border-top:1px solid var(--border)!important}
+.quick-advanced-body{display:grid!important;gap:9px!important;padding:9px!important;border-top:1px solid var(--border)!important}
+.quick-advanced-section{display:grid!important;gap:8px!important;padding:9px!important;border:1px solid rgba(255,255,255,.06)!important;border-radius:9px!important}
+.quick-video-timing:has(#videoTrimBox.hidden){display:none!important}
+.quick-video-timing #videoTrimBox{margin:0!important;padding:0!important;border:0!important;background:transparent!important}
+.quick-fine-body{display:grid!important;grid-template-columns:1fr!important;gap:8px!important;padding:9px!important;border-top:1px solid var(--border)!important}
 .quick-fine-body>.right{display:block!important;position:static!important;width:100%!important;max-width:none!important;max-height:none!important;overflow:visible!important;margin:0!important;padding:0!important}
 .quick-fine-body>.right .panel{width:100%!important;max-width:none!important;margin:0 0 8px!important}
+
+.quick-actions{
+  display:grid!important;
+  grid-template-columns:minmax(0,.7fr) minmax(0,1.3fr)!important;
+  gap:8px!important;
+}
+.quick-actions .btn{width:100%!important;min-height:40px!important}
+#quickExport{font-weight:850!important}
 
 .style-advanced-wrap,.consolidated-transform{display:none!important}
 #lyrics{cursor:default!important;touch-action:auto!important;max-width:88%!important}
 #story[data-lyric-effect="apple"] .lyrics,#story[data-lyric-effect="charli"] .lyrics{left:8%!important;width:84%!important;max-width:84%!important;overflow:visible!important}
 
 @media(max-width:700px){
-  .quick-control-head,.quick-group-head{display:grid!important;gap:3px!important}
-  .quick-control-grid,.quick-actions{grid-template-columns:1fr!important}
-  .quick-wide{grid-column:1!important}
+  .quick-control-head,.quick-group-head,.quick-mini-head{display:grid!important;gap:3px!important}
+  .quick-control-grid,.quick-background-actions,.quick-actions{grid-template-columns:1fr!important}
+  .quick-background-frame>label:nth-child(2){grid-column:1!important}
+  .transport-tools{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:5px!important}
+  .transport-tools .btn{padding:7px 5px!important;font-size:9px!important}
 }
