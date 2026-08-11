@@ -165,7 +165,7 @@
     flex-direction:column!important;
     grid-template-columns:none!important;
     gap:8px!important;
-    padding:6px!important;
+    padding:2px!important;
   }
   .stage{order:1!important;width:100%!important;min-width:0!important}
   .left{order:2!important;width:100%!important;min-width:0!important;max-width:100%!important;padding:0!important;overflow:visible!important}
