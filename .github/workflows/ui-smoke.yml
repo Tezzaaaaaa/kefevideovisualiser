@@ -31,6 +31,8 @@ jobs:
           done
           cat /tmp/lina-http.log
           exit 1
+      - name: Lock destructive project reset and cleared song details
+        run: node qa/reset-state-lock.mjs
       - name: Lock Setup layout across browsers and viewports
         run: node qa/setup-layout-lock.mjs
       - name: Lock adaptive editor shell across browsers and viewports
