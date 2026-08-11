@@ -37,6 +37,8 @@ jobs:
         run: node qa/setup-layout-lock.mjs
       - name: Lock adaptive editor shell across browsers and viewports
         run: node qa/editor-shell-layout-lock.mjs
+      - name: Lock canonical runtime ownership across browsers
+        run: node qa/runtime-ownership.mjs
       - name: Probe WebKit FFmpeg export
         run: node qa/safari-export-probe.mjs
       - name: Run full LINA control and FFmpeg export matrix
