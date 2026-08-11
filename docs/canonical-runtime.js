@@ -11,7 +11,6 @@
   const appleRender=window.linaAppleBaseRender||window.render;
   const effectRender=window.linaEffectBaseRender||window.render;
 
-  const fire=(el,type)=>el?.dispatchEvent(new Event(type,{bubbles:true}));
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 
   function getEffect(){
@@ -259,13 +258,18 @@
     return true;
   }
 
+  function restoreInitialLayout(){applyLayoutValues(initialLayout,{dirty:false,redraw:true})}
+
   function installControlOwnership(){
     replaceSelect('quickEffect',value=>setEffect(value));
     replaceSelect('styleEffectSelect',value=>setEffect(value));
     ownResetButton();ownEffectPicker();
     if($('#previewQuickControls')&&!state.snapshotRestored){
       state.snapshotRestored=true;
-      requestAnimationFrame(()=>applyLayoutValues(initialLayout,{dirty:false,redraw:true}));
+      requestAnimationFrame(restoreInitialLayout);
+      // preview-quick-controls still contains one delayed legacy startup reset.
+      // Reapply the restored state after that callback, then canonical ownership is final.
+      setTimeout(restoreInitialLayout,90);
     }
     syncEffectUI(getEffect());
   }
