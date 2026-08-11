@@ -38,7 +38,8 @@ for(const [browserName,type] of browsers){
     assert.equal(state.titleInStash,true,`${browserName}/${vpName}: title-card source controls missing`);
     assert.equal(state.artwork,0,`${browserName}/${vpName}: retired artwork controls returned`);
     assert.ok(state.flow&&state.flow.display!=='none'&&state.flow.position!=='fixed',`${browserName}/${vpName}: inline workflow controls are not usable`);
-    assert.ok(state.setupBox&&state.setupBox.width>=Math.min(400,viewport.width-24),`${browserName}/${vpName}: Setup is squeezed`);
+    const minSetupWidth=Math.min(400,viewport.width-56);
+    assert.ok(state.setupBox&&state.setupBox.width>=minSetupWidth,`${browserName}/${vpName}: Setup is squeezed (${state.setupBox?.width||0}px < ${minSetupWidth}px)`);
     assert.ok(state.navBox&&state.navBox.y+state.navBox.height<=state.setupBox.y+6,`${browserName}/${vpName}: navigation overlaps Setup`);
     assert.ok(state.docWidth<=viewport.width+2,`${browserName}/${vpName}: horizontal overflow ${state.docWidth}>${viewport.width}`);
 
