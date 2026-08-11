@@ -1,8 +1,8 @@
 'use strict';
 (()=>{
-  const BUILD='p33-20260811-two-column-guided-editor';
+  const BUILD='p34-20260811-effect-specific-typography';
   const load=src=>new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=`${src}?v=${BUILD}`;s.onload=resolve;s.onerror=()=>reject(new Error(`Failed to load ${src}`));document.body.append(s)});
-  for(const href of ['apple-motion.css','ui-solid.css','intro-layout.css','production-consolidated.css','consolidated-studio.css','editor-shell.css','editor-shell-mobile-safety.css','editor-shell-density-fix.css','setup-shell.css','guided-ui.css','preview-effect-switcher.css']){const css=document.createElement('link');css.rel='stylesheet';css.href=`${href}?v=${BUILD}`;document.head.append(css)}
+  for(const href of ['apple-motion.css','ui-solid.css','intro-layout.css','production-consolidated.css','consolidated-studio.css','editor-shell.css','editor-shell-mobile-safety.css','editor-shell-density-fix.css','setup-shell.css','guided-ui.css','preview-effect-switcher.css','effect-typography.css']){const css=document.createElement('link');css.rel='stylesheet';css.href=`${href}?v=${BUILD}`;document.head.append(css)}
   (async()=>{
     try{
       await load('app-core-safe.js');
@@ -31,6 +31,7 @@
       await load('lyrics-workflow-fix.js');
       await load('guided-ui.js');
       await load('preview-effect-switcher.js');
+      await load('effect-typography.js');
       await load('visual-polish.js');
       await load('runtime-guard.js');
     }catch(e){
