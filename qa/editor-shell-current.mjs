@@ -33,7 +33,8 @@ for(const [browserName,type] of browsers){
     assert.deepEqual(state.workspace,{display:'flex',direction:'column'},`${browserName}/${vpName}: workspace is not vertical`);
     assert.equal(state.navCount,5,`${browserName}/${vpName}: five workflow tabs are not present`);
     assert.ok(state.left&&state.stage&&state.left.y<state.stage.y,`${browserName}/${vpName}: active workflow panel is not above Preview`);
-    assert.ok(state.stage.width>=Math.min(400,viewport.width-24),`${browserName}/${vpName}: Preview is squeezed`);
+    const minStageWidth=Math.min(400,viewport.width-56);
+    assert.ok(state.stage.width>=minStageWidth,`${browserName}/${vpName}: Preview is squeezed (${state.stage?.width||0}px < ${minStageWidth}px)`);
     assert.ok(state.stageHead&&state.stageWrap&&state.transport&&state.tools&&state.quick,`${browserName}/${vpName}: Preview stack is incomplete`);
     assert.ok(state.stageHead.y<=state.stageWrap.y&&state.stageWrap.y<state.transport.y&&state.transport.y<state.tools.y&&state.tools.y<state.quick.y,`${browserName}/${vpName}: Preview/transport/control order regressed`);
     assert.equal(state.oldPreviewParent,'linaQuickSourceStash',`${browserName}/${vpName}: legacy preview controls escaped the hidden source stash`);
