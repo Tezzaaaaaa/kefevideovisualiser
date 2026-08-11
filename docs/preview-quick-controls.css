@@ -4,7 +4,7 @@
 .stage-head,
 .stage-wrap,
 #previewQuickControls,
-#previewTitleToggle,
+#previewTitleControls,
 .transport,
 .transport-tools,
 .more-controls,
@@ -40,17 +40,27 @@
   margin-bottom:8px!important;
 }
 
+.preview-title-controls{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) minmax(150px,210px)!important;
+  gap:8px!important;
+  align-items:stretch!important;
+  margin-bottom:8px!important;
+}
+.preview-title-toggle,
+.preview-title-duration{
+  min-height:52px!important;
+  padding:10px 12px!important;
+  border:1px solid var(--border)!important;
+  border-radius:12px!important;
+  background:rgba(255,255,255,.03)!important;
+  box-sizing:border-box!important;
+}
 .preview-title-toggle{
   display:flex!important;
   align-items:center!important;
   justify-content:space-between!important;
   gap:14px!important;
-  min-height:48px!important;
-  padding:10px 12px!important;
-  margin-bottom:8px!important;
-  border:1px solid var(--border)!important;
-  border-radius:12px!important;
-  background:rgba(255,255,255,.03)!important;
   cursor:pointer!important;
 }
 .preview-title-toggle>span{display:grid!important;gap:3px!important;min-width:0!important}
@@ -62,6 +72,25 @@
   min-width:20px!important;
   margin:0!important;
   accent-color:#fff!important;
+}
+.preview-title-duration{
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  gap:5px!important;
+  align-content:center!important;
+}
+.preview-title-duration>span{font-size:9px!important;color:var(--muted)!important}
+.preview-title-duration #titleDuration{
+  width:100%!important;
+  min-width:0!important;
+  min-height:34px!important;
+  border:1px solid #34343d!important;
+  border-radius:9px!important;
+  background:#141419!important;
+  color:#f7f7fa!important;
+  -webkit-text-fill-color:#f7f7fa!important;
+  color-scheme:dark!important;
+  opacity:1!important;
 }
 
 .preview-quick-controls{
@@ -87,6 +116,7 @@
 /* Selected dropdown values must stay readable on every browser. */
 [data-panel] select,
 #previewQuickControls select,
+#previewTitleControls select,
 .more-controls select,
 .right select{
   width:100%!important;
@@ -103,6 +133,7 @@
 }
 [data-panel] select option,
 #previewQuickControls select option,
+#previewTitleControls select option,
 .more-controls select option,
 .right select option{
   background:#141419!important;
@@ -110,6 +141,7 @@
 }
 [data-panel] select:focus,
 #previewQuickControls select:focus,
+#previewTitleControls select:focus,
 .more-controls select:focus,
 .right select:focus{
   border-color:#777781!important;
@@ -118,6 +150,7 @@
 }
 [data-panel] select:disabled,
 #previewQuickControls select:disabled,
+#previewTitleControls select:disabled,
 .more-controls select:disabled,
 .right select:disabled{
   color:#a9a9b2!important;
@@ -144,6 +177,7 @@
 }
 
 @media(max-width:700px){
+  .preview-title-controls{grid-template-columns:1fr!important}
   .quick-control-head{display:grid!important;gap:3px!important}
   .quick-control-grid{grid-template-columns:1fr!important}
   #quickResetLayout{width:100%!important}
