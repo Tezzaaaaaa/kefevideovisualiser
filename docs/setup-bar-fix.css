@@ -1,71 +1,147 @@
-/* LINA Setup/tool bar safety: never cover or squeeze editable content. */
+/* LINA Setup/tool bar hard fix: no overlap, no squeezed controls. */
 
-/* Give the source inspector enough room to be a real editor panel. */
-:root{--editor-left:390px}
-@media(min-width:901px) and (max-width:1280px){
-  :root{--editor-left:370px}
+/* Desktop/compact desktop: Setup gets a real working inspector width. */
+@media(min-width:901px){
+  .workspace:has(.navbtn[data-tool="setup"].active){
+    grid-template-columns:440px minmax(0,1fr)!important;
+    grid-template-areas:"left stage"!important;
+  }
+  .workspace:has(.navbtn[data-tool="style"].active),
+  .workspace:has(.navbtn[data-tool="background"].active){
+    grid-template-columns:390px minmax(0,1fr)!important;
+    grid-template-areas:"left stage"!important;
+  }
 }
 
-/* Track identity must not collapse its editable column. */
-.consolidated-track .track-grid{
-  grid-template-columns:88px minmax(0,1fr)!important;
-  gap:12px!important;
-  width:100%!important;
-  min-width:0!important;
-}
-.consolidated-track .track-art{
-  width:88px!important;
-  height:88px!important;
-  min-width:88px!important;
-}
-.consolidated-track .track-fields{
-  min-width:0!important;
-  width:100%!important;
-}
-.consolidated-track .track-fields>*{
+/* The source inspector and Setup panel must contain every child. */
+.left,
+[data-panel="setup"],
+[data-panel="setup"] .body,
+[data-panel="setup"] .subsection{
   min-width:0!important;
   max-width:100%!important;
   width:100%!important;
   box-sizing:border-box!important;
 }
-.consolidated-track .track-fields .field input,
-.consolidated-track .track-fields .field select{
+.left{overflow-x:hidden!important}
+[data-panel="setup"]{overflow:visible!important}
+[data-panel="setup"] .body{overflow:visible!important}
+[data-panel="setup"] .subsection{overflow:visible!important}
+
+/* Track identity: artwork column + genuinely usable edit column. */
+.consolidated-track .track-grid{
+  display:grid!important;
+  grid-template-columns:104px minmax(0,1fr)!important;
+  gap:14px!important;
+  align-items:start!important;
   width:100%!important;
   min-width:0!important;
+  max-width:100%!important;
   box-sizing:border-box!important;
 }
-.consolidated-track .track-fields .toggle{
+.consolidated-track .track-art{
+  width:104px!important;
+  height:104px!important;
+  min-width:104px!important;
+  max-width:104px!important;
+  box-sizing:border-box!important;
+}
+.consolidated-track .track-fields{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  gap:8px!important;
+  min-width:0!important;
+  max-width:100%!important;
+  width:100%!important;
+  box-sizing:border-box!important;
+}
+
+/* No Setup control may grow past its column or panel. */
+[data-panel="setup"] .field,
+[data-panel="setup"] .upload,
+[data-panel="setup"] .toggle,
+[data-panel="setup"] .helper,
+[data-panel="setup"] .statusbox,
+[data-panel="setup"] .grid2,
+[data-panel="setup"] .grid3,
+[data-panel="setup"] input,
+[data-panel="setup"] select,
+[data-panel="setup"] textarea,
+[data-panel="setup"] button{
+  min-width:0!important;
+  max-width:100%!important;
+  box-sizing:border-box!important;
+}
+[data-panel="setup"] .field,
+[data-panel="setup"] .upload,
+[data-panel="setup"] .toggle,
+[data-panel="setup"] .helper,
+[data-panel="setup"] .statusbox{
+  width:100%!important;
+}
+[data-panel="setup"] .field input,
+[data-panel="setup"] .field select,
+[data-panel="setup"] .field textarea{
+  display:block!important;
+  width:100%!important;
+}
+[data-panel="setup"] .toggle{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto!important;
+  align-items:center!important;
+  gap:10px!important;
   white-space:normal!important;
 }
-.consolidated-track .track-fields .toggle span,
-.consolidated-track .track-fields .helper{
-  overflow-wrap:anywhere!important;
+[data-panel="setup"] .toggle span,
+[data-panel="setup"] .helper,
+[data-panel="setup"] .subhead span,
+[data-panel="setup"] .subhead b{
+  min-width:0!important;
+  overflow-wrap:break-word!important;
+}
+[data-panel="setup"] .subhead{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:10px!important;
+  min-width:0!important;
+  max-width:100%!important;
 }
 
-/* On a phone, stack artwork above the fields instead of creating a skinny column. */
-@media(max-width:620px){
-  .consolidated-track .track-grid{
-    grid-template-columns:1fr!important;
-  }
-  .consolidated-track .track-art{
-    width:96px!important;
-    height:96px!important;
-  }
+/* Song title/artist must never push the inspector wider. */
+#titleInput,#artistInput,#albumInput,#titleDuration{
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
 }
 
-/* Tablet/mobile tool tabs belong in normal flow, never over the editor. */
+/* Tablet/mobile: preview first, then full-width tabs + active editor; never floating. */
 @media(max-width:900px){
   body{padding-bottom:0!important}
+
+  .workspace,
+  .workspace:has(.navbtn[data-tool="setup"].active),
+  .workspace:has(.navbtn[data-tool="style"].active),
+  .workspace:has(.navbtn[data-tool="background"].active){
+    display:flex!important;
+    flex-direction:column!important;
+    grid-template-columns:none!important;
+    gap:8px!important;
+    padding:6px!important;
+  }
+
+  .stage{order:1!important;width:100%!important;min-width:0!important}
+  .left{order:2!important;width:100%!important;min-width:0!important;max-width:100%!important;padding:0!important;overflow:visible!important}
+  .right{order:3!important;width:100%!important;min-width:0!important;max-width:100%!important}
 
   .flow-shell{
     position:static!important;
     margin:0 0 8px!important;
     width:100%!important;
+    min-width:0!important;
     z-index:auto!important;
   }
-
-  #nav.nav,
-  .nav{
+  #nav.nav,.nav{
     position:static!important;
     inset:auto!important;
     left:auto!important;
@@ -73,10 +149,35 @@
     bottom:auto!important;
     top:auto!important;
     width:100%!important;
+    min-width:0!important;
     margin:0!important;
     z-index:auto!important;
     box-shadow:none!important;
     backdrop-filter:none!important;
     -webkit-backdrop-filter:none!important;
+  }
+
+  .consolidated-track .track-grid{
+    grid-template-columns:96px minmax(0,1fr)!important;
+    gap:12px!important;
+  }
+  .consolidated-track .track-art{
+    width:96px!important;
+    height:96px!important;
+    min-width:96px!important;
+    max-width:96px!important;
+  }
+}
+
+/* Phones: stack Track Identity; there is no reason to squeeze it into two columns. */
+@media(max-width:560px){
+  .consolidated-track .track-grid{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+  .consolidated-track .track-art{
+    width:104px!important;
+    height:104px!important;
+    min-width:104px!important;
+    max-width:104px!important;
   }
 }
