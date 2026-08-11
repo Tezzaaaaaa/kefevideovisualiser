@@ -2,6 +2,9 @@
 (()=>{
   const $=s=>document.querySelector(s);
   const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+  const PROJECT_KEY='lina.project.v2';
+  const MEDIA_DB='lina-project-media';
+  const RESET_MARK='lina.full-reset.pending';
   let resetting=false;
 
   function removeTrackArtwork(){
@@ -23,66 +26,77 @@
 
   function clearArtworkVisuals(){
     const intro=$('#introArt');
-    if(intro){
-      intro.removeAttribute('src');
-      intro.classList.remove('on');
-    }
+    if(intro){intro.removeAttribute('src');intro.classList.remove('on')}
     const preview=$('#userArtworkPreview');
-    if(preview){
-      preview.removeAttribute('src');
-      preview.classList.remove('on');
-    }
-    if(typeof artworkObjectURL!=='undefined'&&artworkObjectURL?.startsWith?.('blob:')){
-      try{URL.revokeObjectURL(artworkObjectURL)}catch{}
-    }
-    if(typeof artworkObjectURL!=='undefined')artworkObjectURL=null;
+    if(preview){preview.removeAttribute('src');preview.classList.remove('on')}
+    try{if(typeof artworkObjectURL!=='undefined'&&artworkObjectURL?.startsWith?.('blob:'))URL.revokeObjectURL(artworkObjectURL)}catch{}
+    try{if(typeof artworkObjectURL!=='undefined')artworkObjectURL=null}catch{}
+  }
+
+  function clearLinaStorage(){
+    try{
+      for(let i=localStorage.length-1;i>=0;i--){
+        const key=localStorage.key(i);
+        if(key&&(key===PROJECT_KEY||key.startsWith('lina.')))localStorage.removeItem(key);
+      }
+      localStorage.removeItem(PROJECT_KEY);
+    }catch{}
   }
 
   function clearProjectMemoryAndUI(){
-    try{clearTimeout(autosaveTimer)}catch{}
-    try{autosaveTimer=null}catch{}
+    try{clearTimeout(autosaveTimer);autosaveTimer=null}catch{}
     try{restoring=true}catch{}
-    const autosave=$('#autosaveToggle');
-    if(autosave)autosave.checked=false;
+    const autosave=$('#autosaveToggle');if(autosave)autosave.checked=false;
 
     try{sourceBase=[];sourceLines=[];reviewLines=[];lines=[];selected=0;offset=0;manualIndex=0;selectedSong=null}catch{}
     try{audioFile=null;manualBgFile=null}catch{}
 
-    for(const id of ['songSearch','titleInput','artistInput','albumInput','lyricsText','manualLyricsText']){
-      const el=$('#'+id);if(el)el.value='';
-    }
-    for(const id of ['pickedTitle','pickedArtist','pickedAlbum','titleName','titleArtist','titleAlbum']){
-      const el=$('#'+id);if(el)el.textContent='';
-    }
+    for(const id of ['songSearch','titleInput','artistInput','albumInput','lyricsText','manualLyricsText']){const el=$('#'+id);if(el)el.value=''}
+    for(const id of ['pickedTitle','pickedArtist','pickedAlbum','titleName','titleArtist','titleAlbum']){const el=$('#'+id);if(el)el.textContent=''}
     $('#pickedSong')?.classList.add('hidden');
     $('#songUses')?.classList.add('hidden');
     if($('#song'))$('#song').textContent='Original audio';
     clearArtworkVisuals();
 
-    try{
-      if(audio){audio.pause();audio.removeAttribute('src');audio.load()}
-    }catch{}
+    try{if(audio){audio.pause();audio.removeAttribute('src');audio.load()}}catch{}
     try{setBgSource(null)}catch{}
   }
 
-  async function clearPersistedMediaBounded(){
-    if(typeof clearSavedMedia!=='function')return;
-    try{
-      await Promise.race([
-        Promise.resolve().then(()=>clearSavedMedia()),
-        wait(900)
-      ]);
-    }catch{}
+  function deleteMediaDatabase(){
+    return new Promise(resolve=>{
+      if(!('indexedDB' in window)){resolve();return}
+      let done=false;
+      const finish=()=>{if(done)return;done=true;resolve()};
+      try{
+        const req=indexedDB.deleteDatabase(MEDIA_DB);
+        req.onsuccess=finish;req.onerror=finish;req.onblocked=finish;
+        setTimeout(finish,800);
+      }catch{finish()}
+    });
   }
 
-  async function resetProject(){
+  async function hardResetProject(){
     if(resetting)return;
     resetting=true;
+    const visible=$('#resetProjectVisible');
+    if(visible){visible.disabled=true;visible.textContent='Resetting…'}
+
+    try{sessionStorage.setItem(RESET_MARK,'1')}catch{}
     clearProjectMemoryAndUI();
-    try{localStorage.removeItem(SAVE_KEY)}catch{}
-    await clearPersistedMediaBounded();
-    try{localStorage.removeItem(SAVE_KEY)}catch{}
-    location.reload();
+    clearLinaStorage();
+    await Promise.race([deleteMediaDatabase(),wait(900)]);
+    clearLinaStorage();
+
+    const clean=`${location.pathname}?reset=${Date.now()}`;
+    location.replace(clean);
+  }
+
+  const pending=(()=>{try{return sessionStorage.getItem(RESET_MARK)==='1'}catch{return false}})();
+  if(pending){
+    clearLinaStorage();
+    window.linaResetCleanupPromise=deleteMediaDatabase().finally(()=>{try{sessionStorage.removeItem(RESET_MARK)}catch{}});
+  }else{
+    window.linaResetCleanupPromise=Promise.resolve();
   }
 
   removeTrackArtwork();
@@ -90,6 +104,7 @@
   if(typeof restoreSavedProject==='function'){
     const baseRestore=restoreSavedProject;
     restoreSavedProject=async function(){
+      await window.linaResetCleanupPromise;
       const result=await baseRestore();
       removeTrackArtwork();
       clearArtworkVisuals();
@@ -98,16 +113,6 @@
     };
   }
 
-  window.linaResetProject=resetProject;
-  document.documentElement.dataset.projectResetOwner='canonical-v1';
-
-  const reset=$('#resetBtn');
-  if(reset){
-    reset.dataset.linaOwner='canonical';
-    reset.addEventListener('click',e=>{
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      void resetProject();
-    },true);
-  }
+  window.linaResetProject=hardResetProject;
+  document.documentElement.dataset.projectResetOwner='hard-v2';
 })();
