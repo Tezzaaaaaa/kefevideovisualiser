@@ -14,6 +14,20 @@
     return el;
   }
 
+  function preserveTitleToggle(){
+    const toggle=q('#showTitle');
+    if(!toggle)return;
+    let stash=q('#linaHiddenControlStash');
+    if(!stash){
+      stash=document.createElement('div');
+      stash.id='linaHiddenControlStash';
+      stash.hidden=true;
+      stash.setAttribute('aria-hidden','true');
+      document.body.append(stash);
+    }
+    stash.append(toggle);
+  }
+
   function rebuildSetup(){
     const body=q('[data-panel="setup"] .body');
     if(!body)return false;
@@ -23,10 +37,11 @@
     const titleLabel=q('#titleInput')?.closest('label');
     const artistLabel=q('#artistInput')?.closest('label');
     const albumLabel=q('#albumInput')?.closest('label');
-    const showTitleLabel=q('#showTitle')?.closest('label');
     const durationLabel=q('#titleDuration')?.closest('label');
 
-    if(!audioUpload||!titleLabel||!artistLabel||!albumLabel||!showTitleLabel||!durationLabel)return false;
+    if(!audioUpload||!titleLabel||!artistLabel||!albumLabel||!durationLabel)return false;
+
+    preserveTitleToggle();
 
     const audio=section('Audio','Start here');
     audio.append(audioUpload);
@@ -41,9 +56,7 @@
     const intro=section('Intro','Optional');
     const introGrid=document.createElement('div');
     introGrid.className='setup-intro-grid';
-    const showTitleText=showTitleLabel.querySelector('span');
-    if(showTitleText)showTitleText.textContent='Show title + artist at start';
-    introGrid.append(showTitleLabel,durationLabel);
+    introGrid.append(durationLabel);
     intro.append(introGrid);
     const helper=document.createElement('div');
     helper.className='helper';
