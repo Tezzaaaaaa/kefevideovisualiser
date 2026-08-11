@@ -9,9 +9,9 @@
 
   async function waitForCanonicalOwnership(){
     for(let i=0;i<80;i++){
-      const reset=$('#quickResetLayout'),quick=$('#quickEffect'),style=$('#styleEffectSelect');
+      const reset=$('#linaFreshReset'),quick=$('#quickEffect'),style=$('#styleEffectSelect');
       const ready=window.linaRuntime&&window.linaAuditSystem&&
-        reset?.dataset.linaOwner==='canonical'&&quick?.dataset.linaOwner==='canonical'&&style?.dataset.linaOwner==='canonical'&&
+        reset?.dataset.linaOwner==='fresh-direct'&&quick?.dataset.linaOwner==='canonical'&&style?.dataset.linaOwner==='canonical'&&
         String(document.documentElement.dataset.transportOwner||'').startsWith('canonical')&&
         document.documentElement.dataset.exportOwner==='canonical-v1'&&
         document.documentElement.dataset.controlsOwner==='canonical-v1'&&
@@ -25,7 +25,7 @@
   async function verify(){
     document.documentElement.dataset.linaReady='checking';
     await waitForCanonicalOwnership();
-    const requiredIds=['nav','play','stop','audioFile','lyricsText','story','lyrics','exportBtn','quickResetLayout','quickEffect','styleEffectSelect'];
+    const requiredIds=['nav','play','stop','audioFile','lyricsText','story','lyrics','exportBtn','linaFreshReset','quickEffect','styleEffectSelect'];
     const missing=requiredIds.filter(id=>!document.getElementById(id));
     const requiredFns=['goStep','parseTimed','render','exportVideo','restoreSavedProject'];
     const missingFns=requiredFns.filter(n=>typeof window[n]!=='function');
@@ -53,7 +53,8 @@
     if(document.documentElement.dataset.exportOwner!=='canonical-v1')failures.push('export-owner');
     if(document.documentElement.dataset.projectResetOwner!=='canonical-v1')failures.push('project-reset-owner');
     if(!String(document.documentElement.dataset.transportOwner||'').startsWith('canonical'))failures.push('transport-owner');
-    if($('#quickResetLayout')?.dataset.linaOwner!=='canonical'||$('#quickResetLayout')?.dataset.linaReset!=='canonical')failures.push('visible-reset-owner');
+    if($('#linaFreshReset')?.dataset.linaOwner!=='fresh-direct')failures.push('fresh-reset-owner');
+    if($('#quickResetLayout'))failures.push('retired-reset-control');
     if($('#rightsConfirm'))failures.push('retired-rights-control');
 
     const audit=window.linaAuditSystem?.();
