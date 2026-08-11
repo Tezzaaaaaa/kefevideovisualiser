@@ -40,11 +40,10 @@
     const panel=$('[data-panel="setup"]');
     if(!panel||panel.dataset.guidedSetup==='true')return false;
     panel.dataset.guidedSetup='true';
-    addGuide(panel,'Start with the song','1. Add the audio file. 2. Check the song details. 3. Choose whether you want a short title intro. Then press Next.');
+    addGuide(panel,'Start with the song','1. Add the audio file. 2. Check the song details. Then press Next.');
     const sections=$$('[data-panel="setup"] .setup-shell-section');
     renameSubsection(sections[0],'1. Add audio','Required');
     renameSubsection(sections[1],'2. Check song details','Used for lyrics search');
-    renameSubsection(sections[2],'3. Intro','Optional');
     return true;
   }
 
