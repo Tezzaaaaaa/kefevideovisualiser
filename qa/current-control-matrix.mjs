@@ -9,6 +9,13 @@ function wavBuffer(seconds=2.2,sampleRate=44100){
 const audio=wavBuffer();
 const timed='[00:00.00] Hello world from LINA\n[00:00.80] Second lyric line here\n[00:01.55] Final lyric line';
 const targets=[['chromium',chromium],['firefox',firefox],['webkit',webkit]];
+const resetDefaults={
+  apple:{size:'32',font:'apple-system',weight:'700',align:'left',lh:'1.02',spacing:'-0.02',view:'5'},
+  charli:{size:'34',font:'charli-condensed',weight:'900',align:'center',lh:'0.84',spacing:'-0.055',view:'current'},
+  eternal:{size:'30',font:'eternal-reenie',weight:'400',align:'left',lh:'1.02',spacing:'0.005',view:'5'}
+};
+const alternateFont={apple:'avenir',charli:'charli-black',eternal:'eternal-grace'};
+const alternateWeight={apple:'900',charli:'600',eternal:'700'};
 
 for(const [name,type] of targets){
   const browser=await type.launch({headless:true});
@@ -42,58 +49,77 @@ for(const [name,type] of targets){
   assert.equal(await page.locator('#lyrics .apple-line').evaluateAll(es=>es.filter(e=>getComputedStyle(e).visibility!=='hidden').length),1,`${name}: current-only view failed`);
   await page.selectOption('#quickLyricsView','3');await page.evaluate(()=>window.render(900));
 
-  await page.selectOption('#quickEffect','eternal');assert.equal(await page.inputValue('#lyricEffect'),'eternal',`${name}: effect switch failed`);
-  await page.selectOption('#quickEffect','apple');assert.equal(await page.inputValue('#lyricEffect'),'apple',`${name}: Apple effect restore failed`);
-
   await page.selectOption('#quickFrame','16:9');
-  await page.selectOption('#quickSize','68');
-  await page.selectOption('#quickLyricsView','9');
-  await page.selectOption('#quickAlign','right');
-  await page.locator('#quickY').evaluate(el=>{el.value='70';el.dispatchEvent(new Event('input',{bubbles:true}))});
-  await page.locator('#quickLineHeight').evaluate(el=>{el.value='1.25';el.dispatchEvent(new Event('input',{bubbles:true}))});
-  await page.locator('#quickLetterSpacing').evaluate(el=>{el.value='0.05';el.dispatchEvent(new Event('input',{bubbles:true}))});
-  await page.evaluate(()=>{const s=window.linaConsolidatedState;s.x=120;s.y=-40;s.scale=1.4;s.rot=8;document.querySelector('#lyrics').style.setProperty('--lina-drag-x','120px');document.querySelector('#lyrics').style.setProperty('--lina-drag-y','-40px');document.querySelector('#lyrics').style.setProperty('--lina-scale','1.4');document.querySelector('#lyrics').style.setProperty('--lina-rotation','8deg')});
+  await page.locator('#quickOffset').evaluate(el=>{el.value='350';el.dispatchEvent(new Event('input',{bubbles:true}))});
+  assert.equal(await page.inputValue('#offset'),'350',`${name}: timing offset setup failed`);
 
-  await page.click('#quickResetLayout');
-  await page.waitForTimeout(650);
-  const reset=await page.evaluate(()=>({
-    size:document.querySelector('#size')?.value,
-    quickSize:document.querySelector('#quickSize')?.value,
-    y:document.querySelector('#yPos')?.value,
-    quickY:document.querySelector('#quickY')?.value,
-    view:document.querySelector('#contextMode')?.value,
-    quickView:document.querySelector('#quickLyricsView')?.value,
-    align:document.querySelector('#textAlign')?.value,
-    quickAlign:document.querySelector('#quickAlign')?.value,
-    lh:document.querySelector('#lineHeight')?.value,
-    qlh:document.querySelector('#quickLineHeight')?.value,
-    spacing:document.querySelector('#letterSpacing')?.value,
-    qspacing:document.querySelector('#quickLetterSpacing')?.value,
-    top:getComputedStyle(document.querySelector('#lyrics')).top,
-    inlineTop:document.querySelector('#lyrics')?.style.top,
-    inlineSize:document.querySelector('#lyrics')?.style.fontSize,
-    x:window.linaConsolidatedState.x,yDrag:window.linaConsolidatedState.y,scale:window.linaConsolidatedState.scale,rot:window.linaConsolidatedState.rot,
-    resetOwner:document.querySelector('#quickResetLayout')?.dataset.linaOwner
-  }));
-  assert.equal(reset.size,'32',`${name}: visible Reset did not restore Apple desktop size`);
-  assert.equal(reset.quickSize,'32',`${name}: visible Reset quick size mirror failed`);
-  assert.equal(reset.y,'50',`${name}: visible Reset vertical source failed`);
-  assert.equal(reset.quickY,'50',`${name}: visible Reset vertical mirror failed`);
-  assert.equal(reset.view,'5',`${name}: visible Reset lyric view failed`);
-  assert.equal(reset.quickView,'5',`${name}: visible Reset lyric view mirror failed`);
-  assert.equal(reset.align,'left',`${name}: visible Reset alignment failed`);
-  assert.equal(reset.quickAlign,'left',`${name}: visible Reset alignment mirror failed`);
-  assert.equal(reset.lh,'1.02',`${name}: visible Reset line height failed`);
-  assert.equal(reset.qlh,'1.02',`${name}: visible Reset line height mirror failed`);
-  assert.equal(reset.spacing,'-0.02',`${name}: visible Reset letter spacing failed`);
-  assert.equal(reset.qspacing,'-0.02',`${name}: visible Reset letter spacing mirror failed`);
-  assert.equal(reset.inlineTop,'50%',`${name}: visible Reset preview top failed`);
-  assert.equal(reset.inlineSize,'32px',`${name}: visible Reset preview size failed`);
-  assert.deepEqual([reset.x,reset.yDrag,reset.scale,reset.rot],[0,0,1,0],`${name}: visible Reset transform failed`);
-  assert.equal(reset.resetOwner,'canonical',`${name}: visible Reset lost canonical ownership`);
+  for(const effect of ['apple','charli','eternal']){
+    const d=resetDefaults[effect];
+    await page.selectOption('#quickEffect',effect);
+    await page.waitForTimeout(60);
+    await page.selectOption('#quickFont',alternateFont[effect]);
+    await page.selectOption('#quickWeight',alternateWeight[effect]);
+    await page.selectOption('#quickSize','68');
+    await page.selectOption('#quickLyricsView','9');
+    await page.selectOption('#quickAlign','right');
+    await page.selectOption('#quickCase','upper');
+    await page.locator('#quickTextColor').evaluate(el=>{el.value='#ff3366';el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}))});
+    await page.locator('#quickGlow').evaluate(el=>{el.value='160';el.dispatchEvent(new Event('input',{bubbles:true}))});
+    await page.locator('#quickY').evaluate(el=>{el.value='70';el.dispatchEvent(new Event('input',{bubbles:true}))});
+    await page.locator('#quickLineHeight').evaluate(el=>{el.value='1.25';el.dispatchEvent(new Event('input',{bubbles:true}))});
+    await page.locator('#quickLetterSpacing').evaluate(el=>{el.value='0.05';el.dispatchEvent(new Event('input',{bubbles:true}))});
+    await page.evaluate(()=>{
+      const s=window.linaConsolidatedState;s.x=120;s.y=-40;s.scale=1.4;s.rot=8;
+      const l=document.querySelector('#lyrics');l.style.setProperty('--lina-drag-x','120px');l.style.setProperty('--lina-drag-y','-40px');l.style.setProperty('--lina-scale','1.4');l.style.setProperty('--lina-rotation','8deg');
+    });
 
-  await page.locator('#quickOffset').evaluate(el=>{el.value='100';el.dispatchEvent(new Event('input',{bubbles:true}))});
-  assert.equal(await page.inputValue('#offset'),'100',`${name}: timing offset mirror failed`);
+    const beforeCount=await page.evaluate(()=>window.linaRuntime.state.resetCount);
+    await page.click('#quickResetLayout');
+    await page.waitForTimeout(750);
+    const reset=await page.evaluate(()=>({
+      effect:document.querySelector('#lyricEffect')?.value,
+      size:document.querySelector('#size')?.value,quickSize:document.querySelector('#quickSize')?.value,
+      y:document.querySelector('#yPos')?.value,quickY:document.querySelector('#quickY')?.value,
+      view:document.querySelector('#contextMode')?.value,quickView:document.querySelector('#quickLyricsView')?.value,
+      font:document.querySelector('#fontChoice')?.value,quickFont:document.querySelector('#quickFont')?.value,
+      weight:document.querySelector('#fontWeight')?.value,quickWeight:document.querySelector('#quickWeight')?.value,
+      align:document.querySelector('#textAlign')?.value,quickAlign:document.querySelector('#quickAlign')?.value,
+      lh:document.querySelector('#lineHeight')?.value,qlh:document.querySelector('#quickLineHeight')?.value,
+      spacing:document.querySelector('#letterSpacing')?.value,qspacing:document.querySelector('#quickLetterSpacing')?.value,
+      color:document.querySelector('#textColor')?.value,quickColor:document.querySelector('#quickTextColor')?.value,
+      letterCase:document.querySelector('#letterCase')?.value,quickCase:document.querySelector('#quickCase')?.value,
+      glow:document.querySelector('#glow')?.value,quickGlow:document.querySelector('#quickGlow')?.value,
+      offset:document.querySelector('#offset')?.value,aspect:document.querySelector('#aspect')?.value,
+      inlineTop:document.querySelector('#lyrics')?.style.top,inlineSize:document.querySelector('#lyrics')?.style.fontSize,
+      textTransform:document.querySelector('#lyrics')?.style.textTransform,
+      accent:document.documentElement.style.getPropertyValue('--accent').trim(),
+      dragX:document.querySelector('#lyrics')?.style.getPropertyValue('--lina-drag-x'),dragY:document.querySelector('#lyrics')?.style.getPropertyValue('--lina-drag-y'),
+      scaleVar:document.querySelector('#lyrics')?.style.getPropertyValue('--lina-scale'),rotVar:document.querySelector('#lyrics')?.style.getPropertyValue('--lina-rotation'),
+      x:window.linaConsolidatedState.x,yDrag:window.linaConsolidatedState.y,scale:window.linaConsolidatedState.scale,rot:window.linaConsolidatedState.rot,
+      resetCount:window.linaRuntime.state.resetCount,resetOwner:document.querySelector('#quickResetLayout')?.dataset.linaOwner
+    }));
+
+    assert.equal(reset.effect,effect,`${name}/${effect}: Reset changed the selected effect`);
+    assert.equal(reset.size,d.size,`${name}/${effect}: Reset size failed`);assert.equal(reset.quickSize,d.size,`${name}/${effect}: Reset quick size mirror failed`);
+    assert.equal(reset.y,'50',`${name}/${effect}: Reset vertical position failed`);assert.equal(reset.quickY,'50',`${name}/${effect}: Reset vertical mirror failed`);
+    assert.equal(reset.view,d.view,`${name}/${effect}: Reset lyric view failed`);assert.equal(reset.quickView,d.view,`${name}/${effect}: Reset lyric view mirror failed`);
+    assert.equal(reset.font,d.font,`${name}/${effect}: Reset font failed`);assert.equal(reset.quickFont,d.font,`${name}/${effect}: Reset font mirror failed`);
+    assert.equal(reset.weight,d.weight,`${name}/${effect}: Reset weight failed`);assert.equal(reset.quickWeight,d.weight,`${name}/${effect}: Reset weight mirror failed`);
+    assert.equal(reset.align,d.align,`${name}/${effect}: Reset alignment failed`);assert.equal(reset.quickAlign,d.align,`${name}/${effect}: Reset alignment mirror failed`);
+    assert.equal(reset.lh,d.lh,`${name}/${effect}: Reset line height failed`);assert.equal(reset.qlh,d.lh,`${name}/${effect}: Reset line height mirror failed`);
+    assert.equal(reset.spacing,d.spacing,`${name}/${effect}: Reset letter spacing failed`);assert.equal(reset.qspacing,d.spacing,`${name}/${effect}: Reset letter spacing mirror failed`);
+    assert.equal(reset.color,'#ffffff',`${name}/${effect}: Reset colour failed`);assert.equal(reset.quickColor,'#ffffff',`${name}/${effect}: Reset colour mirror failed`);
+    assert.equal(reset.letterCase,'original',`${name}/${effect}: Reset case failed`);assert.equal(reset.quickCase,'original',`${name}/${effect}: Reset case mirror failed`);
+    assert.equal(reset.glow,'100',`${name}/${effect}: Reset glow failed`);assert.equal(reset.quickGlow,'100',`${name}/${effect}: Reset glow mirror failed`);
+    assert.equal(reset.offset,'350',`${name}/${effect}: Reset incorrectly changed lyric timing`);assert.equal(reset.aspect,'16:9',`${name}/${effect}: Reset incorrectly changed aspect ratio`);
+    assert.equal(reset.inlineTop,'50%',`${name}/${effect}: Reset preview top failed`);assert.equal(reset.inlineSize,`${d.size}px`,`${name}/${effect}: Reset preview size failed`);
+    assert.equal(reset.textTransform,'none',`${name}/${effect}: Reset preview case style failed`);assert.equal(reset.accent,'#ffffff',`${name}/${effect}: Reset preview colour variable failed`);
+    assert.deepEqual([reset.dragX,reset.dragY,reset.scaleVar,reset.rotVar],['0px','0px','1','0deg'],`${name}/${effect}: Reset preview transform variables failed`);
+    assert.deepEqual([reset.x,reset.yDrag,reset.scale,reset.rot],[0,0,1,0],`${name}/${effect}: Reset shared transform state failed`);
+    assert.equal(reset.resetCount,beforeCount+1,`${name}/${effect}: visible Reset handler did not run exactly once`);
+    assert.equal(reset.resetOwner,'canonical',`${name}/${effect}: visible Reset lost canonical ownership`);
+  }
+
   const titleBefore=await page.isChecked('#quickTitle');await page.locator('#quickTitle').setChecked(!titleBefore);assert.equal(await page.isChecked('#showTitle'),!titleBefore,`${name}: title-card toggle failed`);await page.locator('#quickTitle').setChecked(titleBefore);
   await page.selectOption('#quickFrame','1:1');assert.equal(await page.inputValue('#aspect'),'1:1',`${name}: aspect mirror failed`);
   await page.selectOption('#quickQuality','720');assert.equal(await page.inputValue('#quality'),'720',`${name}: quality mirror failed`);
@@ -115,5 +141,5 @@ for(const [name,type] of targets){
 
   assert.deepEqual(errors,[],`${name}: page errors ${errors.join(' | ')}`);
   await browser.close();
-  console.log(`${name}: CURRENT UNIFIED CONTROL MATRIX PASS`);
+  console.log(`${name}: CURRENT HARD-RESET CONTROL MATRIX PASS`);
 }
