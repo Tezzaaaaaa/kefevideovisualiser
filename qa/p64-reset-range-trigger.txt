@@ -1,0 +1,2 @@
+p64-20260812-reset-range-parity
+Temporary exact-state trigger for hard Reset control-range validation.
