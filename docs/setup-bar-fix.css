@@ -47,27 +47,27 @@
   }
 }
 
-/* Track identity gets the whole available row. */
+/* Track identity now uses the full row: no artwork controls. */
 .consolidated-track .track-grid{
   display:grid!important;
-  grid-template-columns:112px minmax(0,1fr)!important;
-  gap:14px!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  gap:10px!important;
   align-items:start!important;
   width:100%!important;
   min-width:0!important;
   max-width:100%!important;
   box-sizing:border-box!important;
 }
-.consolidated-track .track-art{
-  width:112px!important;
-  height:112px!important;
-  min-width:112px!important;
-  max-width:112px!important;
-  box-sizing:border-box!important;
+.consolidated-track .track-art,
+.consolidated-track label[for="userArtworkFile"],
+.consolidated-track #userArtworkFile,
+.consolidated-track #userArtworkIntro{
+  display:none!important;
 }
 .consolidated-track .track-fields{
   display:grid!important;
   grid-template-columns:minmax(0,1fr)!important;
+  grid-column:1/-1!important;
   gap:8px!important;
   min-width:0!important;
   max-width:100%!important;
@@ -186,14 +186,8 @@
     -webkit-backdrop-filter:none!important;
   }
   .consolidated-track .track-grid{
-    grid-template-columns:104px minmax(0,1fr)!important;
-    gap:12px!important;
-  }
-  .consolidated-track .track-art{
-    width:104px!important;
-    height:104px!important;
-    min-width:104px!important;
-    max-width:104px!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    gap:10px!important;
   }
   .consolidated-track .track-intro-settings{
     grid-template-columns:minmax(0,1fr) minmax(150px,.55fr)!important;
@@ -203,12 +197,6 @@
 @media(max-width:560px){
   .consolidated-track .track-grid{
     grid-template-columns:minmax(0,1fr)!important;
-  }
-  .consolidated-track .track-art{
-    width:112px!important;
-    height:112px!important;
-    min-width:112px!important;
-    max-width:112px!important;
   }
   .consolidated-track .track-intro-settings{
     grid-template-columns:minmax(0,1fr)!important;
