@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const STEPS=['setup','lyrics','style','background','review'];
+  const STEPS=['setup','lyrics','background'];
   const q=s=>document.querySelector(s);
   const qa=s=>[...document.querySelectorAll(s)];
 
@@ -72,21 +72,6 @@
     return true;
   }
 
-  function ensureReviewStep(){
-    const nav=q('#nav');
-    if(!nav)return false;
-    if(!nav.querySelector('[data-tool="review"]')){
-      const button=document.createElement('button');
-      button.className='navbtn';
-      button.dataset.tool='review';
-      button.type='button';
-      button.innerHTML='<span class="step">5</span>Review';
-      nav.append(button);
-    }
-    q('[data-panel="review"]')?.remove();
-    return true;
-  }
-
   function moveWorkflowControls(panel){
     const controls=q('.flow-controls');
     const body=panel?.querySelector('.body');
@@ -106,39 +91,10 @@
     });
   }
 
-  function goToReviewControls(index){
-    qa('.tool[data-panel]').forEach(panel=>{
-      panel.classList.remove('active');
-      panel.hidden=true;
-      panel.setAttribute('aria-hidden','true');
-      panel.style.display='none';
-    });
-    markNav('review',index);
-
-    const controls=q('.flow-controls');
-    if(controls)controls.style.display='none';
-    const status=q('#stepStatus');
-    if(status)status.textContent=`Step ${index+1} of ${STEPS.length}`;
-
-    document.documentElement.dataset.reviewDestination='quick-controls';
-    requestAnimationFrame(()=>requestAnimationFrame(()=>{
-      const target=q('#previewQuickControls')||q('.transport')||q('.stage');
-      if(target){
-        target.style.scrollMarginTop='112px';
-        target.scrollIntoView({behavior:'smooth',block:'start'});
-      }
-    }));
-  }
-
   function showPanel(step){
     const index=Math.max(0,STEPS.indexOf(step));
     const id=STEPS[index];
     window.activeStep=index;
-
-    if(id==='review'){
-      goToReviewControls(index);
-      return;
-    }
 
     document.documentElement.dataset.reviewDestination='';
     qa('.tool[data-panel]').forEach(panel=>{
@@ -195,7 +151,7 @@
     let attempts=0;
     const run=()=>{
       attempts++;
-      if(rebuildSetup()&&ensureReviewStep()){
+      if(rebuildSetup()){
         bindNavigation();
         window.linaShowPanel=showPanel;
         showPanel('setup');
