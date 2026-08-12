@@ -9,87 +9,14 @@
 <body>
 <script>
 (async()=>{
-  const BUILD='p70-20260812-reset-clears-everything';
-  const MEDIA_DB='lina-project-media';
-  const MEDIA_STORE='files';
+  const BUILD='p71-20260812-finalisation';
 
-  function isLinaKey(key){return /^lina(?:[.:-]|$)/i.test(String(key||''))}
-
-  function clearLinaWebStorage(){
-    for(const storage of [localStorage,sessionStorage]){
-      try{
-        const keys=[];
-        for(let i=0;i<storage.length;i++)keys.push(storage.key(i));
-        for(const key of keys)if(isLinaKey(key))storage.removeItem(key);
-      }catch{}
-    }
-  }
-
-  function clearAndDeleteMediaDatabase(){
-    if(!('indexedDB' in window))return Promise.resolve();
-    return new Promise((resolve,reject)=>{
-      let request;
-      try{request=indexedDB.open(MEDIA_DB,1)}catch(error){reject(error);return}
-      request.onupgradeneeded=()=>{
-        const db=request.result;
-        if(!db.objectStoreNames.contains(MEDIA_STORE))db.createObjectStore(MEDIA_STORE);
-      };
-      request.onerror=()=>reject(request.error||new Error('Unable to open LINA media storage'));
-      request.onsuccess=()=>{
-        const db=request.result;
-        try{
-          const tx=db.transaction(MEDIA_STORE,'readwrite');
-          tx.objectStore(MEDIA_STORE).clear();
-          tx.onerror=()=>{const error=tx.error;db.close();reject(error||new Error('Unable to clear LINA media storage'))};
-          tx.onabort=()=>{const error=tx.error;db.close();reject(error||new Error('LINA media reset aborted'))};
-          tx.oncomplete=()=>{
-            db.close();
-            let del;
-            try{del=indexedDB.deleteDatabase(MEDIA_DB)}catch{resolve();return}
-            del.onsuccess=()=>resolve();
-            del.onerror=()=>resolve();
-            del.onblocked=()=>resolve();
-          };
-        }catch(error){db.close();reject(error)}
-      };
-    });
-  }
-
-  async function clearLinaCaches(){
-    if(!('caches' in window))return;
-    try{
-      const names=await caches.keys();
-      await Promise.all(names.filter(name=>/lina|lyricvideovisualiser|story.?lyrics/i.test(name)).map(name=>caches.delete(name)));
-    }catch{}
-  }
-
-  async function unregisterLinaWorkers(){
-    if(!('serviceWorker' in navigator))return;
-    try{
-      const regs=await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.filter(reg=>/lyricvideovisualiser/i.test(reg.scope||'')).map(reg=>reg.unregister()));
-    }catch{}
-  }
-
-  async function resetBeforeBoot(){
-    const params=new URLSearchParams(location.search);
-    if(params.get('reset')!=='1')return;
-
-    document.body.innerHTML='<main style="font-family:system-ui;background:#0a0a0b;color:#fff;min-height:100vh;padding:24px"><h1>LINA</h1><p>Clearing project…</p></main>';
-
-    clearLinaWebStorage();
-    await Promise.all([
-      clearAndDeleteMediaDatabase(),
-      clearLinaCaches(),
-      unregisterLinaWorkers()
-    ]);
-    clearLinaWebStorage();
-
-    try{history.replaceState(null,'',location.pathname)}catch{}
+  if(new URLSearchParams(location.search).get('reset')==='1'){
+    location.replace(`reset.html?v=${BUILD}`);
+    return;
   }
 
   try{
-    await resetBeforeBoot();
     const response=await fetch(`app-source.html?v=${BUILD}`,{cache:'no-store'});
     if(!response.ok)throw new Error(`HTTP ${response.status}`);
     let html=await response.text();
@@ -102,8 +29,8 @@
     document.write(html);
     document.close();
   }catch(error){
-    document.body.innerHTML='<main style="font-family:system-ui;background:#0a0a0b;color:#fff;min-height:100vh;padding:24px"><h1>LINA</h1><p>Reset could not fully clear the project. Nothing has been reloaded.</p></main>';
-    console.error('LINA reset failed before boot',error);
+    document.body.innerHTML='<main style="font-family:system-ui;background:#0a0a0b;color:#fff;min-height:100vh;padding:24px"><h1>LINA</h1><p>Failed to load the editor. Reload once.</p></main>';
+    console.error('LINA entry load failed',error);
   }
 })();
 </script>
