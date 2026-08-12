@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
-import {webkit} from 'playwright';
+import {chromium} from 'playwright';
 
 function wav(seconds=2.4,rate=44100){
   const count=Math.floor(seconds*rate),bytes=count*2,b=Buffer.alloc(44+bytes);
@@ -9,7 +9,7 @@ function wav(seconds=2.4,rate=44100){
   return b;
 }
 const background=Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920"><rect width="1080" height="1920" fill="#542788"/><circle cx="540" cy="720" r="360" fill="#ef8a62"/></svg>');
-const browser=await webkit.launch({headless:true});
+const browser=await chromium.launch({headless:true});
 const page=await browser.newPage({acceptDownloads:true,viewport:{width:1280,height:900}});
 const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',message=>console.log('BROWSER',message.type(),message.text()));
 await page.route('https://lrclib.net/api/search**',route=>route.fulfill({contentType:'application/json',body:JSON.stringify([{trackName:'Test Song',artistName:'Lady Gaga',syncedLyrics:'[00:00.00]First lyric line\n[00:00.80]Second lyric line\n[00:01.60]Final lyric line'}])}));
