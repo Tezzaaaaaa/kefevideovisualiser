@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const BUILD='p79-20260812-instant-export-fallback';
+  const BUILD='p80-20260812-branded-paid-export';
   const load=src=>new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=`${src}?v=${BUILD}`;s.onload=resolve;s.onerror=()=>reject(new Error(`Failed to load ${src}`));document.body.append(s)});
   for(const href of ['apple-motion.css','ui-solid.css','intro-layout.css','production-consolidated.css','consolidated-studio.css','editor-shell.css','editor-shell-mobile-safety.css','editor-shell-density-fix.css','setup-shell.css','guided-ui.css','setup-lyrics-bridge.css','background-dropzone.css','effect-typography.css','eternal-sunshine-effect.css','preview-quick-controls.css','sticky-preview.css']){const css=document.createElement('link');css.rel='stylesheet';css.href=`${href}?v=${BUILD}`;document.head.append(css)}
   (async()=>{
