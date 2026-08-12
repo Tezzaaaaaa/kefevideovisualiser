@@ -97,3 +97,43 @@
 @media(max-height:650px){
   .preview-sticky-shell .transport-tools{display:none!important}
 }
+
+
+/* Scale the complete composition, not only its outer frame. */
+.preview-sticky-shell .stage-wrap #story,
+.preview-sticky-shell .stage-wrap #story[data-aspect]{
+  flex:none!important;
+  max-width:none!important;
+  max-height:none!important;
+  transform:none!important;
+  transform-origin:center center!important;
+  zoom:.52!important;
+}
+.preview-sticky-shell .stage-wrap #story[data-aspect="9:16"]{
+  width:360px!important;
+  height:640px!important;
+}
+.preview-sticky-shell .stage-wrap #story[data-aspect="4:5"]{
+  width:400px!important;
+  height:500px!important;
+}
+.preview-sticky-shell .stage-wrap #story[data-aspect="1:1"]{
+  width:500px!important;
+  height:500px!important;
+}
+.preview-sticky-shell .stage-wrap #story[data-aspect="16:9"]{
+  width:640px!important;
+  height:360px!important;
+}
+@media(max-width:900px){
+  .preview-sticky-shell .stage-wrap #story,
+  .preview-sticky-shell .stage-wrap #story[data-aspect]{zoom:.42!important}
+}
+@media(max-width:560px){
+  .preview-sticky-shell .stage-wrap #story,
+  .preview-sticky-shell .stage-wrap #story[data-aspect]{zoom:.38!important}
+}
+@media(max-height:650px){
+  .preview-sticky-shell .stage-wrap #story,
+  .preview-sticky-shell .stage-wrap #story[data-aspect]{zoom:.32!important}
+}
