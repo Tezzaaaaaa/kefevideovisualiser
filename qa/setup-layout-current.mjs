@@ -24,7 +24,7 @@ for(const [browserName,type] of browsers){
         sections:setup?.querySelectorAll('.setup-shell-section').length||0,
         audio:!!setup?.querySelector('#audioFile'),songSearch:!!document.querySelector('#songSearch,#songResults,#findLyricsBtn'),trackSettings:!!setup?.querySelector('#titleInput,#artistInput,#albumInput'),
         titleInSetup:!!setup?.querySelector('#showTitle,#titleDuration'),
-        titleInStash:!!document.querySelector('#linaHiddenControlStash #showTitle')&&!!document.querySelector('#linaHiddenControlStash #titleDuration'),
+        titleSources:!!document.querySelector('#showTitle')&&!!document.querySelector('#titleDuration'),
         artwork:document.querySelectorAll('#userArtworkFile,#userArtworkIntro,label[for="userArtworkFile"],.track-art').length,
         flow:flow?{display:getComputedStyle(flow).display,position:getComputedStyle(flow).position}:null,
         setupBox:box(setup),navBox:box(nav),docWidth:document.documentElement.scrollWidth
@@ -35,7 +35,7 @@ for(const [browserName,type] of browsers){
     assert.equal(state.sections,1,`${browserName}/${vpName}: Setup must contain only the audio uploader`);
     assert.equal(state.audio,true,`${browserName}/${vpName}: audio uploader missing`);assert.equal(state.songSearch,false,`${browserName}/${vpName}: deleted song search returned`);assert.equal(state.trackSettings,false,`${browserName}/${vpName}: settings returned to Setup`);
     assert.equal(state.titleInSetup,false,`${browserName}/${vpName}: title-card controls returned to Setup`);
-    assert.equal(state.titleInStash,true,`${browserName}/${vpName}: title-card source controls missing`);
+    assert.equal(state.titleSources,true,`${browserName}/${vpName}: title-card source controls missing`);
     assert.equal(state.artwork,0,`${browserName}/${vpName}: retired artwork controls returned`);
     assert.ok(state.flow&&state.flow.display!=='none'&&state.flow.position!=='fixed',`${browserName}/${vpName}: inline workflow controls are not usable`);
     const minSetupWidth=Math.min(400,viewport.width-56);
