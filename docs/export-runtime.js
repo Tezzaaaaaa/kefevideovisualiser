@@ -77,8 +77,11 @@ async function exportVideo(){
   };
   const stopRecorder=async fast=>{
     if(!rec)return;
-    if(rec.state!=='inactive')try{rec.stop()}catch{}
-    if(!fast&&recorderDone)await Promise.race([recorderDone,new Promise(r=>setTimeout(r,1800))]).catch(()=>{});
+    if(rec.state!=='inactive'){
+      if(!fast)try{rec.requestData()}catch{}
+      try{rec.stop()}catch{}
+    }
+    if(!fast&&recorderDone)await withTimeout(recorderDone,8000,'Video recorder did not finish finalising.');
   };
   const cleanup=async()=>{
     linaExportCancelCurrent=null;
@@ -286,6 +289,8 @@ async function exportVideo(){
     }
     stopAudio();
     linaExportPhase='finalising';
+    $('#progress').value=100;
+    $('#renderText').textContent='Finalising video…';
     await stopRecorder(false);
     if(cancelled||abort)throw cancelError;
     if(!chunks.length)throw new Error('Recorder produced no video data');
@@ -320,3 +325,24 @@ async function exportVideo(){
   }
 }
 window.linaExportState=()=>({active:linaExportActive,cancellable:!!linaExportCancelCurrent,phase:linaExportPhase,firefox:/Firefox\//i.test(navigator.userAgent)});
+
+const paidTiers=new Set(['paid','pro','premium','member']);
+function linaHasPaidMembership(){
+  const membership=window.linaMembership||window.LINA_MEMBERSHIP||null;
+  return membership?.paid===true||(membership?.active===true&&paidTiers.has(String(membership?.tier||membership?.plan||'').toLowerCase()));
+}
+async function runLinaExport(){
+  const quality=Number($('#quality')?.value||$('#quickQuality')?.value||720);
+  if(quality>720&&!linaHasPaidMembership())return status('1080p export is available to paid members.');
+  return exportVideo();
+}
+for(const id of ['exportBtn','exportBottomBtn']){
+  const button=$('#'+id);
+  if(!button)continue;
+  button.onclick=runLinaExport;
+  button.dataset.linaOwner='export-runtime';
+}
+window.linaHasPaidMembership=linaHasPaidMembership;
+window.linaExport=runLinaExport;
+window.linaFFmpegExport=runLinaExport;
+document.documentElement.dataset.exportOwner='export-runtime';

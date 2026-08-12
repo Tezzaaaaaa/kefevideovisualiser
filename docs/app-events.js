@@ -10,15 +10,13 @@
       await load('app-core-safe.js');
       await load('app-media-safe.js');
       await load('intro-layout.js');
-      await load('export-prewarm.js');
-      await load('ffmpeg-export.js');
-      await load('webkit-export-guard.js');
       await load('consolidated-studio.js');
       await load('canonical-controls.js');
       await load('project-state-fix.js');
       if(window.linaResetCleanupPromise)await window.linaResetCleanupPromise;
       await load('editor-shell.js');
       await load('app-events-safe.js');
+      await load('export-runtime.js');
       if(window.linaRestorePromise)await window.linaRestorePromise;
       window.linaCanonicalControlsActivate?.();
 
@@ -48,7 +46,6 @@
       await load('canonical-runtime.js');
 
       await load('preview-quick-controls.js');
-      await load('canonical-export.js');
       await load('style-effect-selector.js');
       await load('canonical-ui-lock.js');
       await load('transport-lock.js');

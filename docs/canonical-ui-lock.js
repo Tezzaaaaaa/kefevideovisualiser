@@ -16,7 +16,7 @@
   function install(){
     ownEffect('quickEffect');ownEffect('styleEffectSelect');
     const reset=$('#resetProjectVisible');if(reset)reset.dataset.linaOwner='project-hard-v3';
-    const exportBtn=$('#quickExport');if(exportBtn)exportBtn.dataset.linaOwner='canonical-export';
+    const exportBtn=$('#quickExport');if(exportBtn)exportBtn.dataset.linaOwner='export-runtime';
     document.documentElement.dataset.uiOwner='canonical-v1';
   }
 
