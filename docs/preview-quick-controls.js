@@ -88,7 +88,7 @@
     const frameSection=$('#cropX')?.closest('.subsection');
     const readableSection=$('#dim')?.closest('.subsection');
     const frameGrid=group.querySelector('.quick-background-frame');
-    const readableGrid=group.querySelector('.quick-background-readable');
+    const readableGrid=box.querySelector('.quick-typography-readable');
     const actionGrid=group.querySelector('.quick-background-actions');
     for(const id of ['bgFit','cropZoom','cropX','cropY']){const field=takeField(id);if(field&&frameGrid)frameGrid.append(field)}
     for(const id of ['dim','blur']){const field=takeField(id);if(field&&readableGrid)readableGrid.append(field)}
@@ -115,7 +115,7 @@
     box.innerHTML=`
       <div class="quick-control-head"><b>Finalise video</b><span>Every final adjustment is here, in order.</span></div>
       <div class="quick-group quick-priority-1">
-        <div class="quick-group-head"><b>1. Lyrics & typography</b><span>Effect · type · colour · readability</span></div>
+        <div class="quick-group-head"><b>1. Typography & readability</b><span>Everything affecting lyric legibility</span></div>
         <div class="quick-control-grid">
           <label><span>Effect</span><select id="quickEffect"><option value="apple">Apple Music</option><option value="charli">Charli xcx · Apple</option><option value="eternal">Eternal Sunshine</option></select></label>
           <label><span>Font</span><select id="quickFont"></select></label>
@@ -129,11 +129,12 @@
           <label class="quick-range"><span>Letter spacing <b id="quickLetterSpacingVal"></b></span><input id="quickLetterSpacing" type="range"></label>
           <label class="quick-range quick-wide"><span>Glow <b id="quickGlowVal"></b></span><input id="quickGlow" type="range"></label>
         </div>
+        <div class="quick-mini-head"><b>Background readability</b><span>Darken or soften behind the lyrics</span></div>
+        <div class="quick-control-grid quick-typography-readable"></div>
       </div>
       <div class="quick-group quick-priority-2" id="quickBackgroundGroup">
-        <div class="quick-group-head"><b>2. Background & framing</b><span>Fit · crop · readability</span></div>
+        <div class="quick-group-head"><b>2. Background & framing</b><span>Fit · crop · focus</span></div>
         <div class="quick-mini-head"><b>Frame</b><span>Fit · zoom · focus</span></div><div class="quick-control-grid quick-background-frame"></div>
-        <div class="quick-mini-head"><b>Readability</b><span>Darken or soften if needed</span></div><div class="quick-control-grid quick-background-readable"></div>
         <div class="quick-background-actions"></div>
       </div>
       <div class="quick-group quick-priority-3">
@@ -188,7 +189,7 @@
     }
     window.linaQuickSettingsSync=syncAll;
     setTimeout(()=>{window.linaSyncTypography?.();syncAll();titleEnabledState()},30);
-    document.documentElement.dataset.quickControlsOrder='finalise-v3';document.documentElement.dataset.previewFinalise='v3';
+    document.documentElement.dataset.quickControlsOrder='finalise-v4';document.documentElement.dataset.previewFinalise='v4';
     return true;
   }
 
