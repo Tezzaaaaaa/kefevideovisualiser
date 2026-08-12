@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const BUILD='p109-20260813-runtime-recovery';
+  const BUILD='claude-export-20260813-1';
   window.__linaBootErrors=[];
   window.addEventListener('error',event=>window.__linaBootErrors.push(String(event.error?.stack||event.message||'Unknown startup error')));
   const load=src=>new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=`${src}?v=${BUILD}`;s.onload=resolve;s.onerror=()=>reject(new Error(`Failed to load ${src}`));document.body.append(s)});
