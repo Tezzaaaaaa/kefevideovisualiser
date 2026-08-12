@@ -1,3 +1,4 @@
+// QA trigger: verify Setup structure v2 against the full browser matrix.
 import assert from 'node:assert/strict';
 import { chromium, firefox, webkit } from 'playwright';
 
