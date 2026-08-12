@@ -18,15 +18,12 @@ await page.waitForFunction(()=>document.documentElement.dataset.linaReady==='tru
 
 await page.setInputFiles('#audioFile',{name:'safari-probe.wav',mimeType:'audio/wav',buffer:wavBuffer()});
 await page.waitForFunction(()=>Number(document.querySelector('#audio')?.duration)>1.5);
-await page.click('#nav [data-tool="lyrics"]');
-await page.locator('#syncMethod').evaluate(element=>{
-  element.value='pasteTimed';
-  element.dispatchEvent(new Event('change',{bubbles:true}));
+await page.evaluate(()=>{
+  const text='[00:00.00] Safari export probe\n[00:00.80] Video and audio together\n[00:01.55] Final probe line';
+  startReview(parseTimed(text,'probe.lrc'),'timed');
 });
-await page.fill('#lyricsText','[00:00.00] Safari export probe\n[00:00.80] Video and audio together\n[00:01.55] Final probe line');
-await page.click('#applyPaste');
 await page.waitForSelector('#reviewBox:not(.hidden)');
-await page.click('#confirmReview');
+await page.evaluate(()=>document.querySelector('#confirmReview').click());
 await page.waitForFunction(()=>document.querySelectorAll('#timeline .line').length===3);
 await page.selectOption('#quality','720');
 await page.selectOption('#aspect','9:16');
