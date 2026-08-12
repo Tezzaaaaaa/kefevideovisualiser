@@ -1,10 +1,10 @@
 'use strict';
 (()=>{
-  let active=false,phase='idle',cancelled=false,ffmpeg=null,loadPromise=null,classWorkerBlobURL='',coreBlobURL='',wasmBlobURL='';
+  let active=false,phase='idle',cancelled=false,ffmpeg=null,loadPromise=null,classWorkerBlobURL='',coreBlobURL='',wasmBlobURL='',prewarmQueued=false;
   const $=s=>document.querySelector(s);
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
-  const exportState=()=>({active,cancellable:active,phase,ffmpeg:true});
+  const exportState=()=>({active,cancellable:active,phase,ffmpeg:true,engineReady:!!ffmpeg?.loaded});
   window.linaFFmpegActive=()=>active;
 
   function setPhase(next,text){phase=next;if(text&&$('#renderText'))$('#renderText').textContent=text}
@@ -34,7 +34,7 @@
     if(ffmpeg?.loaded)return ffmpeg;
     if(loadPromise)return loadPromise;
     loadPromise=(async()=>{
-      setPhase('loading-engine','Loading MP4 export engine…');
+      if(active)setPhase('loading-engine','Loading MP4 export engine…');
       await loadScript('https://unpkg.com/@ffmpeg/ffmpeg@0.12.15/dist/umd/ffmpeg.js');
       const coreBase='https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm';
       [classWorkerBlobURL,coreBlobURL,wasmBlobURL]=await Promise.all([
@@ -51,9 +51,25 @@
     return loadPromise;
   }
 
-  function canvasBlob(canvas,type='image/jpeg',quality=.9){return new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Could not encode export frame.')),type,quality))}
+  function queuePrewarm(){
+    if(prewarmQueued||ffmpeg?.loaded||loadPromise)return;
+    prewarmQueued=true;
+    const run=()=>{prewarmQueued=false;void getFFmpeg().catch(()=>{})};
+    if('requestIdleCallback'in window)requestIdleCallback(run,{timeout:1800});else setTimeout(run,500);
+  }
+  document.addEventListener('change',e=>{if(e.target?.id==='audioFile'&&e.target.files?.length)queuePrewarm()},true);
+  document.addEventListener('loadedmetadata',e=>{if(e.target?.id==='audio')queuePrewarm()},true);
+
+  function canvasBlob(canvas,type='image/jpeg',quality=.82){return new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Could not encode export frame.')),type,quality))}
   function extForAudio(file){const name=file?.name||'';const m=name.match(/\.([a-z0-9]{2,5})$/i);if(m)return m[1].toLowerCase();const type=file?.type||'';if(type.includes('wav'))return'wav';if(type.includes('mpeg'))return'mp3';if(type.includes('mp4')||type.includes('m4a'))return'm4a';if(type.includes('aac'))return'aac';return'bin'}
   async function safeDelete(engine,path){try{await engine.deleteFile(path)}catch{}}
+  function exportFilename(){
+    const raw=($('#titleInput')?.value||$('#title')?.value||'').trim()||'Untitled';
+    const clean=raw.replace(/[\\/:*?"<>|\u0000-\u001f]/g,' ').replace(/\s+/g,' ').replace(/[. ]+$/g,'').trim().slice(0,120)||'Untitled';
+    return `${clean} - lyric video visualiser.mp4`;
+  }
+  window.linaExportFilename=exportFilename;
+
   function bgClock(t,video){
     if(!video||!Number.isFinite(video.duration)||video.duration<=0)return 0;
     const mode=$('#videoMode')?.value||'auto';
@@ -64,15 +80,15 @@
     return Math.min(video.duration-.001,Math.max(0,t));
   }
   async function seekVideo(video,t){
-    const target=bgClock(t,video);if(Math.abs((video.currentTime||0)-target)<.025)return;
-    await Promise.race([new Promise(resolve=>{const done=()=>{video.removeEventListener('seeked',done);resolve()};video.addEventListener('seeked',done,{once:true});try{video.currentTime=target}catch{resolve()}}),sleep(350)]);
+    const target=bgClock(t,video);if(Math.abs((video.currentTime||0)-target)<.04)return;
+    await Promise.race([new Promise(resolve=>{const done=()=>{video.removeEventListener('seeked',done);resolve()};video.addEventListener('seeked',done,{once:true});try{video.currentTime=target}catch{resolve()}}),sleep(220)]);
   }
   async function cloneBackground(){
     if(!bgMedia)return null;
     if(bgMedia.tagName==='IMG')return bgMedia;
     if(bgMedia.tagName!=='VIDEO')return null;
     const v=document.createElement('video');v.src=bgMedia.src;v.muted=true;v.playsInline=true;v.preload='auto';
-    await Promise.race([new Promise(resolve=>{v.onloadedmetadata=resolve;v.onerror=resolve}),sleep(2000)]);return v;
+    await Promise.race([new Promise(resolve=>{v.onloadedmetadata=resolve;v.onerror=resolve}),sleep(1200)]);return v;
   }
   async function drawFrame(ctx,bgSource,t,w,h){
     if(bgSource?.tagName==='VIDEO')await seekVideo(bgSource,t);
@@ -95,16 +111,16 @@
       if(cancelled)throw new Error('LINA_FFMPEG_CANCELLED');
       const t=Math.min(start+duration-.001,start+i/fps);
       await drawFrame(ctx,bgSource,t,w,h);
-      const blob=await canvasBlob(canvas,'image/jpeg',.9),data=new Uint8Array(await blob.arrayBuffer()),name=`${prefix}${String(i).padStart(4,'0')}.jpg`;
+      const blob=await canvasBlob(canvas,'image/jpeg',.82),data=new Uint8Array(await blob.arrayBuffer()),name=`${prefix}${String(i).padStart(4,'0')}.jpg`;
       await engine.writeFile(name,data);
       if($('#progress'))$('#progress').value=Math.min(88,((start+(i+1)/fps)/Math.max(.001,totalSeconds))*82);
-      if(i%5===0)await sleep(0);
+      if(i%12===0)await sleep(0);
     }
     const out=`segment_${String(segIndex).padStart(4,'0')}.mp4`,pattern=`${prefix}%04d.jpg`;
     setPhase('encoding-segment',`Encoding segment ${segIndex+1}`);
-    let code=await engine.exec(['-framerate',String(fps),'-i',pattern,'-t',String(duration),'-an','-c:v','libx264','-preset','ultrafast','-crf','20','-pix_fmt','yuv420p','-movflags','+faststart',out]);
-    if(code!==0){await safeDelete(engine,out);code=await engine.exec(['-framerate',String(fps),'-i',pattern,'-t',String(duration),'-an','-c:v','mpeg4','-q:v','3','-pix_fmt','yuv420p',out])}
-    for(let i=0;i<frames;i++)await safeDelete(engine,`${prefix}${String(i).padStart(4,'0')}.jpg`);
+    let code=await engine.exec(['-framerate',String(fps),'-i',pattern,'-t',String(duration),'-an','-c:v','libx264','-preset','ultrafast','-crf','23','-pix_fmt','yuv420p','-movflags','+faststart',out]);
+    if(code!==0){await safeDelete(engine,out);code=await engine.exec(['-framerate',String(fps),'-i',pattern,'-t',String(duration),'-an','-c:v','mpeg4','-q:v','4','-pix_fmt','yuv420p',out])}
+    await Promise.all(Array.from({length:frames},(_,i)=>safeDelete(engine,`${prefix}${String(i).padStart(4,'0')}.jpg`)));
     if(code!==0)throw new Error('MP4 segment encoding failed.');
     return out;
   }
@@ -114,13 +130,15 @@
     if(!audioFile||!lines.length)return status('Add audio and synced lyrics before exporting.');
     active=true;cancelled=false;phase='starting';openDialog();status('MP4 export starting…');
     let bgSource=null,engine=null,output='LINA-export.mp4',audioName='',segmentFiles=[];
-    const canvas=$('#canvas'),ctx=canvas.getContext('2d',{alpha:false});
+    const canvas=$('#canvas'),ctx=canvas.getContext('2d',{alpha:false,desynchronized:true});
     try{
       engine=await getFFmpeg();if(cancelled)throw new Error('LINA_FFMPEG_CANCELLED');
       const seconds=Math.min(Number(audio.duration)||0,MAX||600);if(!seconds)throw new Error('Audio duration unavailable.');
       const q=+($('#quality')?.value||720),[w,h]=dims(q,$('#aspect')?.value||'9:16');canvas.width=w;canvas.height=h;
       bgSource=await cloneBackground();
-      const touch=(navigator.maxTouchPoints||0)>0,fps=touch?12:(q>=1080?15:18),segmentSpan=touch?3:5,totalSegments=Math.ceil(seconds/segmentSpan);
+      const touch=(navigator.maxTouchPoints||0)>0;
+      const fps=touch?10:(q>=1080?12:12);
+      const segmentSpan=touch?10:15,totalSegments=Math.ceil(seconds/segmentSpan);
       for(let s=0;s<totalSegments;s++){
         const start=s*segmentSpan,duration=Math.min(segmentSpan,seconds-start);segmentFiles.push(await encodeSegment(engine,s,start,duration,fps,canvas,ctx,bgSource,w,h,seconds));
       }
@@ -128,20 +146,20 @@
       setPhase('muxing','Adding audio…');
       const concat='segments.txt';await engine.writeFile(concat,new TextEncoder().encode(segmentFiles.map(f=>`file '${f}'`).join('\n')));
       audioName=`audio.${extForAudio(audioFile)}`;await engine.writeFile(audioName,new Uint8Array(await audioFile.arrayBuffer()));
-      const code=await engine.exec(['-f','concat','-safe','0','-i',concat,'-i',audioName,'-c:v','copy','-c:a','aac','-b:a','192k','-shortest','-movflags','+faststart',output]);
+      const code=await engine.exec(['-f','concat','-safe','0','-i',concat,'-i',audioName,'-c:v','copy','-c:a','aac','-b:a','160k','-shortest','-movflags','+faststart',output]);
       if(code!==0)throw new Error('Final MP4 mux failed.');
       const data=await engine.readFile(output);if(!data?.byteLength)throw new Error('MP4 export produced no file.');
-      const file=new File([data.buffer],`LINA-lyric-video-${Math.round(seconds)}s.mp4`,{type:'video/mp4'}),url=URL.createObjectURL(file);
+      const file=new File([data.buffer],exportFilename(),{type:'video/mp4'}),url=URL.createObjectURL(file);
       closeDialog();
       const mobileShare=(navigator.maxTouchPoints||0)>0&&matchMedia('(pointer:coarse)').matches&&navigator.canShare?.({files:[file]});
-      if(mobileShare){try{await navigator.share({files:[file],title:'LINA: Lyric Video Visualizer'})}catch(e){if(e?.name!=='AbortError')throw e}}
+      if(mobileShare){try{await navigator.share({files:[file],title:file.name.replace(/\.mp4$/i,'')})}catch(e){if(e?.name!=='AbortError')throw e}}
       else{const a=document.createElement('a');a.href=url;a.download=file.name;a.style.display='none';document.body.appendChild(a);a.click();a.remove()}
       setTimeout(()=>URL.revokeObjectURL(url),30000);status('Export complete.');phase='complete';
     }catch(err){
       if(cancelled||String(err?.message||err).includes('LINA_FFMPEG_CANCELLED'))status('Export cancelled.');
       else{console.error('LINA FFmpeg export failed',err);status('Export failed. Your project is safe — try again.');}
     }finally{
-      if(engine?.loaded){for(const f of segmentFiles)await safeDelete(engine,f);await safeDelete(engine,'segments.txt');if(audioName)await safeDelete(engine,audioName);await safeDelete(engine,output)}
+      if(engine?.loaded){await Promise.all(segmentFiles.map(f=>safeDelete(engine,f)));await safeDelete(engine,'segments.txt');if(audioName)await safeDelete(engine,audioName);await safeDelete(engine,output)}
       try{if(bgSource?.tagName==='VIDEO'){bgSource.pause();bgSource.removeAttribute('src');bgSource.load()}}catch{}
       closeDialog();active=false;cancelled=false;phase='idle';
     }
