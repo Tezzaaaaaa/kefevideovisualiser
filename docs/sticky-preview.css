@@ -95,3 +95,32 @@
 @media(max-height:650px){
   .preview-sticky-shell{min-height:0!important}
 }
+
+
+/* Phone viewport safeguard: the canvas row must never collapse to zero. */
+.preview-sticky-shell{
+  grid-template-rows:auto minmax(140px,1fr) auto auto!important;
+}
+.preview-sticky-shell .stage-wrap{
+  visibility:visible!important;
+  opacity:1!important;
+  min-height:140px!important;
+}
+.preview-sticky-shell .stage-wrap #story{
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+  min-height:0!important;
+}
+@media(max-width:560px){
+  .preview-sticky-shell{
+    grid-template-rows:auto minmax(125px,1fr) auto auto!important;
+  }
+  .preview-sticky-shell .stage-wrap{min-height:125px!important}
+}
+@media(max-height:650px){
+  .preview-sticky-shell{
+    grid-template-rows:auto minmax(105px,1fr) auto!important;
+  }
+  .preview-sticky-shell .stage-wrap{min-height:105px!important}
+}
