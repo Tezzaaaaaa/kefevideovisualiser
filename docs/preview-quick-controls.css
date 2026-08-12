@@ -251,3 +251,43 @@ html[data-preview-finalise="v4"] #quickAdvanced .quick-advanced-body{padding-top
   #previewQuickControls .quick-title-duration>span,
   #previewQuickControls .quick-priority-1 label:has(#quickSize)>span{font-size:8px!important}
 }
+
+
+/* Canonical Quick Settings layout: two columns throughout. */
+#previewQuickControls .quick-control-grid,
+#previewQuickControls .quick-priority-1>.quick-control-grid:first-of-type,
+#previewQuickControls .quick-position-timing,
+#previewQuickControls .quick-background-actions{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+}
+#previewQuickControls .quick-title-pair{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+  gap:6px!important;
+  min-width:0!important;
+  align-items:end!important;
+}
+#previewQuickControls .quick-title-pair>label{
+  min-width:0!important;
+  margin:0!important;
+}
+#previewQuickControls .quick-title-pair .quick-toggle{
+  min-height:42px!important;
+  padding:6px 8px!important;
+}
+#previewQuickControls .quick-title-pair .quick-title-duration{
+  display:grid!important;
+  gap:5px!important;
+}
+#previewQuickControls .quick-wide{grid-column:1/-1!important}
+@media(max-width:700px){
+  #previewQuickControls .quick-control-grid,
+  #previewQuickControls .quick-priority-1>.quick-control-grid:first-of-type,
+  #previewQuickControls .quick-position-timing,
+  #previewQuickControls .quick-background-actions{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+  #previewQuickControls .quick-title-pair{gap:4px!important}
+  #previewQuickControls .quick-title-pair .quick-toggle{padding:5px!important}
+  #previewQuickControls .quick-title-pair .quick-title-duration>span{font-size:8px!important}
+}
