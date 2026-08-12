@@ -33,6 +33,7 @@ jobs:
           set -euo pipefail
           required=(
             docs/index.html
+            docs/reset.html
             docs/app-source.html
             docs/style.css
             docs/app-events.js
@@ -52,13 +53,13 @@ jobs:
             docs/intro-layout.css
             docs/preview-quick-controls.js
             docs/preview-quick-controls.css
+            docs/sticky-preview.css
             docs/canonical-runtime.js
             docs/canonical-controls.js
             docs/canonical-ui-lock.js
             docs/canonical-export.js
             docs/canonical-audit.js
             docs/project-state-fix.js
-            docs/project-reset-button.js
             docs/style-effect-selector.js
             docs/transport-lock.js
             docs/apple-letter-highlight.js
@@ -79,6 +80,7 @@ jobs:
             docs/visual-polish.js
             docs/fresh-reset.js
             docs/reset-button-v2.js
+            docs/project-reset-button.js
           )
           for f in "${retired[@]}"; do
             test ! -e "$f" || { echo "Retired controller unexpectedly present: $f"; exit 1; }
@@ -90,6 +92,9 @@ jobs:
           done
 
           grep -q 'app-events.js' docs/index.html || { echo 'index.html does not load the LINA bootstrap'; exit 1; }
+          grep -q 'reset.html' docs/index.html || { echo 'index.html does not preserve legacy reset routing'; exit 1; }
+          grep -q 'reset.html?v=p71' docs/preview-quick-controls.js || { echo 'Quick Settings does not expose the standalone project reset'; exit 1; }
+          grep -q 'sticky-preview.css' docs/app-events.js || { echo 'bootstrap does not load sticky preview'; exit 1; }
           grep -q 'app-core-safe.js' docs/app-events.js || { echo 'bootstrap does not load canonical core'; exit 1; }
           grep -q 'app-media-safe.js' docs/app-events.js || { echo 'bootstrap does not load canonical media'; exit 1; }
           grep -q 'ffmpeg-export.js' docs/app-events.js || { echo 'bootstrap does not load export runtime'; exit 1; }
@@ -104,15 +109,14 @@ jobs:
           grep -q 'canonical-ui-lock.js' docs/app-events.js || { echo 'bootstrap does not load canonical UI lock'; exit 1; }
           grep -q 'canonical-export.js' docs/app-events.js || { echo 'bootstrap does not load canonical export'; exit 1; }
           grep -q 'canonical-audit.js' docs/app-events.js || { echo 'bootstrap does not load canonical audit'; exit 1; }
-          grep -q 'project-reset-button.js' docs/app-events.js || { echo 'bootstrap does not load full project reset'; exit 1; }
           grep -q 'transport-lock.js' docs/app-events.js || { echo 'bootstrap does not load canonical transport'; exit 1; }
           grep -q 'runtime-guard.js' docs/app-events.js || { echo 'bootstrap does not load runtime guard'; exit 1; }
 
+          ! grep -q 'project-reset-button.js' docs/app-events.js || { echo 'bootstrap still references retired reset controller'; exit 1; }
+          ! grep -q 'quickResetLayout' docs/preview-quick-controls.js || { echo 'Quick Settings still contains the retired lyric-layout reset'; exit 1; }
           ! grep -q 'preview-runtime.js' docs/app-events.js || { echo 'bootstrap still references retired preview-runtime'; exit 1; }
           ! grep -q 'preview-recovery.js' docs/app-events.js || { echo 'bootstrap still references retired preview-recovery'; exit 1; }
           ! grep -q 'layout-reset-fix.js' docs/app-events.js || { echo 'bootstrap still references retired layout reset controller'; exit 1; }
-          ! grep -q 'fresh-reset.js' docs/app-events.js || { echo 'bootstrap still references retired fresh reset'; exit 1; }
-          ! grep -q 'reset-button-v2.js' docs/app-events.js || { echo 'bootstrap still references retired lyric reset'; exit 1; }
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
