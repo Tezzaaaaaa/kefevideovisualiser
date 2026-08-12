@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const BUILD='p76-20260812-synced-smooth-export';
+  const BUILD='p77-20260812-webkit-export-safe';
   const load=src=>new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=`${src}?v=${BUILD}`;s.onload=resolve;s.onerror=()=>reject(new Error(`Failed to load ${src}`));document.body.append(s)});
   for(const href of ['apple-motion.css','ui-solid.css','intro-layout.css','production-consolidated.css','consolidated-studio.css','editor-shell.css','editor-shell-mobile-safety.css','editor-shell-density-fix.css','setup-shell.css','guided-ui.css','setup-lyrics-bridge.css','background-dropzone.css','effect-typography.css','eternal-sunshine-effect.css','preview-quick-controls.css','sticky-preview.css']){const css=document.createElement('link');css.rel='stylesheet';css.href=`${href}?v=${BUILD}`;document.head.append(css)}
   (async()=>{
@@ -9,6 +9,7 @@
       await load('app-media-safe.js');
       await load('intro-layout.js');
       await load('ffmpeg-export.js');
+      await load('webkit-export-guard.js');
       await load('consolidated-studio.js');
       await load('canonical-controls.js');
       await load('project-state-fix.js');
