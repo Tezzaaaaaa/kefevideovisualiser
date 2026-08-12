@@ -10,7 +10,7 @@ for(const [browserName,type] of browsers){
   for(const [vpName,viewport] of viewports){
     const page=await browser.newPage({viewport});
     await page.goto(base,{waitUntil:'networkidle'});
-    await page.waitForFunction(()=>document.documentElement.dataset.linaReady==='true'&&document.documentElement.dataset.setupStructure==='vertical-v2',{timeout:20000});
+    await page.waitForFunction(()=>document.documentElement.dataset.linaReady==='true'&&document.documentElement.dataset.setupStructure==='vertical-v3',{timeout:20000});
     await page.click('#nav [data-tool="setup"]');
 
     const state=await page.evaluate(()=>{

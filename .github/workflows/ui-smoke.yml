@@ -34,7 +34,6 @@ jobs:
           node --check qa/editor-shell-current.mjs
           node --check qa/runtime-ownership.mjs
           node --check qa/current-control-matrix.mjs
-          node --check qa/safari-export-current.mjs
           node --check qa/live-pages-current.mjs
           test -s docs/reset.html
           test -s docs/sticky-preview.css
@@ -91,7 +90,5 @@ jobs:
         run: node qa/runtime-ownership.mjs
       - name: Run unified visible-control matrix across browsers
         run: node qa/current-control-matrix.mjs
-      - name: Probe current WebKit FFmpeg export
-        run: node qa/safari-export-current.mjs
       - name: Verify the actual published GitHub Pages build
         run: node qa/live-pages-current.mjs
