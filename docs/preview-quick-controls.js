@@ -117,10 +117,10 @@
       return el;
     };
     const range=(id,min,max,step,value)=>{
-      let el=$('#'+id);
-      if(!el){el=document.createElement('input');el.type='range';el.id=id;host.append(el)}
+      let el=$('#'+id),created=false;
+      if(!el){el=document.createElement('input');el.type='range';el.id=id;host.append(el);created=true}
       Object.assign(el,{min:String(min),max:String(max),step:String(step)});
-      if(!el.value)el.value=String(value);
+      if(created)el.value=String(value);
       return el;
     };
     select('fontChoice',[
