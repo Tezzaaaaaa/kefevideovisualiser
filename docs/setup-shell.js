@@ -14,6 +14,29 @@
     return el;
   }
 
+  function hiddenStash(){
+    let stash=q('#linaHiddenControlStash');
+    if(!stash){
+      stash=document.createElement('div');
+      stash.id='linaHiddenControlStash';
+      stash.hidden=true;
+      stash.setAttribute('aria-hidden','true');
+      document.body.append(stash);
+    }
+    return stash;
+  }
+
+  function preserveIntroControls(){
+    const stash=hiddenStash();
+    const toggle=q('#showTitle');
+    const duration=q('#titleDuration');
+    if(toggle)stash.append(toggle);
+    if(duration){
+      duration.value=duration.value||'4';
+      stash.append(duration);
+    }
+  }
+
   function rebuildSetup(){
     const body=q('[data-panel="setup"] .body');
     if(!body)return false;
@@ -37,6 +60,8 @@
     }
 
     if(!audioUpload||!titleLabel||!artistLabel)return false;
+
+    preserveIntroControls();
 
     const audio=section('Upload or drop audio here','Required · Start here');
     audio.append(audioUpload);

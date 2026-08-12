@@ -19,7 +19,8 @@ for(const [name,type] of targets){
     sameRender:window.render===window.linaRuntime.render,
     previewRuntime:!!window.linaPreviewRuntime,
     previewRecovery:!!window.linaPreviewRecovery,
-    quickEffectOwner:document.querySelector('#lyricEffect')?.dataset.linaOwner,
+    quickEffectOwner:document.querySelector('#quickEffect')?.dataset.linaOwner,
+    styleEffectOwner:document.querySelector('#styleEffectSelect')?.dataset.linaOwner,
     projectResetOwner:document.querySelector('#resetProjectVisible')?.dataset.linaOwner,
     projectResetHref:document.querySelector('#resetProjectVisible')?.getAttribute('href'),
     oldResetCount:document.querySelectorAll('#quickResetLayout,#linaFreshReset,#resetLyricsBtn,#resetBtn').length,
@@ -32,7 +33,8 @@ for(const [name,type] of targets){
   assert.equal(ownership.sameRender,true,`${name}: render() was wrapped after canonical runtime`);
   assert.equal(ownership.previewRuntime,false,`${name}: retired preview-runtime still loaded`);
   assert.equal(ownership.previewRecovery,false,`${name}: retired preview-recovery still loaded`);
-  assert.equal(ownership.quickEffectOwner,'canonical',`${name}: visible effect control is not canonically owned`);
+  assert.equal(ownership.quickEffectOwner,'canonical',`${name}: Quick Settings effect is not canonically owned`);
+  assert.equal(ownership.styleEffectOwner,'canonical',`${name}: Style effect is not canonically owned`);
   assert.equal(ownership.projectResetOwner,'project-hard-v3',`${name}: project Reset is not the standalone hard reset`);
   assert.match(ownership.projectResetHref||'',/^reset\.html\?v=/,`${name}: project Reset does not route to standalone reset page`);
   assert.equal(ownership.oldResetCount,0,`${name}: a retired reset control is still present`);
@@ -47,21 +49,27 @@ for(const [name,type] of targets){
   });
 
   for(const [mode,count] of [['current',1],['3',3],['5',5],['7',7],['9',9]]){
-    await page.selectOption('#contextMode',mode);await page.evaluate(()=>window.render(4000));
+    await page.selectOption('#quickLyricsView',mode);await page.evaluate(()=>window.render(4000));
     assert.equal(await page.inputValue('#contextMode'),mode,`${name}: Quick Lyrics View ${mode} did not update canonical source`);
     const visible=await page.locator('#lyrics .apple-line').evaluateAll(nodes=>nodes.filter(el=>getComputedStyle(el).visibility!=='hidden').length);
     assert.equal(visible,count,`${name}: Lyrics View ${mode} rendered ${visible}, expected ${count}`);
   }
 
-  await page.selectOption('#lyricEffect','eternal');await page.waitForTimeout(30);
+  await page.selectOption('#quickEffect','eternal');await page.waitForTimeout(30);
   assert.equal(await page.inputValue('#lyricEffect'),'eternal',`${name}: Quick effect did not reach canonical state`);
   assert.equal(await page.evaluate(()=>window.render===window.linaRuntime.render),true,`${name}: Quick effect replaced canonical render()`);
 
+  await page.locator('#nav .navbtn[data-tool="style"]').click();
+  await page.waitForFunction(()=>document.querySelector('[data-panel="style"]')?.classList.contains('active'));
+  await page.selectOption('#styleEffectSelect','charli');await page.waitForTimeout(30);
+  assert.equal(await page.inputValue('#lyricEffect'),'charli',`${name}: Style effect did not reach canonical state`);
+  assert.equal(await page.evaluate(()=>window.render===window.linaRuntime.render),true,`${name}: Style effect replaced canonical render()`);
+
   const effectState=await page.evaluate(()=>{
     window.linaRuntime.setEffect('eternal',{dirty:false,redraw:false});
-    return{selected:document.querySelector('#lyricEffect').value,story:document.querySelector('#story').dataset.lyricEffect,studio:window.linaConsolidatedState.effect,sameRender:window.render===window.linaRuntime.render};
+    return{hidden:document.querySelector('#lyricEffect').value,story:document.querySelector('#story').dataset.lyricEffect,studio:window.linaConsolidatedState.effect,quick:document.querySelector('#quickEffect')?.value,style:document.querySelector('#styleEffectSelect')?.value,sameRender:window.render===window.linaRuntime.render};
   });
-  assert.deepEqual([effectState.selected,effectState.story,effectState.studio],Array(3).fill('eternal'),`${name}: effect state diverged`);
+  assert.deepEqual([effectState.hidden,effectState.story,effectState.studio,effectState.quick,effectState.style],Array(5).fill('eternal'),`${name}: effect state diverged`);
   assert.equal(effectState.sameRender,true,`${name}: effect state change replaced renderer`);
   assert.deepEqual(pageErrors,[],`${name}: page errors: ${pageErrors.join(' | ')}`);
   await browser.close();

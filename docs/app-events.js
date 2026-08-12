@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const BUILD='p110-20260813-single-source-controls';
+  const BUILD='p109-20260813-runtime-recovery';
   window.__linaBootErrors=[];
   window.addEventListener('error',event=>window.__linaBootErrors.push(String(event.error?.stack||event.message||'Unknown startup error')));
   const load=src=>new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=`${src}?v=${BUILD}`;s.onload=resolve;s.onerror=()=>reject(new Error(`Failed to load ${src}`));document.body.append(s)});
@@ -11,10 +11,7 @@
       await load('app-media-safe.js');
       await load('intro-layout.js');
       await load('export-prewarm.js');
-      await load('app-export-safe.js');
-      window.linaMediaRecorderExport=window.exportVideo;
       await load('ffmpeg-export.js');
-      await load('safari-wasm-export.js');
       await load('webkit-export-guard.js');
       await load('consolidated-studio.js');
       await load('canonical-controls.js');
@@ -52,9 +49,11 @@
 
       await load('preview-quick-controls.js');
       await load('canonical-export.js');
+      await load('style-effect-selector.js');
+      await load('canonical-ui-lock.js');
       await load('transport-lock.js');
-      document.documentElement.dataset.linaReady='true';
-      document.documentElement.dataset.systemOwner='single-source-v1';
+      await load('canonical-audit.js');
+      await load('runtime-guard.js');
       requestAnimationFrame(()=>{document.querySelector('#lina-boot-style')?.remove();document.body.style.visibility='visible'});
     }catch(e){
       document.querySelector('#lina-boot-style')?.remove();document.body.style.visibility='visible';

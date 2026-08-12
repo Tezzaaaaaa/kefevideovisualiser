@@ -23,14 +23,14 @@ await page.fill('#lyricsText','[00:00.00] Safari export probe\n[00:00.80] Video 
 await page.click('#applyPaste');await page.waitForSelector('#reviewBox:not(.hidden)');await page.click('#confirmReview');
 await page.waitForFunction(()=>document.querySelectorAll('#timeline .line').length===3);
 await page.evaluate(()=>window.linaRuntime.setEffect('apple',{dirty:false}));
-await page.selectOption('#quality','720');await page.selectOption('#aspect','9:16');
+await page.selectOption('#quickQuality','720');await page.selectOption('#quickFrame','9:16');
 
 const downloadPromise=page.waitForEvent('download',{timeout:90000});
 const failedPromise=page.waitForFunction(()=>/Export failed/i.test(document.querySelector('#topStatus')?.textContent||''),null,{timeout:90000}).then(async()=>{
   const info=await page.evaluate(()=>({status:document.querySelector('#topStatus')?.textContent||'',render:document.querySelector('#renderText')?.textContent||'',state:window.linaExportState?.()}));
   throw new Error(`WebKit export failed: ${JSON.stringify(info)}`);
 });
-await page.click('#exportBtn');
+await page.click('#quickExport');
 let download;
 try{download=await Promise.race([downloadPromise,failedPromise])}
 catch(err){
