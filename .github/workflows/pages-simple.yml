@@ -116,6 +116,20 @@ jobs:
           ! grep -q 'preview-recovery.js' docs/app-events.js || { echo 'bootstrap still references retired preview-recovery'; exit 1; }
           ! grep -q 'layout-reset-fix.js' docs/app-events.js || { echo 'bootstrap still references retired layout reset controller'; exit 1; }
 
+      - name: Install WebKit export test
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps webkit
+
+      - name: Verify a playable WebKit export
+        run: |
+          python3 -m http.server 4173 --directory docs >/tmp/lina-pages.log 2>&1 &
+          for i in {1..20}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && break
+            sleep 1
+          done
+          node qa/safari-export-probe.mjs
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 

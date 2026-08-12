@@ -25,7 +25,6 @@ await page.click('#applyPaste');
 await page.waitForSelector('#reviewBox:not(.hidden)');
 await page.click('#confirmReview');
 await page.waitForFunction(()=>document.querySelectorAll('#timeline .line').length===3);
-await page.check('#rightsConfirm');
 await page.selectOption('#quality','720');
 await page.selectOption('#aspect','9:16');
 await page.click('.effect-option[data-effect="apple"]');
@@ -56,5 +55,8 @@ const streams=execFileSync('ffprobe',['-v','error','-show_entries','stream=codec
 console.log('SAFARI EXPORT RESULT',JSON.stringify({elapsed,filename:download.suggestedFilename(),streams}));
 assert.ok(streams.includes('video'),'Safari probe has no video stream');
 assert.ok(streams.includes('audio'),'Safari probe has no audio stream');
+const duration=Number(execFileSync('ffprobe',['-v','error','-show_entries','format=duration','-of','default=noprint_wrappers=1:nokey=1',path],{encoding:'utf8'}).trim());
+assert.ok(Number.isFinite(duration)&&duration>1.5,`Safari probe duration is invalid (${duration})`);
+execFileSync('ffmpeg',['-v','error','-i',path,'-t','1.5','-f','null','-']);
 await browser.close();
 console.log('Safari export probe: PASS');
