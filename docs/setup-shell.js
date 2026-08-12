@@ -45,7 +45,19 @@
     const mediaStatus=q('#mediaStatus');
     const titleLabel=q('#titleInput')?.closest('label');
     const artistLabel=q('#artistInput')?.closest('label');
-    const albumLabel=q('#albumInput')?.closest('label');
+    let albumLabel=q('#albumInput')?.closest('label');
+
+    if(!albumLabel){
+      albumLabel=document.createElement('label');
+      albumLabel.className='field';
+      albumLabel.innerHTML='<span>Album / release</span><input id="albumInput" type="text" placeholder="Optional">';
+      const albumInput=albumLabel.querySelector('#albumInput');
+      albumInput.addEventListener('input',()=>{
+        try{selectedSong={...(selectedSong||{}),collectionName:albumInput.value}}catch{}
+        try{window.render?.((Number(audio?.currentTime)||0)*1000)}catch{}
+        try{markDirty?.()}catch{}
+      });
+    }
 
     if(!audioUpload||!titleLabel||!artistLabel)return false;
 
