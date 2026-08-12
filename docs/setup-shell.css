@@ -229,7 +229,21 @@
 @media(max-width:560px){
   .navbtn{font-size:8px!important;padding:6px 2px!important;gap:3px!important}
   .navbtn .step{width:17px!important;height:17px!important;font-size:8px!important}
-  .flow-controls.workflow-inline{display:grid!important;grid-template-columns:auto 1fr auto!important}
+  .flow-controls.workflow-inline{
+    display:grid!important;
+    grid-template-columns:auto minmax(0,1fr) auto!important;
+    grid-template-areas:"back status next" "hint hint hint"!important;
+    align-items:center!important;
+  }
+  .flow-controls.workflow-inline #prevStep{grid-area:back!important}
+  .flow-controls.workflow-inline #stepStatus{grid-area:status!important;text-align:center!important}
+  .flow-controls.workflow-inline #nextStep{grid-area:next!important}
+  .flow-controls.workflow-inline #stepReadinessHint{
+    grid-area:hint!important;
+    width:100%!important;
+    text-align:center!important;
+    white-space:normal!important;
+  }
 }
 
 

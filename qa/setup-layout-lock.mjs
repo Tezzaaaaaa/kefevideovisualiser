@@ -39,7 +39,7 @@ for(const [name,type] of browsers){
     await page.waitForFunction(()=>{
       const panel=document.querySelector('[data-panel="setup"]');
       const stash=document.querySelector('#linaHiddenControlStash');
-      return document.documentElement.dataset.setupStructure==='vertical-v2'&&
+      return document.documentElement.dataset.setupStructure==='vertical-v3'&&
         !!panel?.querySelector('#audioFile')&&!!panel?.querySelector('#titleInput')&&!!panel?.querySelector('#artistInput')&&!!panel?.querySelector('#albumInput')&&
         !!stash?.querySelector('#showTitle')&&!!stash?.querySelector('#titleDuration')&&
         !panel?.querySelector('#userArtworkFile')&&!panel?.querySelector('#userArtworkIntro');
@@ -47,7 +47,7 @@ for(const [name,type] of browsers){
     await page.click('#nav [data-tool="setup"]');
 
     const setup=page.locator('[data-panel="setup"]');
-    assert.equal(await setup.locator('.setup-shell-section').count(),2,`${name}/${vpName}: Setup should contain only Audio and Track details sections`);
+    assert.equal(await setup.locator('.setup-shell-section').count(),3,`${name}/${vpName}: Setup should contain Audio, Song details and automatic lyrics sections`);
     assert.equal(await setup.locator('.setup-audio-drop-section').count(),1,`${name}/${vpName}: Add audio section is missing`);
     assert.equal(await setup.locator('.setup-details-grid').count(),1,`${name}/${vpName}: Track details grid is missing`);
     assert.equal(await setup.locator('#showTitle,#titleDuration').count(),0,`${name}/${vpName}: title-card controls returned to Setup`);
@@ -82,8 +82,7 @@ for(const [name,type] of browsers){
     const detailBounds=await setup.locator('.setup-details-grid').evaluate(el=>{const r=el.getBoundingClientRect();return{left:r.left,right:r.right}});
     assert.ok(detailBounds.left>=setupBounds.left-1&&detailBounds.right<=setupBounds.right+1,`${name}/${vpName}: Track details overflow the Setup panel`);
 
-    const retiredSearch=await page.locator('.legacy-lookup-retired').count();
-    assert.ok(retiredSearch>=1,`${name}/${vpName}: retired lookup unexpectedly returned to active Setup`);
+    assert.equal(await setup.locator('#setupLyricsLookup #findLyricsBtn').count(),1,`${name}/${vpName}: automatic lyrics lookup is missing from Setup`);
 
     if(viewport.width<=900){
       const shell=await page.locator('.workspace').evaluate(el=>({display:getComputedStyle(el).display,direction:getComputedStyle(el).flexDirection,box:el.getBoundingClientRect()}));

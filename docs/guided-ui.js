@@ -63,7 +63,7 @@
 
     if(source){
       renameSubsection(source,'Other ways to get lyrics','Import or time lyrics');
-      if(searchBox)searchBox.remove();
+      if(searchBox&&source.contains(searchBox))searchBox.remove();
       let other=source.querySelector('.other-lyrics-methods');
       if(!other){
         other=document.createElement('details');

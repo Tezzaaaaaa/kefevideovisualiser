@@ -124,6 +124,7 @@
     }
 
     if(searchBox.parentElement!==section)section.append(searchBox);
+    searchBox.classList.remove('legacy-lookup-retired');
     searchBox.classList.remove('hidden');
     searchBox.hidden=false;
     searchBox.setAttribute('aria-hidden','false');

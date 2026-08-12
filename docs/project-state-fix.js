@@ -123,5 +123,12 @@
   }
 
   window.linaResetProject=hardResetProject;
+  document.addEventListener('click',event=>{
+    const reset=event.target.closest?.('#resetProjectVisible');
+    if(!reset)return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    hardResetProject();
+  },true);
   document.documentElement.dataset.projectResetOwner='hard-v2';
 })();
