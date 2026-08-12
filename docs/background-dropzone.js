@@ -42,7 +42,7 @@
       if(b)b.textContent='Drop another image or video here to replace it';
       if(s)s.textContent=file?.name||'Current background is ready in Preview.';
     }else{
-      if(b)b.textContent='Drop background image or video here';
+      if(b)b.textContent='Upload or drop image/video here';
       if(s)s.textContent='or click anywhere here to choose a file';
     }
   }
@@ -113,7 +113,7 @@
     const zone=document.createElement('label');
     zone.id='backgroundDropZone';
     zone.className='background-dropzone';
-    zone.innerHTML='<span class="background-drop-copy"><span class="background-drop-icon">▣</span><b>Drop background image or video here</b><span>or click anywhere here to choose a file</span></span><input id="backgroundMediaFile" type="file" accept="image/*,video/*">';
+    zone.innerHTML='<span class="background-drop-copy"><span class="background-drop-icon">▣</span><b>Upload or drop image/video here</b><span>or click anywhere here to choose a file</span></span><input id="backgroundMediaFile" type="file" accept="image/*,video/*">';
 
     const state=document.createElement('div');
     state.id='backgroundLoadState';
