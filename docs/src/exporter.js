@@ -1,181 +1,160 @@
-// exporter.js — the single owner of the export lifecycle.
-// The preview canvas remains the only rendering source. Audio `ended`, a
-// currentTime boundary, and a duration watchdog converge on one finaliser.
+// The only export implementation. Each run owns fresh audio, Web Audio,
+// streams, recorder, timers and listeners, and destroys them before settling.
 
-let sharedAudioCtx = null;
-let sharedSource = null;
-let sharedAudioElement = null;
+const FORMATS = [
+  ["video/webm;codecs=vp9,opus", "webm"],
+  ["video/webm;codecs=vp8,opus", "webm"],
+  ["video/webm", "webm"],
+  ["video/mp4;codecs=h264,aac", "mp4"],
+  ["video/mp4", "mp4"],
+];
 
-function getAudioGraph(audioEl) {
-  if (!sharedAudioCtx) {
-    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContextCtor) throw new Error("This browser does not support Web Audio export.");
-    sharedAudioCtx = new AudioContextCtor();
-  }
-  if (!sharedSource) {
-    sharedSource = sharedAudioCtx.createMediaElementSource(audioEl);
-    sharedAudioElement = audioEl;
-    sharedSource.connect(sharedAudioCtx.destination);
-  } else if (sharedAudioElement !== audioEl) {
-    throw new Error("The export audio source changed. Reload the page and try again.");
-  }
-  const destination = sharedAudioCtx.createMediaStreamDestination();
-  sharedSource.connect(destination);
-  return { context: sharedAudioCtx, destination };
+function recordingFormat() {
+  if (typeof MediaRecorder === "undefined") throw new Error("Video export is not supported by this browser.");
+  if (typeof MediaRecorder.isTypeSupported !== "function") return { mimeType: "", extension: "webm" };
+  const match = FORMATS.find(([type]) => MediaRecorder.isTypeSupported(type));
+  if (!match) throw new Error("This browser has no supported video export format.");
+  return { mimeType: match[0], extension: match[1] };
 }
 
-function pickMimeType() {
-  const candidates = [
-    { mime: "video/webm;codecs=vp9,opus", extension: "webm" },
-    { mime: "video/webm;codecs=vp8,opus", extension: "webm" },
-    { mime: "video/webm", extension: "webm" },
-    { mime: "video/mp4;codecs=h264,aac", extension: "mp4" },
-    { mime: "video/mp4", extension: "mp4" },
-  ];
-  if (!window.MediaRecorder) return null;
-  if (typeof MediaRecorder.isTypeSupported !== "function") return { mime: "", extension: "webm" };
-  return candidates.find(({ mime }) => MediaRecorder.isTypeSupported(mime)) || { mime: "", extension: "webm" };
-}
-
-function waitForSeek(audioEl, time) {
+function waitForAudio(audio) {
   return new Promise((resolve, reject) => {
-    if (Math.abs(audioEl.currentTime - time) < 0.01) return resolve();
-    const cleanup = () => {
-      clearTimeout(timeout);
-      audioEl.removeEventListener("seeked", onSeeked);
+    if (audio.readyState >= HTMLMediaElement.HAVE_METADATA) return resolve();
+    const finish = error => {
+      clearTimeout(timer);
+      audio.removeEventListener("loadedmetadata", loaded);
+      audio.removeEventListener("error", failed);
+      error ? reject(error) : resolve();
     };
-    const onSeeked = () => { cleanup(); resolve(); };
-    const timeout = setTimeout(() => {
-      cleanup();
-      reject(new Error("The audio could not seek to the beginning."));
-    }, 3000);
-    audioEl.addEventListener("seeked", onSeeked, { once: true });
-    audioEl.currentTime = time;
+    const loaded = () => finish();
+    const failed = () => finish(new Error("The audio file could not be opened for export."));
+    const timer = setTimeout(() => finish(new Error("The audio file did not load for export.")), 10_000);
+    audio.addEventListener("loadedmetadata", loaded, { once: true });
+    audio.addEventListener("error", failed, { once: true });
+    audio.load();
   });
 }
 
 export async function exportVideo({ canvas, audioEl, fps = 30, onProgress, onFinalizing, onDone, onError, onCancel }) {
-  if (!canvas?.captureStream) throw new Error("This browser cannot record the preview canvas.");
-  const duration = audioEl.duration;
-  if (!Number.isFinite(duration) || duration <= 0) {
-    throw new Error("Audio duration is unknown — wait for the track to load, then try again.");
-  }
-  const selectedFormat = pickMimeType();
-  if (!selectedFormat) throw new Error("This browser does not support video recording.");
+  if (typeof canvas?.captureStream !== "function") throw new Error("Canvas video export is not supported by this browser.");
+  const sourceUrl = audioEl.currentSrc || audioEl.src;
+  if (!sourceUrl) throw new Error("Load an audio file before exporting.");
 
-  const { context, destination } = getAudioGraph(audioEl);
-  if (context.state === "suspended") await context.resume();
-  await waitForSeek(audioEl, 0);
+  const format = recordingFormat();
+  const exportAudio = new Audio();
+  exportAudio.preload = "auto";
+  exportAudio.src = sourceUrl;
+  await waitForAudio(exportAudio);
+  const duration = exportAudio.duration;
+  if (!Number.isFinite(duration) || duration <= 0) throw new Error("The audio duration is invalid.");
 
-  const videoStream = canvas.captureStream(fps);
-  const combinedStream = new MediaStream([...videoStream.getVideoTracks(), ...destination.stream.getAudioTracks()]);
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) throw new Error("Audio export is not supported by this browser.");
+  const audioContext = new AudioContextClass();
+  const audioSource = audioContext.createMediaElementSource(exportAudio);
+  const audioOutput = audioContext.createMediaStreamDestination();
+  audioSource.connect(audioOutput);
+
+  const canvasStream = canvas.captureStream(fps);
+  const outputStream = new MediaStream([...canvasStream.getVideoTracks(), ...audioOutput.stream.getAudioTracks()]);
   const options = { videoBitsPerSecond: 10_000_000 };
-  if (selectedFormat.mime) options.mimeType = selectedFormat.mime;
+  if (format.mimeType) options.mimeType = format.mimeType;
 
   let recorder;
   try {
-    recorder = new MediaRecorder(combinedStream, options);
+    recorder = new MediaRecorder(outputStream, options);
   } catch (error) {
-    combinedStream.getTracks().forEach((track) => track.stop());
-    try { sharedSource.disconnect(destination); } catch { /* already disconnected */ }
-    throw new Error(`The browser could not start the video recorder: ${error.message}`);
+    outputStream.getTracks().forEach(track => track.stop());
+    await audioContext.close();
+    throw new Error(`Video recording could not start: ${error.message}`);
   }
 
+  let phase = "starting";
+  let frame = 0;
+  let watchdog = 0;
+  let cancelRun = () => {};
   const chunks = [];
-  let phase = "recording";
-  let terminal = false;
-  let stopFallback = null;
-  let durationWatchdog = null;
-  let animationFrame = null;
 
-  const cleanup = () => {
-    cancelAnimationFrame(animationFrame);
-    clearTimeout(stopFallback);
-    clearTimeout(durationWatchdog);
-    audioEl.removeEventListener("ended", finishRecording);
-    combinedStream.getTracks().forEach((track) => track.stop());
-    try { sharedSource.disconnect(destination); } catch { /* already disconnected */ }
-  };
+  const result = new Promise(resolve => {
+    let settled = false;
+    const cleanup = async () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(watchdog);
+      exportAudio.pause();
+      exportAudio.removeAttribute("src");
+      outputStream.getTracks().forEach(track => track.stop());
+      try { audioSource.disconnect(); } catch {}
+      if (audioContext.state !== "closed") await audioContext.close().catch(() => {});
+    };
+    const settle = async outcome => {
+      if (settled) return;
+      settled = true;
+      await cleanup();
+      resolve(outcome);
+    };
+    const fail = error => {
+      phase = "failed";
+      if (recorder.state !== "inactive") try { recorder.stop(); } catch {}
+      settle({ type: "error", error: error instanceof Error ? error : new Error(String(error)) });
+    };
+    const stop = () => {
+      if (phase !== "recording") return;
+      phase = "finalizing";
+      onProgress?.(1);
+      onFinalizing?.();
+      try {
+        recorder.requestData();
+        recorder.stop();
+      } catch (error) { fail(error); }
+    };
+    const monitor = () => {
+      if (phase !== "recording") return;
+      const time = Math.min(duration, exportAudio.currentTime || 0);
+      if (Math.abs((audioEl.currentTime || 0) - time) > 0.02) audioEl.currentTime = time;
+      onProgress?.(time / duration);
+      if (exportAudio.ended || time >= duration - 0.03) stop();
+      else frame = requestAnimationFrame(monitor);
+    };
 
-  const fail = (error) => {
-    if (terminal) return;
-    terminal = true;
-    phase = "failed";
-    audioEl.pause();
-    if (recorder.state !== "inactive") {
-      try { recorder.stop(); } catch { /* recorder already failed */ }
-    }
-    cleanup();
-    onError?.(error instanceof Error ? error : new Error(String(error)));
-  };
+    recorder.ondataavailable = event => { if (event.data?.size) chunks.push(event.data); };
+    recorder.onerror = event => fail(event.error || new Error("The video recorder failed."));
+    recorder.onstop = () => {
+      if (settled) return;
+      const mimeType = recorder.mimeType || format.mimeType || "video/webm";
+      const blob = new Blob(chunks, { type: mimeType });
+      if (!blob.size) return fail(new Error("The exported video file was empty."));
+      phase = "completed";
+      settle({ type: "done", blob, info: { mimeType, extension: format.extension } });
+    };
+    exportAudio.addEventListener("ended", stop, { once: true });
 
-  const complete = () => {
-    if (terminal) return;
-    terminal = true;
-    phase = "completed";
-    audioEl.pause();
-    cleanup();
-    const type = recorder.mimeType || selectedFormat.mime || "video/webm";
-    const blob = new Blob(chunks, { type });
-    if (!blob.size) return onError?.(new Error("The browser produced an empty video file."));
-    onDone?.(blob, { mimeType: type, extension: selectedFormat.extension });
-  };
+    cancelRun = () => {
+      if (settled) return;
+      phase = "cancelled";
+      recorder.onstop = null;
+      if (recorder.state !== "inactive") try { recorder.stop(); } catch {}
+      settle({ type: "cancel" });
+    };
 
-  function finishRecording() {
-    if (phase !== "recording") return;
-    phase = "finalizing";
-    audioEl.pause();
-    onProgress?.(1);
-    onFinalizing?.();
-    try { if (recorder.state === "recording") recorder.requestData(); } catch { /* optional */ }
-    try {
-      if (recorder.state !== "inactive") recorder.stop();
-      else complete();
-    } catch (error) {
-      fail(error);
-      return;
-    }
-    stopFallback = setTimeout(() => {
-      if (!terminal) fail(new Error("The browser could not finalise the recording."));
-    }, 8000);
-  }
+    (async () => {
+      try {
+        if (audioContext.state === "suspended") await audioContext.resume();
+        recorder.start(250);
+        phase = "recording";
+        await exportAudio.play();
+        frame = requestAnimationFrame(monitor);
+        watchdog = setTimeout(stop, Math.ceil(duration * 1000) + 5000);
+      } catch (error) { fail(new Error(`Export playback could not start: ${error.message}`)); }
+    })();
+  });
 
-  const monitor = () => {
-    if (phase !== "recording") return;
-    const currentTime = Math.min(duration, audioEl.currentTime || 0);
-    onProgress?.(currentTime / duration);
-    if (audioEl.ended || currentTime >= duration - 0.05) return finishRecording();
-    animationFrame = requestAnimationFrame(monitor);
-  };
-
-  const cancel = () => {
-    if (terminal) return;
-    terminal = true;
-    phase = "cancelled";
-    audioEl.pause();
-    if (recorder.state !== "inactive") {
-      try { recorder.stop(); } catch { /* already stopped */ }
-    }
-    cleanup();
-    onCancel?.();
-  };
-
-  recorder.ondataavailable = (event) => { if (event.data?.size) chunks.push(event.data); };
-  recorder.onstop = complete;
-  recorder.onerror = (event) => fail(event.error || new Error("Recorder error"));
-  audioEl.addEventListener("ended", finishRecording);
-  durationWatchdog = setTimeout(finishRecording, Math.ceil(duration * 1000) + 5000);
-
-  recorder.start(250);
-  try {
-    await audioEl.play();
-  } catch (error) {
-    fail(new Error(`Audio playback could not start: ${error.message}`));
-    throw error;
-  }
-  animationFrame = requestAnimationFrame(monitor);
-
-  return { cancel, get phase() { return phase; }, recorder };
+  const job = { cancel: () => cancelRun(), get phase() { return phase; }, recorder };
+  result.then(outcome => {
+    if (outcome.type === "done") onDone?.(outcome.blob, outcome.info);
+    else if (outcome.type === "cancel") onCancel?.();
+    else onError?.(outcome.error);
+  });
+  return job;
 }
 
 export function downloadBlob(blob, filename) {

@@ -32,9 +32,10 @@ for(const effect of ['apple','charli','eternal']){
   assert.ok(path,`${effect}: no exported file`);
   const streams=execFileSync('ffprobe',['-v','error','-show_entries','stream=codec_type','-of','csv=p=0',path],{encoding:'utf8'}).trim().split(/\s+/);
   assert.ok(streams.includes('video'),`${effect}: video stream missing`);assert.ok(streams.includes('audio'),`${effect}: audio stream missing`);
-  const duration=Number(execFileSync('ffprobe',['-v','error','-show_entries','format=duration','-of','default=nw=1:nk=1',path],{encoding:'utf8'}).trim());
-  assert.ok(duration>2,`${effect}: invalid duration ${duration}`);
-  execFileSync('ffmpeg',['-v','error','-i',path,'-t','2','-f','null','-']);
+  const frameTimes=execFileSync('ffprobe',['-v','error','-select_streams','v:0','-show_entries','frame=best_effort_timestamp_time','-of','csv=p=0',path],{encoding:'utf8'}).trim().split(/\s+/).map(Number).filter(Number.isFinite);
+  const duration=Math.max(...frameTimes);
+  assert.ok(duration>2,`${effect}: invalid packet duration ${duration}`);
+  execFileSync('ffmpeg',['-v','error','-i',path,'-f','null','-']);
   await page.waitForFunction(()=>document.querySelector('#exportOverlay').classList.contains('hidden'));
 }
 assert.deepEqual(errors,[]);
