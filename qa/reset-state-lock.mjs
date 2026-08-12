@@ -9,8 +9,9 @@ function wavBuffer(seconds=1.4,sampleRate=44100){
 const base='http://127.0.0.1:4173/';
 const browser=await chromium.launch({headless:true});
 const page=await browser.newPage({viewport:{width:1100,height:800}});
+const browserMessages=[];page.on('console',m=>browserMessages.push(`${m.type()}: ${m.text()}`));page.on('pageerror',e=>browserMessages.push(`pageerror: ${e.message}`));
 await page.goto(base,{waitUntil:'networkidle'});
-await page.waitForFunction(()=>document.documentElement.dataset.linaReady==='true',null,{timeout:20000});
+try{await page.waitForFunction(()=>document.documentElement.dataset.linaReady==='true',null,{timeout:20000})}catch(error){const state=await page.evaluate(()=>({ready:document.documentElement.dataset.linaReady,status:document.querySelector('#topStatus')?.textContent,nav:[...document.querySelectorAll('#nav [data-tool]')].map(x=>x.dataset.tool),preview:!!document.querySelector('.preview-sticky-shell #story'),quick:!!document.querySelector('#previewQuickControls'),audit:window.linaAuditSystem||null,owners:{render:document.documentElement.dataset.renderOwner,layout:document.documentElement.dataset.layoutOwner,effect:document.documentElement.dataset.effectOwner,transport:document.documentElement.dataset.transportOwner,export:document.documentElement.dataset.exportOwner,reset:document.documentElement.dataset.projectResetOwner,controls:document.documentElement.dataset.controlsOwner,ui:document.documentElement.dataset.uiOwner}}));console.error(JSON.stringify({state,browserMessages},null,2));throw error}
 await page.waitForSelector('#resetProjectVisible',{state:'visible',timeout:10000});
 
 assert.equal(await page.locator('#resetProjectVisible').textContent(),'Reset project','visible reset label is wrong');
