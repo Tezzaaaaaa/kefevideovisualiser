@@ -200,3 +200,14 @@ html[data-preview-finalise="v4"] #quickAdvanced .quick-advanced-body{padding-top
     grid-template-columns:repeat(3,minmax(0,1fr))!important;
   }
 }
+
+
+/* Position and timing are part of Lyric look; keep them as one compact two-column row. */
+#previewQuickControls .quick-position-timing{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+}
+@media(max-width:560px){
+  #previewQuickControls .quick-position-timing{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+}
