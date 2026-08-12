@@ -164,7 +164,8 @@
   async function fastWebCodecsExport(){
     if(!('VideoEncoder'in window&&'AudioEncoder'in window))throw new Error('LINA_FAST_UNAVAILABLE');
     setPhase('fast-init','Starting hardware encoder…');setProgress(2,'Starting hardware encoder…');
-    const M=await import('https://cdn.jsdelivr.net/npm/mediabunny@1.51.0/+esm');
+    const warmed=window.linaMediabunnyReady?.()||window.linaExportPrewarm?.();
+    const M=(warmed?await warmed:null)||await import('https://cdn.jsdelivr.net/npm/mediabunny@1.51.0/+esm');
     const seconds=Math.min(Number(audio.duration)||0,MAX||600);if(!seconds)throw new Error('Audio duration unavailable.');
     const q=+($('#quality')?.value||720),[w,h]=dims(q,$('#aspect')?.value||'9:16');
     const profile=await chooseFastProfile(M,w,h,q);if(!profile)throw new Error('LINA_FAST_UNAVAILABLE');
@@ -258,8 +259,9 @@
       try{await fastWebCodecsExport()}
       catch(err){
         if(cancelled||String(err?.message||err).includes('LINA_FFMPEG_CANCELLED'))throw err;
-        if(String(err?.message||err).includes('LINA_FAST_UNAVAILABLE')){console.info('LINA fast export unavailable; using compatibility export.');setProgress(2,'Using compatibility encoder…');await ffmpegFallbackExport()}
-        else throw err;
+        console.warn('LINA fast export unavailable; using compatibility export.',err);
+        setProgress(2,'Using compatibility encoder…');
+        await ffmpegFallbackExport();
       }
       status('Export complete.');phase='complete';
     }catch(err){
