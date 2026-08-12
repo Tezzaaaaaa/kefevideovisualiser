@@ -37,7 +37,6 @@
       await load('setup-shell.js');
       await load('lyrics-workflow-fix.js');
       await load('guided-ui.js');
-      await load('setup-lyrics-bridge.js');
       await load('background-dropzone.js');
       await load('effect-typography.js');
 
