@@ -9,8 +9,47 @@
 <body>
 <script>
 (async()=>{
-  const BUILD='p68-20260812-full-project-reset';
+  const BUILD='p69-20260812-native-full-reset';
+
+  async function resetBeforeBoot(){
+    const params=new URLSearchParams(location.search);
+    if(params.get('reset')!=='1')return;
+
+    document.body.innerHTML='<main style="font-family:system-ui;background:#0a0a0b;color:#fff;min-height:100vh;padding:24px"><h1>LINA</h1><p>Resetting project…</p></main>';
+
+    try{
+      for(let i=localStorage.length-1;i>=0;i--){
+        const key=localStorage.key(i);
+        if(key&&(key==='lina.project.v2'||key.startsWith('lina.')))localStorage.removeItem(key);
+      }
+    }catch{}
+
+    try{
+      for(let i=sessionStorage.length-1;i>=0;i--){
+        const key=sessionStorage.key(i);
+        if(key&&key.startsWith('lina.'))sessionStorage.removeItem(key);
+      }
+    }catch{}
+
+    if('indexedDB' in window){
+      await new Promise(resolve=>{
+        let done=false;
+        const finish=()=>{if(done)return;done=true;resolve()};
+        try{
+          const request=indexedDB.deleteDatabase('lina-project-media');
+          request.onsuccess=finish;
+          request.onerror=finish;
+          request.onblocked=()=>setTimeout(finish,250);
+          setTimeout(finish,1200);
+        }catch{finish()}
+      });
+    }
+
+    try{history.replaceState(null,'',location.pathname)}catch{}
+  }
+
   try{
+    await resetBeforeBoot();
     const response=await fetch(`app-source.html?v=${BUILD}`,{cache:'no-store'});
     if(!response.ok)throw new Error(`HTTP ${response.status}`);
     let html=await response.text();
