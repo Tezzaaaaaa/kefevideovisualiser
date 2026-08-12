@@ -131,6 +131,11 @@
         </div>
         <div class="quick-mini-head"><b>Background readability</b><span>Darken or soften behind the lyrics</span></div>
         <div class="quick-control-grid quick-typography-readable"></div>
+        <div class="quick-mini-head"><b>Opening title card</b><span>Part of the finished lyric look</span></div>
+        <div class="quick-control-grid">
+          <label class="quick-toggle"><span><b>Show title card</b><small>Title, artist and album</small></span><input id="quickTitle" type="checkbox"></label>
+          <label><span>Title-card duration</span><select id="quickTitleDuration"></select></label>
+        </div>
       </div>
       <div class="quick-group quick-priority-2" id="quickBackgroundGroup">
         <div class="quick-group-head"><b>2. Background & framing</b><span>Fit · crop · focus</span></div>
@@ -138,12 +143,10 @@
         <div class="quick-background-actions"></div>
       </div>
       <div class="quick-group quick-priority-3">
-        <div class="quick-group-head"><b>3. Position, timing & intro</b><span>Place it · sync it · finish the opening</span></div>
+        <div class="quick-group-head"><b>3. Position & timing</b><span>Place it · sync it</span></div>
         <div class="quick-control-grid">
           <label class="quick-range"><span>Vertical position <b id="quickYVal"></b></span><input id="quickY" type="range"></label>
           <label class="quick-range"><span>Lyric offset <b id="quickOffsetVal"></b></span><input id="quickOffset" type="range"></label>
-          <label class="quick-toggle"><span><b>Show title card</b><small>Title, artist and album</small></span><input id="quickTitle" type="checkbox"></label>
-          <label><span>Title-card duration</span><select id="quickTitleDuration"></select></label>
         </div>
       </div>
       <div class="quick-group quick-priority-4">
@@ -189,7 +192,7 @@
     }
     window.linaQuickSettingsSync=syncAll;
     setTimeout(()=>{window.linaSyncTypography?.();syncAll();titleEnabledState()},30);
-    document.documentElement.dataset.quickControlsOrder='finalise-v4';document.documentElement.dataset.previewFinalise='v4';
+    document.documentElement.dataset.quickControlsOrder='finalise-v5';document.documentElement.dataset.previewFinalise='v4';
     return true;
   }
 
