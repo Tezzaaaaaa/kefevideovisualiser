@@ -183,6 +183,10 @@
         </div>
         <div class="quick-mini-head"><b>Background readability</b><span>Darken or soften behind the lyrics</span></div>
         <div class="quick-control-grid quick-typography-readable"></div>
+        <div class="quick-mini-head"><b>Track details</b><span>Used on the title card and export metadata</span></div>
+        <div class="quick-control-grid quick-track-details"></div>
+        <div class="quick-mini-head"><b>Lyric flow & entrance</b><span>Phrasing · timing · visibility</span></div>
+        <div class="quick-control-grid quick-lyric-flow"></div>
         <div class="quick-mini-head"><b>Position & timing</b><span>Place it · sync it</span></div>
         <div class="quick-control-grid quick-position-timing">
           <label class="quick-range"><span>Vertical position <b id="quickYVal"></b></span><input id="quickY" type="range"></label>
@@ -202,12 +206,7 @@
           <label class="quick-toggle quick-wide"><span><b>Safe-area guides</b><small>Preview only · never exported</small></span><input id="quickSafe" type="checkbox"></label>
         </div>
       </div>
-      <details id="quickAdvanced" class="quick-fine quick-advanced">
-        <summary>Fine lyric editing</summary>
-        <div class="quick-advanced-body">
-          <details id="quickFineTiming" class="quick-fine quick-timing-editor"><summary>Line timing, text and word emphasis</summary><div class="quick-fine-body"></div></details>
-        </div>
-      </details>
+      <div id="quickHiddenEditorMarker" hidden aria-hidden="true"></div>
       <div class="quick-actions">
         <a id="resetProjectVisible" class="btn subtle" href="reset.html?v=p103-20260813-upload-only-background" role="button" data-lina-owner="project-hard-v3">Reset project</a>
         <button id="quickExport" class="btn primary" type="button">Export video</button>
@@ -217,8 +216,15 @@
     const sourceStash=stash(),previewControls=$('.preview-controls'),exportBlock=$('.stage-export'),stylePanel=$('[data-panel="style"]');
     if(previewControls)sourceStash.append(previewControls);if(exportBlock)sourceStash.append(exportBlock);if(stylePanel)sourceStash.append(stylePanel);
     $('.navbtn[data-tool="style"]')?.remove();
-    const inspector=$('.right'),fineBody=$('#quickFineTiming .quick-fine-body');if(inspector&&fineBody)fineBody.append(inspector);
+    const inspector=$('.right');if(inspector)stash().append(inspector);
     $('.more-controls')?.remove();moveBackgroundControls(box);
+    const trackGrid=box.querySelector('.quick-track-details');for(const id of ['titleInput','artistInput','albumInput']){const field=takeField(id);if(field&&trackGrid)trackGrid.append(field)}
+    const flowGrid=box.querySelector('.quick-lyric-flow'),grouping=takeField('grouping'),entrance=takeField('lyricsEntrance'),custom=$('#customEntranceWrap'),clear=$('#clearLyrics');
+    if(grouping&&flowGrid)flowGrid.append(grouping);if(entrance&&flowGrid)flowGrid.append(entrance);if(custom&&flowGrid)flowGrid.append(custom);if(clear&&flowGrid)flowGrid.append(clear);
+    const contextSource=takeField('contextMode');if(contextSource)stash().append(contextSource);
+    const applyGrouping=$('#applyGrouping');if(applyGrouping)stash().append(applyGrouping);
+    for(const section of [...document.querySelectorAll('[data-panel="lyrics"] .subsection')]){const label=section.querySelector(':scope > .subhead b')?.textContent?.trim();if(label==='Lyric phrasing'||label==='Lyrics entrance')section.remove()}
+    document.documentElement.dataset.tweakLyrics='hidden';
 
     const qe=$('#quickEffect');qe.value=currentEffect();qe.addEventListener('change',()=>setEffect(qe.value));
     bindSelect('fontChoice','quickFont');bindSize();bindSelect('contextMode','quickLyricsView');bindSelect('textAlign','quickAlign');bindColor();
