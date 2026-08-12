@@ -13,9 +13,9 @@
     const link=document.createElement('a');
     link.id='resetProjectVisible';
     link.className='btn subtle';
-    link.href='?reset=1';
+    link.href='reset.html?v=p71';
     link.textContent='Reset project';
-    link.dataset.linaOwner='project-hard-v2';
+    link.dataset.linaOwner='project-hard-v3';
     link.setAttribute('role','button');
     actions.prepend(link);
     return true;
