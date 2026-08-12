@@ -139,6 +139,14 @@
     }
   }
 
+  function buildPreviewAspectToggle(){
+    const head=$('.preview-sticky-shell .stage-head'),source=$('#aspect');if(!head||!source||$('#previewAspectToggle'))return;
+    const wrap=document.createElement('div');wrap.id='previewAspectToggle';wrap.className='preview-aspect-toggle';wrap.setAttribute('aria-label','Preview aspect ratio');
+    for(const value of ['9:16','4:5','1:1','16:9']){const button=document.createElement('button');button.type='button';button.dataset.aspect=value;button.textContent=value;button.addEventListener('click',()=>{source.value=value;fire(source,'input');fire(source,'change');syncPreviewAspectToggle();setTimeout(syncAll,0)});wrap.append(button)}
+    head.append(wrap);syncPreviewAspectToggle();
+  }
+  function syncPreviewAspectToggle(){const value=$('#aspect')?.value;$('#previewAspectToggle button').forEach(button=>{const active=button.dataset.aspect===value;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active))})}
+
   function build(){
     ensureCanonicalSources();
     const stageWrap=$('.stage-wrap');if(!stageWrap||$('#previewQuickControls'))return false;
@@ -198,7 +206,7 @@
         <button id="quickExport" class="btn primary" type="button">Export video</button>
       </div>`;
 
-    const stickyShell=$('.preview-sticky-shell');(stickyShell||stageWrap).after(box);
+    const stickyShell=$('.preview-sticky-shell');(stickyShell||stageWrap).after(box);buildPreviewAspectToggle();
     const sourceStash=stash(),previewControls=$('.preview-controls'),exportBlock=$('.stage-export'),stylePanel=$('[data-panel="style"]');
     if(previewControls)sourceStash.append(previewControls);if(exportBlock)sourceStash.append(exportBlock);if(stylePanel)sourceStash.append(stylePanel);
     $('.navbtn[data-tool="style"]')?.remove();
@@ -213,7 +221,7 @@
     bindRange('letterSpacing','quickLetterSpacing','quickLetterSpacingVal',v=>`${Number(v).toFixed(3).replace(/0+$/,'').replace(/\.$/,'')}em`);bindRange('glow','quickGlow','quickGlowVal',v=>`${v}%`);bindToggle('safeToggle','quickSafe');
     $('#quickExport')?.addEventListener('click',()=>($('#exportBottomBtn')||$('#exportBtn'))?.click());
 
-    document.addEventListener('change',e=>{if(['styleEffectSelect','lyricEffect'].includes(e.target?.id)||e.target?.closest?.('.effect-option'))setTimeout(syncAll,30)},true);
+    document.addEventListener('change',e=>{if(e.target?.id==='aspect')syncPreviewAspectToggle();if(['styleEffectSelect','lyricEffect'].includes(e.target?.id)||e.target?.closest?.('.effect-option'))setTimeout(syncAll,30)},true);
     document.addEventListener('click',e=>{if(e.target.closest?.('.effect-option[data-effect]'))setTimeout(syncAll,30)},true);
     const story=$('#story');
     if(story&&story.dataset.geometryLocked!=='true'){
