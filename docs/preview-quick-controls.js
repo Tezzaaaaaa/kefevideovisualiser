@@ -113,70 +113,61 @@
     const box=document.createElement('section');
     box.id='previewQuickControls';box.className='preview-quick-controls';
     box.innerHTML=`
-      <div class="quick-control-head"><b>Quick settings</b><span>Most-used controls first.</span></div>
+      <div class="quick-control-head"><b>Finalise video</b><span>Every final adjustment is here, in order.</span></div>
       <div class="quick-group quick-priority-1">
-        <div class="quick-group-head"><b>1. Lyric look</b><span>What viewers notice first</span></div>
+        <div class="quick-group-head"><b>1. Lyrics & typography</b><span>Effect · type · colour · readability</span></div>
         <div class="quick-control-grid">
           <label><span>Effect</span><select id="quickEffect"><option value="apple">Apple Music</option><option value="charli">Charli xcx · Apple</option><option value="eternal">Eternal Sunshine</option></select></label>
           <label><span>Font</span><select id="quickFont"></select></label>
           <label><span>Text size</span><select id="quickSize"></select></label>
-          <label><span>Lyrics view</span><select id="quickLyricsView"></select></label>
+          <label><span>Weight</span><select id="quickWeight"></select></label>
           <label><span>Alignment</span><select id="quickAlign"></select></label>
+          <label><span>Letter case</span><select id="quickCase"></select></label>
           <label class="quick-colour"><span>Text colour</span><input id="quickTextColor" type="color" value="#ffffff"></label>
+          <label><span>Lyrics on screen</span><select id="quickLyricsView"></select></label>
+          <label class="quick-range"><span>Line height <b id="quickLineHeightVal"></b></span><input id="quickLineHeight" type="range"></label>
+          <label class="quick-range"><span>Letter spacing <b id="quickLetterSpacingVal"></b></span><input id="quickLetterSpacing" type="range"></label>
+          <label class="quick-range quick-wide"><span>Glow <b id="quickGlowVal"></b></span><input id="quickGlow" type="range"></label>
         </div>
       </div>
       <div class="quick-group quick-priority-2" id="quickBackgroundGroup">
-        <div class="quick-group-head"><b>2. Background</b><span>Frame it · keep lyrics readable</span></div>
-        <div class="quick-mini-head"><b>Framing</b><span>Fit · zoom · focus</span></div><div class="quick-control-grid quick-background-frame"></div>
-        <div class="quick-mini-head"><b>Readability</b><span>Darken or soften only if needed</span></div><div class="quick-control-grid quick-background-readable"></div>
+        <div class="quick-group-head"><b>2. Background & framing</b><span>Fit · crop · readability</span></div>
+        <div class="quick-mini-head"><b>Frame</b><span>Fit · zoom · focus</span></div><div class="quick-control-grid quick-background-frame"></div>
+        <div class="quick-mini-head"><b>Readability</b><span>Darken or soften if needed</span></div><div class="quick-control-grid quick-background-readable"></div>
         <div class="quick-background-actions"></div>
       </div>
       <div class="quick-group quick-priority-3">
-        <div class="quick-group-head"><b>3. Position & sync</b><span>Keep lyrics placed and timed correctly</span></div>
+        <div class="quick-group-head"><b>3. Position, timing & intro</b><span>Place it · sync it · finish the opening</span></div>
         <div class="quick-control-grid">
           <label class="quick-range"><span>Vertical position <b id="quickYVal"></b></span><input id="quickY" type="range"></label>
           <label class="quick-range"><span>Lyric offset <b id="quickOffsetVal"></b></span><input id="quickOffset" type="range"></label>
+          <label class="quick-toggle"><span><b>Show title card</b><small>Title, artist and album</small></span><input id="quickTitle" type="checkbox"></label>
+          <label><span>Title-card duration</span><select id="quickTitleDuration"></select></label>
         </div>
       </div>
       <div class="quick-group quick-priority-4">
-        <div class="quick-group-head"><b>4. Title card</b><span>Optional intro</span></div>
-        <div class="quick-control-grid">
-          <label class="quick-toggle"><span><b>Show title card</b><small>Title, artist and album</small></span><input id="quickTitle" type="checkbox"></label>
-          <label><span>Duration</span><select id="quickTitleDuration"></select></label>
-        </div>
-      </div>
-      <div class="quick-group quick-priority-5">
-        <div class="quick-group-head"><b>5. Output</b><span>Choose the final format</span></div>
+        <div class="quick-group-head"><b>4. Export</b><span>Frame · quality · guides</span></div>
         <div class="quick-control-grid">
           <label><span>Aspect ratio</span><select id="quickFrame"></select></label>
           <label><span>Quality</span><select id="quickQuality"></select></label>
+          <label class="quick-toggle quick-wide"><span><b>Safe-area guides</b><small>Preview only · never exported</small></span><input id="quickSafe" type="checkbox"></label>
         </div>
       </div>
       <details id="quickAdvanced" class="quick-fine quick-advanced">
-        <summary>Advanced controls</summary>
+        <summary>Fine lyric editing</summary>
         <div class="quick-advanced-body">
-          <div class="quick-advanced-section">
-            <div class="quick-mini-head"><b>Fine typography</b><span>Usually leave these alone</span></div>
-            <div class="quick-control-grid">
-              <label><span>Weight</span><select id="quickWeight"></select></label>
-              <label><span>Letter case</span><select id="quickCase"></select></label>
-              <label class="quick-range"><span>Line height <b id="quickLineHeightVal"></b></span><input id="quickLineHeight" type="range"></label>
-              <label class="quick-range"><span>Letter spacing <b id="quickLetterSpacingVal"></b></span><input id="quickLetterSpacing" type="range"></label>
-              <label class="quick-range"><span>Glow <b id="quickGlowVal"></b></span><input id="quickGlow" type="range"></label>
-              <label class="quick-toggle"><span><b>Safe-area guides</b><small>Preview only</small></span><input id="quickSafe" type="checkbox"></label>
-            </div>
-          </div>
-          <details id="quickFineTiming" class="quick-fine quick-timing-editor"><summary>Fine timing & lyric editing</summary><div class="quick-fine-body"></div></details>
+          <details id="quickFineTiming" class="quick-fine quick-timing-editor"><summary>Line timing, text and word emphasis</summary><div class="quick-fine-body"></div></details>
         </div>
       </details>
       <div class="quick-actions">
-        <a id="resetProjectVisible" class="btn subtle" href="reset.html?v=p72" role="button" data-lina-owner="project-hard-v3">Reset project</a>
+        <a id="resetProjectVisible" class="btn subtle" href="reset.html?v=p81" role="button" data-lina-owner="project-hard-v3">Reset project</a>
         <button id="quickExport" class="btn primary" type="button">Export video</button>
       </div>`;
 
     const tools=$('.transport-tools'),transport=$('.transport');(tools||transport||stageWrap).after(box);
-    const sourceStash=stash(),previewControls=$('.preview-controls'),exportBlock=$('.stage-export');
-    if(previewControls)sourceStash.append(previewControls);if(exportBlock)sourceStash.append(exportBlock);
+    const sourceStash=stash(),previewControls=$('.preview-controls'),exportBlock=$('.stage-export'),stylePanel=$('[data-panel="style"]');
+    if(previewControls)sourceStash.append(previewControls);if(exportBlock)sourceStash.append(exportBlock);if(stylePanel)sourceStash.append(stylePanel);
+    $('.navbtn[data-tool="style"]')?.remove();
     const inspector=$('.right'),fineBody=$('#quickFineTiming .quick-fine-body');if(inspector&&fineBody)fineBody.append(inspector);
     $('.more-controls')?.remove();moveBackgroundControls(box);
 
@@ -197,7 +188,7 @@
     }
     window.linaQuickSettingsSync=syncAll;
     setTimeout(()=>{window.linaSyncTypography?.();syncAll();titleEnabledState()},30);
-    document.documentElement.dataset.quickControlsOrder='priority-v2';
+    document.documentElement.dataset.quickControlsOrder='finalise-v3';document.documentElement.dataset.previewFinalise='v3';
     return true;
   }
 
