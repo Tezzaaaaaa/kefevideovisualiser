@@ -11,7 +11,7 @@
     require(document.documentElement.dataset.projectResetOwner==='hard-v2','project-reset-owner');
     require(document.documentElement.dataset.controlsOwner==='canonical-v1','controls-owner');
     require(document.documentElement.dataset.uiOwner==='canonical-v1','ui-owner');
-    require($('#resetProjectVisible')?.dataset.linaOwner==='project-hard-v2','full-project-reset');
+    require($('#resetProjectVisible')?.dataset.linaOwner==='project-hard-v3','full-project-reset');
     require(!$('#quickResetLayout')&&!$('#linaFreshReset')&&!$('#resetLyricsBtn')&&!$('#resetBtn'),'retired-reset-control-present');
     require($('#quickEffect')?.dataset.linaOwner==='canonical','quick-effect-owner');
     require($('#styleEffectSelect')?.dataset.linaOwner==='canonical','style-effect-owner');
