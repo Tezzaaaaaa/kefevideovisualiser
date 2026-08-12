@@ -105,6 +105,15 @@
     const baseRestore=restoreSavedProject;
     restoreSavedProject=async function(){
       await window.linaResetCleanupPromise;
+      if(window.LINA_FRESH_RESET){
+        clearProjectMemoryAndUI();
+        clearLinaStorage();
+        await deleteMediaDatabase();
+        try{restoring=false}catch{}
+        removeTrackArtwork();
+        clearArtworkVisuals();
+        return false;
+      }
       const result=await baseRestore();
       removeTrackArtwork();
       clearArtworkVisuals();
