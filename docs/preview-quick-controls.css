@@ -181,3 +181,10 @@
   .transport-tools{grid-template-columns:repeat(3,minmax(0,1fr))!important;grid-template-rows:auto!important;gap:5px!important}
   .transport-tools .btn{padding:7px 5px!important;font-size:9px!important}
 }
+
+/* Finalise-video workspace: one under-preview home for all visual settings. */
+html[data-preview-finalise="v3"] .nav{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+html[data-preview-finalise="v3"] .quick-wide{grid-column:1/-1!important}
+html[data-preview-finalise="v3"] .quick-priority-1{border-color:rgba(255,255,255,.12)!important;background:rgba(255,255,255,.024)!important}
+html[data-preview-finalise="v3"] .quick-priority-4{background:rgba(255,255,255,.032)!important}
+html[data-preview-finalise="v3"] #quickAdvanced .quick-advanced-body{padding-top:9px!important}
