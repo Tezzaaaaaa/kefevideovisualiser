@@ -91,7 +91,7 @@ p{color:#b8b8bd}
     await Promise.all([clearIndexedDB(),clearCaches(),clearWorkers()]);
     clearWebStorage();
     state.textContent='Project cleared.';
-    location.replace(`./index.html?freshReset=1&v=p95-20260813-cache-refresh&nonce=${Date.now()}`);
+    location.replace(`./index.html?freshReset=1&v=p96-20260813-quick-settings-visible&nonce=${Date.now()}`);
   }catch(error){
     console.error('LINA hard reset failed',error);
     state.textContent='Reset failed. The editor was not reopened.';
