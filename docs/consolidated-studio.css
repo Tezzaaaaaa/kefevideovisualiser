@@ -20,3 +20,96 @@
 @media(max-width:900px){.effect-picker{grid-template-columns:1fr}.effect-option{min-height:72px}.consolidated-track .track-grid{grid-template-columns:80px 1fr}.consolidated-track .track-art{width:80px}}
 @media(max-width:620px){.transform-grid{grid-template-columns:1fr}.consolidated-track .track-grid{grid-template-columns:1fr}.consolidated-track .track-art{width:92px}.effect-picker{display:flex;overflow-x:auto;scroll-snap-type:x mandatory}.effect-option{min-width:180px;scroll-snap-align:start}}
 @media(prefers-reduced-motion:reduce){.eternal-caret{animation:none}.eternal-page{transition:none}}
+
+/* Eternal Sunshine v2 — direct ink over media, no faux paper/card, no blinking typewriter cursor. */
+.story[data-lyric-effect="eternal"] .lyrics{
+  left:9%;
+  width:82%;
+  max-height:82%;
+  padding:.18em .04em;
+  overflow:visible;
+  text-align:left;
+}
+.story[data-lyric-effect="eternal"] .eternal-page{
+  width:100%;
+  padding:0;
+  background:transparent!important;
+  color:var(--accent);
+  font-family:"Bradley Hand","Noteworthy","Chalkboard SE","Segoe Print","Comic Sans MS",cursive;
+  text-shadow:0 .025em .035em rgba(0,0,0,.66),0 0 .22em rgba(0,0,0,.22);
+  transform:translate3d(var(--eternal-drift-x,0),var(--eternal-drift-y,0),0) rotate(var(--eternal-tilt,0deg));
+  transform-origin:32% 54%;
+  transition:transform .14s linear,opacity .16s ease;
+}
+.story[data-lyric-effect="eternal"] .eternal-memory{
+  max-width:94%;
+  margin:0 0 .3em 0;
+  font-size:.43em;
+  line-height:1.14;
+  font-weight:500;
+  letter-spacing:.004em;
+  white-space:pre-wrap;
+  filter:blur(.008em);
+  pointer-events:none;
+}
+.story[data-lyric-effect="eternal"] .eternal-memory.memory-far{
+  opacity:.11;
+  transform:translateX(calc(var(--eternal-memory-x,0em) + .22em)) rotate(.42deg);
+  margin-bottom:.36em;
+}
+.story[data-lyric-effect="eternal"] .eternal-memory.memory-near{
+  opacity:.26;
+  transform:translateX(var(--eternal-memory-x,0em)) rotate(-.24deg);
+  margin-bottom:.6em;
+}
+.story[data-lyric-effect="eternal"] .eternal-current{
+  position:relative;
+  max-width:100%;
+  min-height:1.04em;
+  margin:0;
+  padding:0;
+  font-size:1em;
+  line-height:1.09;
+  font-weight:560;
+  letter-spacing:.003em;
+  white-space:pre-wrap;
+  transform:rotate(var(--eternal-current-tilt,0deg));
+  transform-origin:left center;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.story[data-lyric-effect="eternal"] .eternal-current::after{display:none!important}
+.story[data-lyric-effect="eternal"] .eternal-caret{display:none!important}
+.story[data-lyric-effect="eternal"] .eternal-ink-written{
+  opacity:1;
+  text-shadow:.012em .008em 0 rgba(255,255,255,.035),0 .025em .035em rgba(0,0,0,.66),0 0 .22em rgba(0,0,0,.22);
+}
+.story[data-lyric-effect="eternal"] .eternal-ink-pending{
+  opacity:0;
+  text-shadow:none;
+}
+.story[data-lyric-effect="eternal"] .eternal-ink-head{
+  display:inline-block;
+  width:.085em;
+  height:.045em;
+  margin:0 0 .1em .015em;
+  border-radius:50%;
+  vertical-align:baseline;
+  background:currentColor;
+  opacity:calc(var(--eternal-ink-head,0) * .62);
+  transform:rotate(-13deg);
+  box-shadow:0 0 .08em currentColor;
+}
+.story[data-lyric-effect="eternal"] .music-tag{
+  background:rgba(18,14,13,.24);
+  backdrop-filter:blur(5px);
+  -webkit-backdrop-filter:blur(5px);
+}
+@media(max-width:620px){
+  .story[data-lyric-effect="eternal"] .lyrics{left:8%;width:84%;max-height:84%}
+  .story[data-lyric-effect="eternal"] .eternal-memory{font-size:.46em}
+}
+@media(prefers-reduced-motion:reduce){
+  .story[data-lyric-effect="eternal"] .eternal-page{transition:none}
+  .story[data-lyric-effect="eternal"] .eternal-ink-head{box-shadow:none}
+}
