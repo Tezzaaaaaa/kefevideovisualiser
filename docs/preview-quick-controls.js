@@ -95,7 +95,7 @@
     const reset=$('#resetCrop'),remove=$('#removeBg');if(reset&&actionGrid)actionGrid.append(reset);if(remove&&actionGrid)actionGrid.append(remove);
     if(frameSection&&frameSection!==group)frameSection.remove();
     if(readableSection&&readableSection!==group)readableSection.remove();
-    const advancedBody=box.querySelector('.quick-advanced-body'),videoBox=$('#videoTrimBox');
+    const advancedBody=box.querySelector('.quick-video-timing-target'),videoBox=$('#videoTrimBox');
     if(videoBox&&advancedBody){
       const oldParent=videoBox.parentElement,videoWrap=document.createElement('div');
       videoWrap.className='quick-advanced-section quick-video-timing';
@@ -197,6 +197,7 @@
         <div class="quick-group-head"><b>2. Background & framing</b><span>Fit · crop · focus</span></div>
         <div class="quick-mini-head"><b>Frame</b><span>Fit · zoom · focus</span></div><div class="quick-control-grid quick-background-frame"></div>
         <div class="quick-background-actions"></div>
+        <div class="quick-video-timing-target"></div>
       </div>
       <div class="quick-group quick-priority-4">
         <div class="quick-group-head"><b>3. Export</b><span>Frame · quality · guides</span></div>
@@ -222,7 +223,7 @@
     const flowGrid=box.querySelector('.quick-lyric-flow'),grouping=takeField('grouping'),entrance=takeField('lyricsEntrance'),custom=$('#customEntranceWrap'),clear=$('#clearLyrics');
     if(grouping&&flowGrid)flowGrid.append(grouping);if(entrance&&flowGrid)flowGrid.append(entrance);if(custom&&flowGrid)flowGrid.append(custom);if(clear&&flowGrid)flowGrid.append(clear);
     const contextSource=takeField('contextMode');if(contextSource)stash().append(contextSource);
-    const applyGrouping=$('#applyGrouping');if(applyGrouping)stash().append(applyGrouping);
+    const applyGrouping=$('#applyGrouping');if(applyGrouping)stash().append(applyGrouping);$('#grouping')?.addEventListener('change',()=>$('#applyGrouping')?.click());
     for(const section of [...document.querySelectorAll('[data-panel="lyrics"] .subsection')]){const label=section.querySelector(':scope > .subhead b')?.textContent?.trim();if(label==='Lyric phrasing'||label==='Lyrics entrance')section.remove()}
     document.documentElement.dataset.tweakLyrics='hidden';
 
