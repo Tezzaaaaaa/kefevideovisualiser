@@ -1,5 +1,3 @@
-[rebuild/five-step-lina bdba744] Make loaded lyrics visible in preview
- 2 files changed, 22 insertions(+), 1 deletion(-)
 import {state,ASPECTS} from './state.js';
 import {parseLyrics} from './parser.js';
 import {render} from './renderer.js';
