@@ -55,13 +55,8 @@
     audio.append(audioUpload);
     if(mediaStatus)audio.append(mediaStatus);
 
-    const details=section('Track details','User supplied');
-    const detailsGrid=document.createElement('div');
-    detailsGrid.className='setup-details-grid';
-    detailsGrid.append(titleLabel,artistLabel);if(albumLabel)detailsGrid.append(albumLabel);
-    details.append(detailsGrid);
-
-    body.replaceChildren(audio,details);
+    const stash=hiddenStash();stash.append(titleLabel,artistLabel);if(albumLabel)stash.append(albumLabel);
+    body.replaceChildren(audio);
 
     q('#useArtworkBg2')?.closest('.subsection')?.remove();
     qa('#userArtworkFile,#userArtworkPreview,#artworkEmpty,#userArtworkIntro,#showArtworkIntro,#useArtworkBg,#pickedArt,#introArt').forEach(el=>el.remove());
