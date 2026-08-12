@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0b">
+<title>Resetting LINA</title>
+<style>
+html,body{margin:0;min-height:100%;background:#0a0a0b;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+main{min-height:100vh;display:grid;place-items:center;text-align:center;padding:24px;box-sizing:border-box}
+p{color:#b8b8bd}
+</style>
+</head>
+<body>
+<main><div><h1>LINA</h1><p id="state">Clearing project…</p></div></main>
+<script>
+(async()=>{
+  const state=document.getElementById('state');
+  const APP_PATH='/lyricvideovisualiser/';
+  const KNOWN_DB='lina-project-media';
+  const linaKey=key=>/^lina(?:[.:-]|$)/i.test(String(key||''));
+  const linaDb=name=>/lina|lyric.?video|story.?lyrics/i.test(String(name||''));
+
+  function clearWebStorage(){
+    for(const storage of [localStorage,sessionStorage]){
+      try{
+        const keys=[];
+        for(let i=0;i<storage.length;i++)keys.push(storage.key(i));
+        for(const key of keys)if(linaKey(key))storage.removeItem(key);
+      }catch{}
+    }
+  }
+
+  function clearDatabase(name){
+    return new Promise(resolve=>{
+      if(!name||!('indexedDB' in window)){resolve();return}
+      let open;
+      try{open=indexedDB.open(name)}catch{resolve();return}
+      open.onerror=()=>resolve();
+      open.onupgradeneeded=()=>{};
+      open.onsuccess=()=>{
+        const db=open.result;
+        const stores=[...db.objectStoreNames];
+        if(!stores.length){db.close();deleteDatabase(name).then(resolve);return}
+        let tx;
+        try{tx=db.transaction(stores,'readwrite')}catch{db.close();deleteDatabase(name).then(resolve);return}
+        for(const store of stores){try{tx.objectStore(store).clear()}catch{}}
+        const finish=()=>{try{db.close()}catch{};deleteDatabase(name).then(resolve)};
+        tx.oncomplete=finish;
+        tx.onerror=finish;
+        tx.onabort=finish;
+      };
+    });
+  }
+
+  function deleteDatabase(name){
+    return new Promise(resolve=>{
+      try{
+        const req=indexedDB.deleteDatabase(name);
+        req.onsuccess=()=>resolve();
+        req.onerror=()=>resolve();
+        req.onblocked=()=>resolve();
+      }catch{resolve()}
+    });
+  }
+
+  async function clearIndexedDB(){
+    if(!('indexedDB' in window))return;
+    const names=new Set([KNOWN_DB]);
+    if(typeof indexedDB.databases==='function'){
+      try{
+        for(const info of await indexedDB.databases())if(info?.name&&linaDb(info.name))names.add(info.name);
+      }catch{}
+    }
+    for(const name of names)await clearDatabase(name);
+  }
+
+  async function clearCaches(){
+    if(!('caches' in window))return;
+    try{
+      for(const name of await caches.keys()){
+        if(linaDb(name)){await caches.delete(name);continue}
+        const cache=await caches.open(name);
+        for(const request of await cache.keys()){
+          try{if(new URL(request.url).pathname.includes(APP_PATH))await cache.delete(request)}catch{}
+        }
+      }
+    }catch{}
+  }
+
+  async function clearWorkers(){
+    if(!('serviceWorker' in navigator))return;
+    try{
+      for(const registration of await navigator.serviceWorker.getRegistrations()){
+        if(String(registration.scope||'').includes(APP_PATH))await registration.unregister();
+      }
+    }catch{}
+  }
+
+  try{
+    clearWebStorage();
+    await Promise.all([clearIndexedDB(),clearCaches(),clearWorkers()]);
+    clearWebStorage();
+    state.textContent='Project cleared.';
+    location.replace(`./index.html?fresh=${Date.now()}`);
+  }catch(error){
+    console.error('LINA hard reset failed',error);
+    state.textContent='Reset failed. The editor was not reopened.';
+  }
+})();
+</script>
+</body>
+</html>
