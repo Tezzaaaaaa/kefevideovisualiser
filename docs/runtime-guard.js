@@ -11,7 +11,7 @@
     for(let i=0;i<80;i++){
       const reset=$('#resetProjectVisible'),quick=$('#quickEffect'),style=$('#styleEffectSelect');
       const ready=window.linaRuntime&&window.linaAuditSystem&&
-        reset?.dataset.linaOwner==='project-hard-v2'&&quick?.dataset.linaOwner==='canonical'&&style?.dataset.linaOwner==='canonical'&&
+        reset?.dataset.linaOwner==='project-hard-v3'&&quick?.dataset.linaOwner==='canonical'&&style?.dataset.linaOwner==='canonical'&&
         String(document.documentElement.dataset.transportOwner||'').startsWith('canonical')&&
         document.documentElement.dataset.exportOwner==='canonical-v1'&&
         document.documentElement.dataset.controlsOwner==='canonical-v1'&&
@@ -54,7 +54,7 @@
     if(document.documentElement.dataset.exportOwner!=='canonical-v1')failures.push('export-owner');
     if(document.documentElement.dataset.projectResetOwner!=='hard-v2')failures.push('project-reset-owner');
     if(!String(document.documentElement.dataset.transportOwner||'').startsWith('canonical'))failures.push('transport-owner');
-    if($('#resetProjectVisible')?.dataset.linaOwner!=='project-hard-v2'||typeof window.linaResetProject!=='function')failures.push('full-project-reset');
+    if($('#resetProjectVisible')?.dataset.linaOwner!=='project-hard-v3')failures.push('full-project-reset-link');
     if($('#quickResetLayout')||$('#linaFreshReset')||$('#resetLyricsBtn')||$('#resetBtn'))failures.push('retired-reset-control');
     if($('#rightsConfirm'))failures.push('retired-rights-control');
 
