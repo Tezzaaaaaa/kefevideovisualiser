@@ -209,7 +209,7 @@
       </div>
       <div id="quickHiddenEditorMarker" hidden aria-hidden="true"></div>
       <div class="quick-actions">
-        <a id="resetProjectVisible" class="btn subtle" href="reset.html?v=p108-20260813-workflow-reset" role="button" data-lina-owner="project-hard-v3">Reset project</a>
+        <a id="resetProjectVisible" class="btn subtle" href="reset.html?v=p109-20260813-runtime-recovery" role="button" data-lina-owner="project-hard-v3">Reset project</a>
         <button id="quickExport" class="btn primary" type="button">Export video</button>
       </div>`;
 

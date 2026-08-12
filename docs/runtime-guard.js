@@ -31,6 +31,7 @@
     const requiredFns=['goStep','parseTimed','render','exportVideo','restoreSavedProject'];
     const missingFns=requiredFns.filter(n=>typeof window[n]!=='function');
     const failures=[];
+    if(window.__linaBootErrors?.length)failures.push(...window.__linaBootErrors.map((_,i)=>`startup-error-${i+1}`));
 
     if([...document.querySelectorAll('#nav .navbtn[data-tool]')].length!==3)failures.push('navigation');
     if(!window.linaTiming)failures.push('timing-layer');
