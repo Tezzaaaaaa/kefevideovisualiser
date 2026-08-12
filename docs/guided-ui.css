@@ -252,3 +252,42 @@
   .left,.stage{max-width:100%!important}
   #story[data-aspect="16:9"],#story[data-aspect="1:1"],#story[data-aspect="4:5"],#story[data-aspect="9:16"]{width:100%!important}
 }
+
+
+/* Workflow readiness: green means the required choice for that step is complete. */
+#nav .navbtn.step-ready{
+  color:#b9ffd0!important;
+  border-color:rgba(53,224,112,.62)!important;
+  background:linear-gradient(180deg,rgba(44,195,96,.20),rgba(30,135,69,.12))!important;
+  box-shadow:0 0 0 1px rgba(53,224,112,.14),0 0 18px rgba(53,224,112,.18)!important;
+}
+#nav .navbtn.step-ready .step{
+  color:#07170d!important;
+  background:#43e77c!important;
+  box-shadow:0 0 14px rgba(67,231,124,.52)!important;
+}
+#nextStep.next-ready{
+  color:#041109!important;
+  border-color:#4df08a!important;
+  background:linear-gradient(180deg,#58f292,#35cf70)!important;
+  box-shadow:0 0 0 1px rgba(77,240,138,.24),0 0 22px rgba(53,224,112,.42)!important;
+  animation:lina-ready-pulse 1.8s ease-in-out infinite!important;
+}
+#nextStep.next-waiting{
+  opacity:.68!important;
+  box-shadow:none!important;
+}
+.step-readiness-hint{
+  display:block!important;
+  flex:1 1 100%!important;
+  margin-right:auto!important;
+  color:var(--muted)!important;
+  font-size:9px!important;
+  line-height:1.35!important;
+}
+.step-readiness-hint.ready{color:#7ff2a7!important}
+@keyframes lina-ready-pulse{
+  0%,100%{filter:brightness(1);box-shadow:0 0 0 1px rgba(77,240,138,.22),0 0 16px rgba(53,224,112,.30)}
+  50%{filter:brightness(1.08);box-shadow:0 0 0 1px rgba(77,240,138,.38),0 0 28px rgba(53,224,112,.50)}
+}
+@media(prefers-reduced-motion:reduce){#nextStep.next-ready{animation:none!important}}
