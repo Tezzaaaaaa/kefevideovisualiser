@@ -10,8 +10,8 @@ function wav(seconds=2.4,rate=44100){
   return b;
 }
 const background=Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920"><rect width="1080" height="1920" fill="#542788"/><circle cx="540" cy="720" r="360" fill="#ef8a62"/></svg>');
+execFileSync('ffmpeg',['-y','-v','error','-f','lavfi','-i','color=c=0x542788:s=320x568:d=1','-c:v','libx264','-pix_fmt','yuv420p','-movflags','+faststart','/tmp/lina-background.mp4']);
 execFileSync('ffmpeg',['-y','-v','error','-f','lavfi','-i','color=c=0x542788:s=320x568:d=1','-c:v','libvpx-vp9','-pix_fmt','yuv420p','/tmp/lina-background.webm']);
-const videoBackground=readFileSync('/tmp/lina-background.webm');
 const browser=await chromium.launch({headless:true});
 const page=await browser.newPage({acceptDownloads:true,viewport:{width:1280,height:900}});
 const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',message=>console.log('BROWSER',message.type(),message.text()));
@@ -60,8 +60,12 @@ assert.match(await page.locator('#toast').textContent(),/cancelled/i);
 chooserPromise=page.waitForEvent('filechooser');
 await page.click('label[for="backgroundInput"]');
 chooser=await chooserPromise;
-await chooser.setFiles({name:'background.webm',mimeType:'video/webm',buffer:videoBackground});
-await page.waitForFunction(()=>!document.querySelector('#exportBottom').disabled && document.querySelector('#backgroundStatus').textContent.includes('background.webm'),null,{timeout:10000});
+const supportsMp4=await page.locator('#backgroundVideo').evaluate(video=>!!video.canPlayType('video/mp4; codecs="avc1.42E01E"'));
+const videoName=supportsMp4?'background.mp4':'background.webm';
+const videoMime=supportsMp4?'video/mp4':'video/webm';
+const videoPath=supportsMp4?'/tmp/lina-background.mp4':'/tmp/lina-background.webm';
+await chooser.setFiles({name:videoName,mimeType:videoMime,buffer:readFileSync(videoPath)});
+await page.waitForFunction(name=>!document.querySelector('#exportBottom').disabled && document.querySelector('#backgroundStatus').textContent.includes(name),videoName,{timeout:10000});
 await page.waitForTimeout(250);
 sample=await canvasSample();
 assert.ok(sample.visible>10000 && sample.bright>0,`video preview blank: ${JSON.stringify(sample)}`);

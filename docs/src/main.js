@@ -4,9 +4,9 @@ import {render} from './renderer.js';
 import {exportVideo,downloadBlob} from './exporter.js';
 
 const $=s=>document.querySelector(s);
-const canvas=$('#stageCanvas'),ctx=canvas.getContext('2d'),audio=$('#audioEl');
+const canvas=$('#stageCanvas'),ctx=canvas.getContext('2d'),audio=$('#audioEl'),backgroundVideo=$('#backgroundVideo');
 const media={image:null,video:null};
-let audioURL='',backgroundURL='',exportJob=null;
+let audioURL='',backgroundURL='',exportJob=null,backgroundLoadId=0;
 const fmt=t=>`${Math.floor((t||0)/60)}:${String(Math.floor((t||0)%60)).padStart(2,'0')}`;
 function toast(message,error=false){const el=$('#toast');el.textContent=message;el.classList.toggle('error',error);el.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('show'),3500)}
 function readiness(){const ready=!!state.audio.file&&state.lyrics.lines.length>0&&(media.image||media.video);$('#readyStatus').textContent=ready?'Ready to export':'Add audio, lyrics and background';$('#exportBtn').disabled=$('#exportBottom').disabled=!ready}
@@ -45,11 +45,23 @@ $('#findLyrics').addEventListener('click',findLyrics);
 
 $('#backgroundInput').addEventListener('change',event=>{
   const file=event.target.files[0];if(!file)return;
+  const loadId=++backgroundLoadId;
   if(backgroundURL)URL.revokeObjectURL(backgroundURL);backgroundURL=URL.createObjectURL(file);
   media.image=null;media.video=null;
-  if(file.type.startsWith('video/')){const video=document.createElement('video');video.src=backgroundURL;video.muted=true;video.loop=true;video.playsInline=true;video.preload='auto';video.addEventListener('loadeddata',()=>{media.video=video;state.background.type='video';video.play().catch(()=>{});readiness()},{once:true})}
-  else{const image=new Image();image.onload=()=>{media.image=image;state.background.type='image';readiness()};image.src=backgroundURL}
-  $('#backgroundStatus').textContent=file.name;
+  readiness();$('#backgroundStatus').textContent=`Loading ${file.name}…`;
+  if(file.type.startsWith('video/')){
+    backgroundVideo.pause();
+    backgroundVideo.onloadedmetadata=()=>{if(loadId===backgroundLoadId&&backgroundVideo.duration>0)backgroundVideo.currentTime=Math.min(.05,backgroundVideo.duration/2)};
+    backgroundVideo.onloadeddata=()=>{if(loadId!==backgroundLoadId)return;media.video=backgroundVideo;state.background.type='video';$('#backgroundStatus').textContent=file.name;backgroundVideo.play().catch(()=>{});readiness()};
+    backgroundVideo.onerror=()=>{if(loadId!==backgroundLoadId)return;$('#backgroundStatus').textContent='Video could not be loaded';toast('This background video format is not supported on this device',true);readiness()};
+    backgroundVideo.src=backgroundURL;backgroundVideo.load();
+  }else{
+    backgroundVideo.pause();backgroundVideo.removeAttribute('src');backgroundVideo.load();
+    const image=new Image();
+    image.onload=()=>{if(loadId!==backgroundLoadId)return;media.image=image;state.background.type='image';$('#backgroundStatus').textContent=file.name;readiness()};
+    image.onerror=()=>{if(loadId!==backgroundLoadId)return;$('#backgroundStatus').textContent='Image could not be loaded';toast('This background image could not be loaded',true);readiness()};
+    image.src=backgroundURL;
+  }
 });
 
 $('#effects').addEventListener('click',event=>{const button=event.target.closest('[data-effect]');if(!button)return;state.style.effect=button.dataset.effect;document.querySelectorAll('[data-effect]').forEach(item=>item.classList.toggle('active',item===button))});
