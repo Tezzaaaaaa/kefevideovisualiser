@@ -1,0 +1,37 @@
+name: Deploy LINA
+on:
+  push:
+    branches: [main]
+    paths: ["docs/**", ".github/workflows/deploy-lina.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: lina-pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate clean LINA build
+        run: |
+          set -euo pipefail
+          test "$(find docs -type f | wc -l)" -eq 10
+          test -f docs/index.html
+          test -f docs/styles.css
+          test -f docs/src/main.js
+          test -f docs/src/exporter.js
+          for file in docs/src/*.js; do node --check "$file"; done
+          ! find docs -type f \( -name '*-fix*' -o -name '*-safe*' -o -name '*-guard*' -o -name '*-bridge*' \) | grep .
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+      - id: deployment
+        uses: actions/deploy-pages@v4

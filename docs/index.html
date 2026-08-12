@@ -1,57 +1,12 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0a0a0b">
-<title>LINA: Lyric Video Visualizer</title>
-</head>
-<body>
-<script>
-(async()=>{
-  const BUILD='claude-export-20260813-1';
-
-  const params=new URLSearchParams(location.search);
-  if(params.get('reset')==='1'){
-    location.replace(`reset.html?v=${BUILD}&nonce=${Date.now()}`);
-    return;
-  }
-
-  if(params.get('freshReset')==='1'){
-    const linaKey=key=>/^lina(?:[.:-]|$)/i.test(String(key||''));
-    for(const storage of [localStorage,sessionStorage]){
-      try{for(let i=storage.length-1;i>=0;i--){const key=storage.key(i);if(linaKey(key))storage.removeItem(key)}}catch{}
-    }
-    const deleteDb=name=>new Promise(resolve=>{
-      if(!('indexedDB'in window)){resolve();return}
-      let done=false;const finish=()=>{if(done)return;done=true;clearTimeout(timer);resolve()};const timer=setTimeout(finish,1800);
-      try{const req=indexedDB.deleteDatabase(name);req.onsuccess=finish;req.onerror=finish;req.onblocked=()=>setTimeout(finish,900)}catch{finish()}
-    });
-    const databases=new Set(['lina-project-media']);
-    if(typeof indexedDB?.databases==='function')try{for(const info of await indexedDB.databases())if(info?.name&&/lina|lyric.?video|story.?lyrics/i.test(info.name))databases.add(info.name)}catch{}
-    const cleanCaches=async()=>{if(!('caches'in window))return;for(const name of await caches.keys()){const cache=await caches.open(name);for(const request of await cache.keys())try{if(new URL(request.url).pathname.includes('/lyricvideovisualiser/'))await cache.delete(request)}catch{}}};
-    await Promise.all([[...databases].map(deleteDb),cleanCaches()].flat());
-    window.LINA_FRESH_RESET=true;
-  }
-
-  try{
-    const response=await fetch(`app-source.html?v=${BUILD}`,{cache:'no-store'});
-    if(!response.ok)throw new Error(`HTTP ${response.status}`);
-    let html=await response.text();
-    html=html
-      .replace('style.css','style.css?v='+BUILD)
-      .replace('app-core.js','app-core.js?v='+BUILD)
-      .replace('app-media.js','app-media.js?v='+BUILD)
-      .replace('app-events.js?v=20260811a','app-events.js?v='+BUILD);
-    html=html.replace('</head>','<style id="lina-boot-style">html{background:#0a0a0b}body{visibility:hidden}</style></head>');
-    document.open();
-    document.write(html);
-    document.close();
-  }catch(error){
-    document.body.innerHTML='<main style="font-family:system-ui;background:#0a0a0b;color:#fff;min-height:100vh;padding:24px"><h1>LINA</h1><p>Failed to load the editor. Reload once.</p></main>';
-    console.error('LINA entry load failed',error);
-  }
-})();
-</script>
-</body>
-</html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>LINA</title><meta name="description" content="Create a lyric video in five steps."><link rel="stylesheet" href="styles.css"></head>
+<body><main class="lina"><header><div class="brand">LINA <i></i><small>LYRIC VIDEO</small></div><button id="exportBtn" class="primary">Export</button></header>
+<section class="flow">
+<label class="step"><b>1</b><span>Load audio<small id="audioStatus">Choose an audio file</small></span><input id="audioInput" type="file" accept="audio/*"></label>
+<div class="step"><b>2</b><span>Get lyrics automatically<small id="lyricsStatus">Waiting for audio</small></span><button id="findLyrics" disabled>Find lyrics</button></div>
+<label class="step"><b>3</b><span>Load background<small id="backgroundStatus">Choose an image or video</small></span><input id="backgroundInput" type="file" accept="image/*,video/*"></label>
+<div class="step effects"><b>4</b><span>Choose effect</span><div id="effects"><button data-effect="apple" class="active">Apple</button><button data-effect="charli">Charli</button><button data-effect="eternal">Eternal</button></div></div>
+<div class="step final"><b>5</b><span>Export<small id="readyStatus">Add audio, lyrics and background</small></span><button id="exportBottom" class="primary">Export video</button></div>
+</section>
+<section class="preview"><div class="preview-head"><strong>Preview</strong><div id="aspects"><button data-aspect="9:16" class="active">9:16</button><button data-aspect="1:1">1:1</button><button data-aspect="16:9">16:9</button></div></div><canvas id="stageCanvas" width="1080" height="1920"></canvas><div class="transport"><button id="playBtn">▶</button><input id="seek" type="range" min="0" max="0" value="0" step=".01"><time id="clock">0:00 / 0:00</time></div></section>
+</main><audio id="audioEl" preload="auto"></audio><div id="exportOverlay" class="overlay hidden"><div><strong id="exportPct">0%</strong><p id="exportStatus">Rendering…</p><progress id="exportProgress" max="100" value="0"></progress><button id="cancelExport">Cancel</button></div></div><div id="toast" class="toast"></div><script type="module" src="src/main.js"></script></body></html>

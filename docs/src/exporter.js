@@ -54,7 +54,7 @@ function waitForSeek(audioEl, time) {
   });
 }
 
-async function exportVideo({ canvas, audioEl, fps = 30, renderFrame, onProgress, onFinalizing, onDone, onError, onCancel }) {
+export async function exportVideo({ canvas, audioEl, fps = 30, onProgress, onFinalizing, onDone, onError, onCancel }) {
   if (!canvas?.captureStream) throw new Error("This browser cannot record the preview canvas.");
   const duration = audioEl.duration;
   if (!Number.isFinite(duration) || duration <= 0) {
@@ -143,7 +143,6 @@ async function exportVideo({ canvas, audioEl, fps = 30, renderFrame, onProgress,
   const monitor = () => {
     if (phase !== "recording") return;
     const currentTime = Math.min(duration, audioEl.currentTime || 0);
-    renderFrame?.(currentTime);
     onProgress?.(currentTime / duration);
     if (audioEl.ended || currentTime >= duration - 0.05) return finishRecording();
     animationFrame = requestAnimationFrame(monitor);
@@ -167,7 +166,6 @@ async function exportVideo({ canvas, audioEl, fps = 30, renderFrame, onProgress,
   audioEl.addEventListener("ended", finishRecording);
   durationWatchdog = setTimeout(finishRecording, Math.ceil(duration * 1000) + 5000);
 
-  renderFrame?.(0);
   recorder.start(250);
   try {
     await audioEl.play();
@@ -180,7 +178,7 @@ async function exportVideo({ canvas, audioEl, fps = 30, renderFrame, onProgress,
   return { cancel, get phase() { return phase; }, recorder };
 }
 
-function downloadBlob(blob, filename) {
+export function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
@@ -190,73 +188,3 @@ function downloadBlob(blob, filename) {
   anchor.remove();
   setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }
-
-// Original LINA site adapter. This is the only site-specific layer: it supplies
-// the existing canvas renderer and connects the existing export controls.
-(()=>{
-  const $=selector=>document.querySelector(selector);
-  let job=null;
-
-  function drawFrame(context,background,time,width,height){
-    const milliseconds=time*1000;
-    if(background?.tagName==='VIDEO')syncBgVideo(time,false,background);
-    context.fillStyle='#171719';context.fillRect(0,0,width,height);
-    if(background){try{drawCover(context,background,width,height)}catch{}}
-    else{
-      const gradient=context.createLinearGradient(0,0,width,height);
-      gradient.addColorStop(0,'#5e35b1');gradient.addColorStop(.56,'#d81b60');gradient.addColorStop(1,'#fb8c00');
-      context.fillStyle=gradient;context.fillRect(0,0,width,height);
-    }
-    context.fillStyle=`rgba(0,0,0,${Number($('#dim')?.value||0)/100})`;context.fillRect(0,0,width,height);
-    const entrance=entranceMs(),titleWindow=titleWindowMs();
-    if(titleWindow>0&&milliseconds<titleWindow&&milliseconds<entrance)drawIntro(context,width,height);
-    if(milliseconds>=entrance)drawApple(context,lines[ci(milliseconds)]||lines[0],milliseconds,width,height);
-  }
-
-  function clean(value){return String(value||'').trim().replace(/[\\/:*?"<>|\u0000-\u001f]/g,' ').replace(/\s+/g,' ').slice(0,90)}
-  function outputName(extension){
-    const title=clean($('#titleInput')?.value)||'LINA lyric video',artist=clean($('#artistInput')?.value);
-    return`${title}${artist?` - ${artist}`:''}.${extension}`;
-  }
-  function setProgress(value,message){
-    if($('#progress'))$('#progress').value=Math.max(0,Math.min(1,value))*100;
-    if(message){if($('#renderText'))$('#renderText').textContent=message;status(message)}
-  }
-  async function deliver(blob,meta){
-    const file=new File([blob],outputName(meta.extension),{type:meta.mimeType});
-    if(navigator.canShare?.({files:[file]})){
-      try{await navigator.share({files:[file],title:file.name.replace(/\.[^.]+$/,'')});return}catch(error){if(error?.name==='AbortError')return}
-    }
-    downloadBlob(blob,file.name);
-  }
-  async function start(){
-    if(job)return status('An export is already running.');
-    if(!audioFile||!lines.length)return status('Add audio and synced lyrics before exporting.');
-    const canvas=$('#canvas'),audioEl=$('#audio'),quality=Number($('#quality')?.value||720);
-    const [width,height]=dims(quality,$('#aspect')?.value||'9:16');
-    canvas.width=width;canvas.height=height;
-    const context=canvas.getContext('2d',{alpha:false}),background=bgMedia;
-    setProgress(0,'Preparing export…');
-    try{
-      job=await exportVideo({
-        canvas,audioEl,fps:quality>=1080?24:30,
-        renderFrame:time=>drawFrame(context,background,time,width,height),
-        onProgress:value=>setProgress(value,`Rendering ${ft(value*audioEl.duration)} of ${ft(audioEl.duration)}`),
-        onFinalizing:()=>setProgress(1,'Finalising video…'),
-        onDone:async(blob,meta)=>{job=null;setProgress(1,'Export complete.');await deliver(blob,meta)},
-        onError:error=>{job=null;console.error('LINA export failed',error);status(`Export failed: ${error.message}`)},
-        onCancel:()=>{job=null;status('Export cancelled.')}
-      });
-    }catch(error){job=null;console.error('LINA export failed',error);status(`Export failed: ${error.message}`)}
-  }
-
-  for(const id of['exportBtn','exportBottomBtn']){
-    const button=$('#'+id);if(button){button.onclick=start;button.dataset.linaOwner='export-runtime'}
-  }
-  $('#cancel')?.addEventListener('click',()=>job?.cancel());
-  window.exportVideo=start;
-  window.linaExport=start;
-  window.linaRequestExportCancel=()=>job?.cancel();
-  window.linaExportState=()=>({active:!!job,cancellable:!!job,phase:job?.phase||'idle'});
-  document.documentElement.dataset.exportOwner='export-runtime';
-})();

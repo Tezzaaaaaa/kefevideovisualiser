@@ -1,8 +1,0 @@
-/* Mobile interaction safety layer for the fixed bottom tool tabs. */
-@media(max-width:900px){
-  html{scroll-padding-top:64px;scroll-padding-bottom:92px}
-  body{padding-bottom:92px!important}
-  .left .field,.left .upload,.left .toggle,.left .btn,.right .field,.right .btn,.right .line,.stage-export,.preview-controls{scroll-margin-top:72px;scroll-margin-bottom:96px}
-  .left .tool.active,.right{padding-bottom:18px!important}
-}
-@media(max-width:560px){body{padding-bottom:100px!important}}
