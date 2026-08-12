@@ -42,7 +42,7 @@
   function effect(){
     const hidden=$('#lyricEffect')?.value;
     const data=$('#story')?.dataset.lyricEffect;
-    return PROFILES[hidden]?hidden:PROFILES[data]?data:PROFILES[$('#quickEffect')?.value]?$('#quickEffect').value:PROFILES[$('#styleEffectSelect')?.value]?$('#styleEffectSelect').value:'apple';
+    return PROFILES[hidden]?hidden:PROFILES[data]?data:'apple';
   }
 
   function ensureWeightOptions(){
@@ -147,7 +147,7 @@
         el.addEventListener(id==='lineHeight'||id==='letterSpacing'?'input':'change',capture);
       }
     }
-    for(const effectSelect of [$('#styleEffectSelect'),$('#quickEffect'),$('#previewEffectSelect'),$('#lyricEffect')]){
+    for(const effectSelect of [$('#lyricEffect')]){
       if(effectSelect&&effectSelect.dataset.typographyBound!=='true'){
         effectSelect.dataset.typographyBound='true';
         effectSelect.addEventListener('change',()=>setTimeout(()=>activate(effect()),0));

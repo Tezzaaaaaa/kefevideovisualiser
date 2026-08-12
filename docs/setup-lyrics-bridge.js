@@ -151,7 +151,7 @@
     setHead(detail,'2. Check song details','Used for lyrics search');
 
     const searchOption=sync.querySelector('option[value="search"]');
-    if(searchOption){searchOption.hidden=true;searchOption.disabled=true;}
+    searchOption?.remove();
     if(sync.value==='search'||!['importTimed','manual'].includes(sync.value)){
       sync.value='importTimed';
       sync.dispatchEvent(new Event('change',{bubbles:true}));

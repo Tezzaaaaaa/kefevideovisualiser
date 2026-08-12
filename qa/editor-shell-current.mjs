@@ -10,7 +10,7 @@ for(const [browserName,type] of browsers){
   for(const [vpName,viewport] of viewports){
     const page=await browser.newPage({viewport});
     await page.goto(base,{waitUntil:'networkidle'});
-    await page.waitForFunction(()=>document.documentElement.dataset.linaReady==='true'&&document.documentElement.dataset.quickControlsOrder==='finalise-v5',{timeout:20000});
+    await page.waitForFunction(()=>document.querySelector('#previewQuickControls')&&document.documentElement.dataset.previewFinalise==='single-source',{timeout:20000});
     await page.click('#nav [data-tool="setup"]');
 
     const state=await page.evaluate(()=>{
@@ -37,8 +37,8 @@ for(const [browserName,type] of browsers){
     assert.ok(state.stage.width>=minStageWidth,`${browserName}/${vpName}: Preview is squeezed (${state.stage?.width||0}px < ${minStageWidth}px)`);
     assert.ok(state.stageHead&&state.stageWrap&&state.transport&&state.tools&&state.quick,`${browserName}/${vpName}: Preview stack is incomplete`);
     assert.ok(state.stageHead.y<=state.stageWrap.y&&state.stageWrap.y<state.transport.y&&state.transport.y<state.tools.y&&state.tools.y<state.quick.y,`${browserName}/${vpName}: Preview/transport/control order regressed`);
-    assert.equal(state.oldPreviewParent,'linaQuickSourceStash',`${browserName}/${vpName}: legacy preview controls escaped the hidden source stash`);
-    assert.equal(state.oldExportParent,'linaQuickSourceStash',`${browserName}/${vpName}: legacy output controls escaped the hidden source stash`);
+    assert.equal(state.oldPreviewParent,'',`${browserName}/${vpName}: duplicate preview controls returned`);
+    assert.equal(state.oldExportParent,'',`${browserName}/${vpName}: duplicate export controls returned`);
     assert.ok(!state.editExists||state.editDisplay==='none',`${browserName}/${vpName}: obsolete Edit transport button returned`);
     assert.equal(state.quickGroups,3,`${browserName}/${vpName}: Finalise groups changed`);
     assert.equal(state.tweakOpen,false,`${browserName}/${vpName}: Tweak lyrics should start collapsed`);

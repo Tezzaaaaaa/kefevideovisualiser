@@ -14,11 +14,9 @@
 
   function getEffect(){
     const studio=window.linaConsolidatedState?.effect;
-    const hidden=$('#lyricEffect')?.value;
+    const selected=$('#lyricEffect')?.value;
     const story=$('#story')?.dataset.lyricEffect;
-    const quick=$('#quickEffect')?.value;
-    const style=$('#styleEffectSelect')?.value;
-    for(const value of [hidden,studio,story,quick,style])if(VALID_EFFECTS.has(value))return value;
+    for(const value of [selected,studio,story])if(VALID_EFFECTS.has(value))return value;
     return 'apple';
   }
 
@@ -52,10 +50,8 @@
   function syncEffectUI(value){
     const studio=studioState();
     studio.effect=value;
-    const hidden=$('#lyricEffect');if(hidden&&hidden.value!==value)hidden.value=value;
+    const selected=$('#lyricEffect');if(selected&&selected.value!==value)selected.value=value;
     const story=$('#story');if(story)story.dataset.lyricEffect=value;
-    const quick=$('#quickEffect');if(quick&&quick.value!==value)quick.value=value;
-    const style=$('#styleEffectSelect');if(style&&style.value!==value)style.value=value;
     document.querySelectorAll('.effect-option[data-effect]').forEach(b=>b.classList.toggle('active',b.dataset.effect===value));
   }
 
@@ -93,7 +89,8 @@
   function handoff(ms){
     if(typeof lines==='undefined'||!Array.isArray(lines)||!lines.length)return;
     const title=$('#titleCard'),lyrics=$('#lyrics');if(!lyrics)return;
-    let active=false;try{active=ms>=entranceMs()}catch{}
+    let active=false,titleActive=false;
+    try{titleActive=!!$('#showTitle')?.checked&&!!$('#titleInput')?.value&&ms<titleWindowMs();active=!titleActive&&ms>=entranceMs()}catch{}
     if(active){
       if(title){title.classList.remove('on');title.hidden=true;title.style.setProperty('display','none','important');title.setAttribute('aria-hidden','true')}
       lyrics.classList.add('visible');lyrics.classList.remove('preenter');lyrics.style.setProperty('visibility','visible');lyrics.style.setProperty('z-index','4');
@@ -182,20 +179,9 @@
   function syncLayoutMirrors(){
     const size=String($('#size')?.value||'52');
     if($('#sizeVal'))$('#sizeVal').textContent=size;
-    const quickSize=$('#quickSize');
-    if(quickSize?.options?.length){const values=[...quickSize.options].map(o=>Number(o.value)).filter(Number.isFinite),n=Number(size)||52,best=values.reduce((a,b)=>Math.abs(b-n)<Math.abs(a-n)?b:a,values[0]??n);quickSize.value=String(best)}
-
-    const font=$('#fontChoice'),quickFont=$('#quickFont');if(font&&quickFont){copySelect(font,quickFont);quickFont.value=font.value}
-    const weight=$('#fontWeight')?.value;if(weight&&$('#quickWeight'))$('#quickWeight').value=weight;
-    const letterCase=$('#letterCase')?.value;if(letterCase&&$('#quickCase'))$('#quickCase').value=letterCase;
-    const color=$('#textColor')?.value||'#ffffff';if($('#quickTextColor'))$('#quickTextColor').value=color;
-    const glow=String($('#glow')?.value||'100');if($('#glowVal'))$('#glowVal').textContent=`${glow}%`;if($('#quickGlow'))$('#quickGlow').value=glow;if($('#quickGlowVal'))$('#quickGlowVal').textContent=`${glow}%`;
-
-    const y=String($('#yPos')?.value||'50');if($('#quickY'))$('#quickY').value=y;if($('#quickYVal'))$('#quickYVal').textContent=`${y}%`;
-    const view=$('#contextMode')?.value;if(view&&$('#quickLyricsView'))$('#quickLyricsView').value=view;
-    const align=$('#textAlign')?.value;if(align&&$('#quickAlign'))$('#quickAlign').value=align;
-    const lh=String($('#lineHeight')?.value||'1.02');if($('#lineHeightVal'))$('#lineHeightVal').textContent=Number(lh).toFixed(2);if($('#quickLineHeight'))$('#quickLineHeight').value=lh;if($('#quickLineHeightVal'))$('#quickLineHeightVal').textContent=Number(lh).toFixed(2);
-    const spacing=String($('#letterSpacing')?.value||'0');const spacingText=`${Number(spacing).toFixed(3).replace(/0+$/,'').replace(/\.$/,'')}em`;if($('#letterSpacingVal'))$('#letterSpacingVal').textContent=spacingText;if($('#quickLetterSpacing'))$('#quickLetterSpacing').value=spacing;if($('#quickLetterSpacingVal'))$('#quickLetterSpacingVal').textContent=spacingText;
+    const glow=String($('#glow')?.value||'100');if($('#glowVal'))$('#glowVal').textContent=`${glow}%`;
+    const lh=String($('#lineHeight')?.value||'1.02');if($('#lineHeightVal'))$('#lineHeightVal').textContent=Number(lh).toFixed(2);
+    const spacing=String($('#letterSpacing')?.value||'0');const spacingText=`${Number(spacing).toFixed(3).replace(/0+$/,'').replace(/\.$/,'')}em`;if($('#letterSpacingVal'))$('#letterSpacingVal').textContent=spacingText;
   }
 
   function applyLayoutValues(values,{dirty=false,redraw=true}={}){
@@ -283,22 +269,20 @@
   function restoreInitialLayout(){applyLayoutValues(initialLayout,{dirty:false,redraw:true})}
 
   function installControlOwnership(){
-    markDelegatedControl('quickEffect');
-    markDelegatedControl('styleEffectSelect');
-    markDelegatedControl('quickResetLayout',{reset:true});
+    markDelegatedControl('lyricEffect');
     ownEffectPicker();
     if($('#previewQuickControls')&&!state.snapshotRestored){state.snapshotRestored=true;requestAnimationFrame(restoreInitialLayout)}
     syncEffectUI(getEffect());
   }
 
   const observer=new MutationObserver(()=>installControlOwnership());observer.observe(document.documentElement,{subtree:true,childList:true});
-  let tries=0;const ownershipTimer=setInterval(()=>{tries++;installControlOwnership();if(tries>100&&$('#quickResetLayout')&&$('#styleEffectSelect')){clearInterval(ownershipTimer);observer.disconnect()}},60);
+  let tries=0;const ownershipTimer=setInterval(()=>{tries++;installControlOwnership();if(tries>100){clearInterval(ownershipTimer);observer.disconnect()}},60);
 
   studioState();
   window.render=render;
   window.linaRuntime={
     version:'canonical-v2-hard-reset',render,setEffect,getEffect,resetLayout,selectedContext,contextForValue,ensureBackground,applyLayoutValues,captureLayout,state,defaults:DEFAULTS,
-    selfTest(){const modes=['current','3','5','7','9'].map(contextForValue);return{renderOwner:document.documentElement.dataset.renderOwner,effect:getEffect(),appleBase:typeof appleRender==='function',charliBase:typeof effectRender==='function',appleEnhancer:!!window.linaAppleLetterHighlight,eternalEnhancer:!!window.linaEternalSunshine,contextModes:modes.map(x=>x.total),resetOwner:$('#quickResetLayout')?.dataset.linaOwner||'pending',resetCount:state.resetCount}}
+    selfTest(){const modes=['current','3','5','7','9'].map(contextForValue);return{renderOwner:document.documentElement.dataset.renderOwner,effect:getEffect(),appleBase:typeof appleRender==='function',charliBase:typeof effectRender==='function',appleEnhancer:!!window.linaAppleLetterHighlight,eternalEnhancer:!!window.linaEternalSunshine,contextModes:modes.map(x=>x.total),resetCount:state.resetCount}}
   };
   window.linaResetLyricLayout=resetLayout;
   document.documentElement.dataset.renderOwner='canonical-v1';document.documentElement.dataset.effectOwner='canonical-v1';document.documentElement.dataset.layoutOwner='canonical-v2-hard-reset';
