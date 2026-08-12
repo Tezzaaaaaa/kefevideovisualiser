@@ -1,3 +1,5 @@
+[rebuild/five-step-lina bdba744] Make loaded lyrics visible in preview
+ 2 files changed, 22 insertions(+), 1 deletion(-)
 import {state,ASPECTS} from './state.js';
 import {parseLyrics} from './parser.js';
 import {render} from './renderer.js';
@@ -26,6 +28,8 @@ async function findLyrics(){
     const parsed=parseLyrics(match.syncedLyrics);
     state.lyrics.raw=match.syncedLyrics;state.lyrics.format=parsed.format;state.lyrics.lines=parsed.lines;
     state.project.title=match.trackName||track;state.project.artist=match.artistName||artist;
+    const firstLyricTime=parsed.lines.find(line=>Number.isFinite(line.time))?.time;
+    if(audio.paused&&Number.isFinite(firstLyricTime))audio.currentTime=Math.min(audio.duration||firstLyricTime,firstLyricTime+.05);
     $('#lyricsStatus').textContent=`${parsed.lines.length} synced lines found`;
     toast('Synced lyrics loaded');readiness();
   }catch(error){$('#lyricsStatus').textContent='Could not find synced lyrics automatically';toast(error.message,true)}
@@ -64,4 +68,4 @@ async function startExport(){
 $('#exportBtn').addEventListener('click',startExport);$('#exportBottom').addEventListener('click',startExport);$('#cancelExport').addEventListener('click',()=>exportJob?.cancel());
 
 function tick(){state.playback.currentTime=audio.currentTime||0;$('#seek').value=state.playback.currentTime;$('#clock').textContent=`${fmt(state.playback.currentTime)} / ${fmt(audio.duration)}`;if(media.video&&Number.isFinite(media.video.duration)&&Math.abs(media.video.currentTime-state.playback.currentTime%media.video.duration)>.25)media.video.currentTime=state.playback.currentTime%media.video.duration;render(ctx,canvas.width,canvas.height,state,media);requestAnimationFrame(tick)}
-state.canvas.aspect='9:16';state.style.effect='apple';state.style.fontSize=76;state.style.align='center';state.style.textColor='#fff';state.style.accentColor='#fff';state.background.dim=.35;readiness();requestAnimationFrame(tick);
+state.canvas.aspect='9:16';state.style.effect='apple';state.style.fontSize=76;state.style.align='center';state.style.textColor='#fff';state.style.accentColor='#fff';state.style.dimColor='rgba(255,255,255,.72)';state.background.dim=.35;readiness();requestAnimationFrame(tick);
