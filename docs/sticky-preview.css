@@ -1,15 +1,22 @@
-/* LINA sticky preview — keep the visual result in view while editing. */
+/* LINA sticky preview — keep the visual result in view while editing without blocking controls. */
 .stage-wrap{
   position:sticky!important;
   top:64px!important;
-  z-index:32!important;
+  z-index:2!important;
   box-shadow:0 18px 38px rgba(0,0,0,.22)!important;
+}
+
+.transport,
+.transport-tools,
+#previewQuickControls{
+  position:relative!important;
+  z-index:3!important;
 }
 
 @media(max-width:900px){
   .stage-wrap{
     top:54px!important;
-    z-index:1300!important;
+    z-index:2!important;
     box-shadow:0 14px 30px rgba(0,0,0,.28)!important;
   }
 }
