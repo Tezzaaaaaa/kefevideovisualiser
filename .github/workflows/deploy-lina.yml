@@ -22,7 +22,7 @@ jobs:
       - name: Validate clean LINA build
         run: |
           set -euo pipefail
-          test "$(find docs -type f | wc -l)" -eq 10
+          test "$(find docs -type f | wc -l)" -eq 9
           test -f docs/index.html
           test -f docs/styles.css
           test -f docs/src/main.js

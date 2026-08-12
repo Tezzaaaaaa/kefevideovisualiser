@@ -2,9 +2,9 @@
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>LINA</title><meta name="description" content="Create a lyric video in five steps."><link rel="stylesheet" href="styles.css"></head>
 <body><main class="lina"><header><div class="brand">LINA <i></i><small>LYRIC VIDEO</small></div><button id="exportBtn" class="primary">Export</button></header>
 <section class="flow">
-<label class="step"><b>1</b><span>Load audio<small id="audioStatus">Choose an audio file</small></span><input id="audioInput" type="file" accept="audio/*"></label>
+<div class="step"><b>1</b><span>Load audio<small id="audioStatus">Choose an audio file</small></span><input id="audioInput" class="file-input" type="file" accept=".mp3,.m4a,.wav,.aac,.ogg,.flac,audio/*"><label class="file-button" for="audioInput">Choose audio</label></div>
 <div class="step"><b>2</b><span>Get lyrics automatically<small id="lyricsStatus">Waiting for audio</small></span><button id="findLyrics" disabled>Find lyrics</button></div>
-<label class="step"><b>3</b><span>Load background<small id="backgroundStatus">Choose an image or video</small></span><input id="backgroundInput" type="file" accept="image/*,video/*"></label>
+<div class="step"><b>3</b><span>Load background<small id="backgroundStatus">Choose an image or video</small></span><input id="backgroundInput" class="file-input" type="file" accept="image/*,video/*"><label class="file-button" for="backgroundInput">Choose background</label></div>
 <div class="step effects"><b>4</b><span>Choose effect</span><div id="effects"><button data-effect="apple" class="active">Apple</button><button data-effect="charli">Charli</button><button data-effect="eternal">Eternal</button></div></div>
 <div class="step final"><b>5</b><span>Export<small id="readyStatus">Add audio, lyrics and background</small></span><button id="exportBottom" class="primary">Export video</button></div>
 </section>

@@ -140,15 +140,3 @@ export function parseLyrics(raw, formatHint = "auto") {
   if (format === "lrc") return { format, ...parseLrc(raw) };
   return { format: "txt", ...parseTxt(raw) };
 }
-
-// After tap-sync (or any manual time edit) assigns .time to txt lines,
-// call this once to derive endTime + evenly-split words.
-export function finalizeManualTimes(lines, songDuration) {
-  const timed = lines.filter((l) => l.time != null);
-  return lines.map((l, i) => {
-    if (l.time == null) return l;
-    const next = lines.slice(i + 1).find((x) => x.time != null);
-    const endTime = next ? next.time : songDuration || l.time + 4;
-    return { ...l, endTime, words: splitWordsEven(l.text, l.time, endTime) };
-  });
-}

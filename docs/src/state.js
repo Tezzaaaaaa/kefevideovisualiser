@@ -3,8 +3,6 @@
 // its own copy of "current line", "is playing", etc. That duplication
 // is what caused the original project's race conditions.
 
-const listeners = new Set();
-
 export const state = {
   project: {
     title: "",
@@ -17,11 +15,11 @@ export const state = {
   },
   lyrics: {
     raw: "",
-    format: "auto", // auto | txt | lrc | enhanced
+    format: "auto",
     lines: [], // [{ time, endTime, text, words: [{time,text}] }]
   },
   style: {
-    effect: "karaoke", // karaoke | stack | typewriter | classic
+    effect: "apple",
     fontSize: 64,
     align: "center", // left | center | right
     textCase: "original", // original | upper | lower | title
@@ -50,34 +48,7 @@ export const state = {
     isPlaying: false,
     currentTime: 0,
   },
-  tool: "setup", // setup | lyrics | style | background
-  tapSync: {
-    active: false,
-    index: 0,
-  },
-  export: {
-    inProgress: false,
-    progress: 0,
-    resultUrl: null,
-  },
 };
-
-export function subscribe(fn) {
-  listeners.add(fn);
-  return () => listeners.delete(fn);
-}
-
-export function notify(reason) {
-  for (const fn of listeners) fn(reason);
-}
-
-export function update(path, value) {
-  const parts = path.split(".");
-  let obj = state;
-  for (let i = 0; i < parts.length - 1; i++) obj = obj[parts[i]];
-  obj[parts[parts.length - 1]] = value;
-  notify(path);
-}
 
 export const ASPECTS = {
   "9:16": { w: 1080, h: 1920 },
