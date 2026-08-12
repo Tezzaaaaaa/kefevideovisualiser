@@ -120,6 +120,8 @@
           <label><span>Effect</span><select id="quickEffect"><option value="apple">Apple Music</option><option value="charli">Charli xcx · Apple</option><option value="eternal">Eternal Sunshine</option></select></label>
           <label><span>Font</span><select id="quickFont"></select></label>
           <label><span>Text size</span><select id="quickSize"></select></label>
+          <label class="quick-toggle quick-title-inline"><span><b>Title card</b><small>Show at opening</small></span><input id="quickTitle" type="checkbox"></label>
+          <label class="quick-title-duration"><span>Title duration</span><select id="quickTitleDuration"></select></label>
           <label><span>Weight</span><select id="quickWeight"></select></label>
           <label><span>Alignment</span><select id="quickAlign"></select></label>
           <label><span>Letter case</span><select id="quickCase"></select></label>
@@ -131,11 +133,6 @@
         </div>
         <div class="quick-mini-head"><b>Background readability</b><span>Darken or soften behind the lyrics</span></div>
         <div class="quick-control-grid quick-typography-readable"></div>
-        <div class="quick-mini-head"><b>Opening title card</b><span>Part of the finished lyric look</span></div>
-        <div class="quick-control-grid">
-          <label class="quick-toggle"><span><b>Show title card</b><small>Title, artist and album</small></span><input id="quickTitle" type="checkbox"></label>
-          <label><span>Title-card duration</span><select id="quickTitleDuration"></select></label>
-        </div>
       </div>
       <div class="quick-group quick-priority-2" id="quickBackgroundGroup">
         <div class="quick-group-head"><b>2. Background & framing</b><span>Fit · crop · focus</span></div>
