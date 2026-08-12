@@ -107,7 +107,40 @@
 
   function titleEnabledState(){const toggle=$('#quickTitle'),duration=$('#quickTitleDuration');if(duration)duration.disabled=toggle?!toggle.checked:false}
 
+  function ensureCanonicalSources(){
+    const host=stash();
+    const select=(id,options,value)=>{
+      let el=$('#'+id);
+      if(!el){el=document.createElement('select');el.id=id;host.append(el)}
+      if(!el.options.length)el.replaceChildren(...options.map(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;return o}));
+      if(value!=null&&!el.value)el.value=value;
+      return el;
+    };
+    const range=(id,min,max,step,value)=>{
+      let el=$('#'+id);
+      if(!el){el=document.createElement('input');el.type='range';el.id=id;host.append(el)}
+      Object.assign(el,{min:String(min),max:String(max),step:String(step)});
+      if(!el.value)el.value=String(value);
+      return el;
+    };
+    select('fontChoice',[
+      ['apple-system','SF Pro / Apple system'],
+      ['helvetica','Helvetica Neue'],
+      ['avenir','Avenir Next']
+    ],'apple-system');
+    select('fontWeight',[
+      ['400','Regular'],['500','Medium'],['600','Semibold'],['700','Bold'],['800','Heavy'],['900','Black']
+    ],'700');
+    select('textAlign',[['left','Left'],['center','Centre'],['right','Right']],'left');
+    range('lineHeight',.75,1.35,.01,1.02);
+    range('letterSpacing',-.08,.1,.005,-.02);
+    for(const [id,value] of [['lineHeightVal','1.02'],['letterSpacingVal','-0.02em']]){
+      if(!$('#'+id)){const el=document.createElement('span');el.id=id;el.textContent=value;host.append(el)}
+    }
+  }
+
   function build(){
+    ensureCanonicalSources();
     const stageWrap=$('.stage-wrap');if(!stageWrap||$('#previewQuickControls'))return false;
     $('#previewEffectSwitcher')?.remove();$('#simpleControlSummary')?.remove();$('#previewTitleControls')?.remove();$('#resetBtn')?.remove();
     const box=document.createElement('section');
