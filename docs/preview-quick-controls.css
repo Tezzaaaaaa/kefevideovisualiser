@@ -66,7 +66,7 @@
   gap:8px!important;
 }
 .quick-control-grid>label,
-#quickBackgroundGroup .field{
+#quickBackgroundGroup .field,.quick-typography-readable .field{
   display:grid!important;
   gap:5px!important;
   min-width:0!important;
@@ -74,12 +74,12 @@
   margin:0!important;
 }
 .quick-control-grid>label>span,
-#quickBackgroundGroup .field>span{font-size:9px!important;color:var(--muted)!important}
+#quickBackgroundGroup .field>span,.quick-typography-readable .field>span{font-size:9px!important;color:var(--muted)!important}
 .quick-control-grid>label>span b,
-#quickBackgroundGroup .field>span b{font-size:9px!important;color:var(--text)!important}
+#quickBackgroundGroup .field>span b,.quick-typography-readable .field>span b{font-size:9px!important;color:var(--text)!important}
 
 /* Background controls are one coherent group instead of two detached panels. */
-.quick-background-frame,.quick-background-readable{align-items:end!important}
+.quick-background-frame,.quick-typography-readable{align-items:end!important}
 .quick-background-actions{
   display:grid!important;
   grid-template-columns:repeat(2,minmax(0,1fr))!important;
@@ -107,7 +107,7 @@
 [data-panel] select:focus,#previewQuickControls select:focus,.right select:focus{border-color:#777781!important;outline:2px solid rgba(255,255,255,.14)!important;outline-offset:1px!important}
 
 #previewQuickControls input[type="range"],
-#quickBackgroundGroup input[type="range"]{width:100%!important;min-width:0!important;margin:3px 0 0!important}
+#quickBackgroundGroup input[type="range"],.quick-typography-readable input[type="range"]{width:100%!important;min-width:0!important;margin:3px 0 0!important}
 .quick-colour input[type="color"]{
   width:100%!important;
   min-height:38px!important;
@@ -183,8 +183,8 @@
 }
 
 /* Finalise-video workspace: one under-preview home for all visual settings. */
-html[data-preview-finalise="v3"] .nav{grid-template-columns:repeat(3,minmax(0,1fr))!important}
-html[data-preview-finalise="v3"] .quick-wide{grid-column:1/-1!important}
-html[data-preview-finalise="v3"] .quick-priority-1{border-color:rgba(255,255,255,.12)!important;background:rgba(255,255,255,.024)!important}
-html[data-preview-finalise="v3"] .quick-priority-4{background:rgba(255,255,255,.032)!important}
-html[data-preview-finalise="v3"] #quickAdvanced .quick-advanced-body{padding-top:9px!important}
+html[data-preview-finalise="v4"] .nav{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+html[data-preview-finalise="v4"] .quick-wide{grid-column:1/-1!important}
+html[data-preview-finalise="v4"] .quick-priority-1{border-color:rgba(255,255,255,.12)!important;background:rgba(255,255,255,.024)!important}
+html[data-preview-finalise="v4"] .quick-priority-4{background:rgba(255,255,255,.032)!important}
+html[data-preview-finalise="v4"] #quickAdvanced .quick-advanced-body{padding-top:9px!important}
