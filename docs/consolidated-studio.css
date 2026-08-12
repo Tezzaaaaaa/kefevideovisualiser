@@ -82,7 +82,7 @@
 .story[data-lyric-effect="eternal"] .eternal-caret{display:none!important}
 .story[data-lyric-effect="eternal"] .eternal-ink-written{
   opacity:1;
-  text-shadow:.012em .008em 0 rgba(255,255,255,.035);
+  text-shadow:.012em .008em 0 rgba(255,255,255,.035),0 .025em .035em rgba(0,0,0,.66),0 0 .22em rgba(0,0,0,.22);
 }
 .story[data-lyric-effect="eternal"] .eternal-ink-pending{
   opacity:0;
