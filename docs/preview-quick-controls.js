@@ -133,21 +133,19 @@
         </div>
         <div class="quick-mini-head"><b>Background readability</b><span>Darken or soften behind the lyrics</span></div>
         <div class="quick-control-grid quick-typography-readable"></div>
+        <div class="quick-mini-head"><b>Position & timing</b><span>Place it · sync it</span></div>
+        <div class="quick-control-grid quick-position-timing">
+          <label class="quick-range"><span>Vertical position <b id="quickYVal"></b></span><input id="quickY" type="range"></label>
+          <label class="quick-range"><span>Lyric offset <b id="quickOffsetVal"></b></span><input id="quickOffset" type="range"></label>
+        </div>
       </div>
       <div class="quick-group quick-priority-2" id="quickBackgroundGroup">
         <div class="quick-group-head"><b>2. Background & framing</b><span>Fit · crop · focus</span></div>
         <div class="quick-mini-head"><b>Frame</b><span>Fit · zoom · focus</span></div><div class="quick-control-grid quick-background-frame"></div>
         <div class="quick-background-actions"></div>
       </div>
-      <div class="quick-group quick-priority-3">
-        <div class="quick-group-head"><b>3. Position & timing</b><span>Place it · sync it</span></div>
-        <div class="quick-control-grid">
-          <label class="quick-range"><span>Vertical position <b id="quickYVal"></b></span><input id="quickY" type="range"></label>
-          <label class="quick-range"><span>Lyric offset <b id="quickOffsetVal"></b></span><input id="quickOffset" type="range"></label>
-        </div>
-      </div>
       <div class="quick-group quick-priority-4">
-        <div class="quick-group-head"><b>4. Export</b><span>Frame · quality · guides</span></div>
+        <div class="quick-group-head"><b>3. Export</b><span>Frame · quality · guides</span></div>
         <div class="quick-control-grid">
           <label><span>Aspect ratio</span><select id="quickFrame"></select></label>
           <label><span>Quality</span><select id="quickQuality"></select></label>
