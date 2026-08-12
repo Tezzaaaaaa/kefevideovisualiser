@@ -69,6 +69,41 @@
   }
   window.linaExportFilename=exportFilename;
 
+  function exportMetadata(){
+    const title=cleanFilenamePart($('#titleInput')?.value||$('#title')?.value,'Untitled');
+    const artist=cleanFilenamePart($('#artistInput')?.value||$('#artist')?.value,'');
+    const album=cleanFilenamePart($('#albumInput')?.value||'','');
+    const website=new URL('.',location.href).href;
+    return{
+      title,
+      artist:artist||'LINA user',
+      album:album||undefined,
+      genre:'Lyric Video',
+      date:new Date(),
+      lyrics:(Array.isArray(lines)?lines:[]).map(line=>String(line?.text||'').trim()).filter(Boolean).join('\n'),
+      description:'Lyric video created with LINA: Lyric Video Visualizer.',
+      comment:`Created with LINA · ${website}`
+    };
+  }
+  function ffmpegMetadataArgs(){
+    const meta=exportMetadata(),pairs=[['title',meta.title],['artist',meta.artist],['album',meta.album],['genre',meta.genre],['date',meta.date.toISOString()],['description',meta.description],['comment',meta.comment],['lyrics',meta.lyrics]];
+    return pairs.flatMap(([key,value])=>value?['-metadata',`${key}=${value}`]:[]);
+  }
+  function drawExportWatermark(ctx,w,h){
+    const quality=+($('#quality')?.value||720);
+    if(quality>720)return;
+    const unit=Math.max(1,Math.min(w,h)/720),pad=20*unit,logoSize=22*unit,subSize=8.5*unit;
+    ctx.save();
+    ctx.globalAlpha=.46;ctx.textAlign='right';ctx.textBaseline='alphabetic';
+    ctx.shadowColor='rgba(0,0,0,.55)';ctx.shadowBlur=6*unit;ctx.shadowOffsetY=1.5*unit;
+    ctx.fillStyle='#fff';ctx.font=`800 ${logoSize}px system-ui,-apple-system,BlinkMacSystemFont,"SF Pro Display",sans-serif`;
+    ctx.fillText('LINA',w-pad,h-pad-subSize*1.45);
+    ctx.globalAlpha=.34;ctx.shadowBlur=3*unit;ctx.font=`650 ${subSize}px system-ui,-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif`;
+    ctx.fillText('LYRIC VIDEO VISUALIZER',w-pad,h-pad);
+    ctx.restore();
+  }
+  window.linaExportMetadata=exportMetadata;
+
   async function loadScript(url){if(window.FFmpegWASM?.FFmpeg)return;await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=url;s.crossOrigin='anonymous';s.onload=resolve;s.onerror=()=>reject(new Error(`Could not load ${url}`));document.head.append(s)});if(!window.FFmpegWASM?.FFmpeg)throw new Error('FFmpeg browser runtime did not initialise.')}
   async function toBlobURL(url,type){const r=await fetch(url,{mode:'cors',cache:'force-cache'});if(!r.ok)throw new Error(`Could not load ${url}`);const b=await r.blob();return URL.createObjectURL(new Blob([b],{type}))}
   async function makeClassWorkerURL(){const base='https://unpkg.com/@ffmpeg/ffmpeg@0.12.15/dist/esm/';const r=await fetch(`${base}worker.js`,{mode:'cors',cache:'force-cache'});if(!r.ok)throw new Error('Could not load FFmpeg worker.');let text=await r.text();text=text.replace(/from\s+(["'])\.\/([^"']+)\1/g,(m,q,p)=>`from ${q}${base}${p}${q}`);return URL.createObjectURL(new Blob([text],{type:'text/javascript'}))}
@@ -139,6 +174,7 @@
     const ms=t*1000,ent=entranceMs(),tw=titleWindowMs();
     if(tw>0&&ms<tw&&ms<ent)drawIntro(ctx,w,h);
     if(ms>=ent)drawApple(ctx,lines[ci(ms)]||lines[0],ms,w,h);
+    drawExportWatermark(ctx,w,h);
     ctx.restore();
   }
 
@@ -179,6 +215,7 @@
     const videoSource=new M.CanvasSource(canvas,{codec:'avc',bitrate,bitrateMode:'variable',latencyMode:'quality',hardwareAcceleration:'prefer-hardware',keyFrameInterval:2,contentHint:'detail',onEncodedPacket:()=>{encodedFrames++;setProgress(8+(encodedFrames/totalFrames)*82,`Encoding ${q}p · ${fps} fps…`)}});
     const audioSource=new M.AudioBufferSource({codec:'aac',bitrate:192000});
     output.addVideoTrack(videoSource,{frameRate:fps});output.addAudioTrack(audioSource);
+    output.setMetadataTags(exportMetadata());
     await output.start();
     setProgress(6,'Preparing audio…');
     const audioCtx=new (window.AudioContext||window.webkitAudioContext)({sampleRate:48000});
@@ -240,7 +277,7 @@
       setProgress(88,'Adding audio…');
       const concat='segments.txt';await engine.writeFile(concat,new TextEncoder().encode(segmentFiles.map(f=>`file '${f}'`).join('\n')));
       audioName=`audio.${extForAudio(audioFile)}`;await engine.writeFile(audioName,new Uint8Array(await audioFile.arrayBuffer()));
-      const code=await engine.exec(['-f','concat','-safe','0','-i',concat,'-i',audioName,'-c:v','copy','-c:a','aac','-b:a','192k','-shortest','-movflags','+faststart',output]);
+      const code=await engine.exec(['-f','concat','-safe','0','-i',concat,'-i',audioName,'-c:v','copy','-c:a','aac','-b:a','192k','-shortest',...ffmpegMetadataArgs(),'-movflags','+faststart',output]);
       if(code!==0)throw new Error('Final MP4 mux failed.');
       const data=await engine.readFile(output);if(!data?.byteLength)throw new Error('MP4 export produced no file.');
       setProgress(100,'Export complete');
