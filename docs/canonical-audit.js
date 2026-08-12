@@ -7,7 +7,7 @@
     require(!!window.linaRuntime,'runtime');
     require(window.render===window.linaRuntime?.render,'render-owner');
     require(String(document.documentElement.dataset.transportOwner||'').startsWith('canonical'),'transport-owner');
-    require(String(document.documentElement.dataset.exportOwner||'').startsWith('canonical'),'export-owner');
+    require(document.documentElement.dataset.exportOwner==='export-runtime','export-owner');
     require(document.documentElement.dataset.projectResetOwner==='hard-v2','project-reset-owner');
     require(document.documentElement.dataset.controlsOwner==='canonical-v1','controls-owner');
     require(document.documentElement.dataset.uiOwner==='canonical-v1','ui-owner');

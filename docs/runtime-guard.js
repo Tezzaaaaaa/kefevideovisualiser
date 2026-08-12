@@ -13,7 +13,7 @@
       const ready=window.linaRuntime&&window.linaAuditSystem&&
         reset?.dataset.linaOwner==='project-hard-v3'&&quick?.dataset.linaOwner==='canonical'&&
         String(document.documentElement.dataset.transportOwner||'').startsWith('canonical')&&
-        String(document.documentElement.dataset.exportOwner||'').startsWith('canonical')&&
+        document.documentElement.dataset.exportOwner==='export-runtime'&&
         document.documentElement.dataset.controlsOwner==='canonical-v1'&&
         document.documentElement.dataset.uiOwner==='canonical-v1'&&
         document.documentElement.dataset.projectResetOwner==='hard-v2';
@@ -52,7 +52,7 @@
 
     if(document.documentElement.dataset.controlsOwner!=='canonical-v1')failures.push('controls-owner');
     if(document.documentElement.dataset.uiOwner!=='canonical-v1')failures.push('ui-owner');
-    if(!String(document.documentElement.dataset.exportOwner||'').startsWith('canonical'))failures.push('export-owner');
+    if(document.documentElement.dataset.exportOwner!=='export-runtime')failures.push('export-owner');
     if(document.documentElement.dataset.projectResetOwner!=='hard-v2')failures.push('project-reset-owner');
     if(!String(document.documentElement.dataset.transportOwner||'').startsWith('canonical'))failures.push('transport-owner');
     if($('#resetProjectVisible')?.dataset.linaOwner!=='project-hard-v3')failures.push('full-project-reset-link');
