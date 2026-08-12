@@ -109,7 +109,7 @@
 
   function build(){
     const stageWrap=$('.stage-wrap');if(!stageWrap||$('#previewQuickControls'))return false;
-    $('#previewEffectSwitcher')?.remove();$('#simpleControlSummary')?.remove();$('#previewTitleControls')?.remove();
+    $('#previewEffectSwitcher')?.remove();$('#simpleControlSummary')?.remove();$('#previewTitleControls')?.remove();$('#resetBtn')?.remove();
     const box=document.createElement('section');
     box.id='previewQuickControls';box.className='preview-quick-controls';
     box.innerHTML=`
@@ -170,7 +170,7 @@
         </div>
       </details>
       <div class="quick-actions">
-        <a id="resetProjectVisible" class="btn subtle" href="reset.html?v=p71" role="button" data-lina-owner="project-hard-v3">Reset project</a>
+        <a id="resetProjectVisible" class="btn subtle" href="reset.html?v=p72" role="button" data-lina-owner="project-hard-v3">Reset project</a>
         <button id="quickExport" class="btn primary" type="button">Export video</button>
       </div>`;
 
