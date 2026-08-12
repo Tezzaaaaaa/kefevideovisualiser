@@ -1,4 +1,4 @@
-name: Deploy Story Lyrics Pages
+name: Deploy LINA
 
 on:
   push:
