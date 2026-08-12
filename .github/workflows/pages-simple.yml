@@ -56,11 +56,15 @@ jobs:
             docs/sticky-preview.css
             docs/canonical-runtime.js
             docs/canonical-controls.js
+            docs/canonical-ui-lock.js
             docs/canonical-export.js
+            docs/canonical-audit.js
             docs/project-state-fix.js
+            docs/style-effect-selector.js
             docs/transport-lock.js
             docs/apple-letter-highlight.js
             docs/eternal-sunshine-effect.js
+            docs/runtime-guard.js
           )
           for f in "${required[@]}"; do
             test -s "$f" || { echo "Missing required runtime file: $f"; exit 1; }
@@ -102,8 +106,11 @@ jobs:
           grep -q 'preview-quick-controls.js' docs/app-events.js || { echo 'bootstrap does not load Quick Settings'; exit 1; }
           grep -q 'canonical-runtime.js' docs/app-events.js || { echo 'bootstrap does not load canonical runtime'; exit 1; }
           grep -q 'canonical-controls.js' docs/app-events.js || { echo 'bootstrap does not load canonical controls'; exit 1; }
+          grep -q 'canonical-ui-lock.js' docs/app-events.js || { echo 'bootstrap does not load canonical UI lock'; exit 1; }
           grep -q 'canonical-export.js' docs/app-events.js || { echo 'bootstrap does not load canonical export'; exit 1; }
+          grep -q 'canonical-audit.js' docs/app-events.js || { echo 'bootstrap does not load canonical audit'; exit 1; }
           grep -q 'transport-lock.js' docs/app-events.js || { echo 'bootstrap does not load canonical transport'; exit 1; }
+          grep -q 'runtime-guard.js' docs/app-events.js || { echo 'bootstrap does not load runtime guard'; exit 1; }
 
           ! grep -q 'project-reset-button.js' docs/app-events.js || { echo 'bootstrap still references retired reset controller'; exit 1; }
           ! grep -q 'quickResetLayout' docs/preview-quick-controls.js || { echo 'Quick Settings still contains the retired lyric-layout reset'; exit 1; }

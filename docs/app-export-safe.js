@@ -107,9 +107,8 @@ async function exportVideo(){
     }
     ctx.fillStyle=`rgba(0,0,0,${+$('#dim').value/100})`;ctx.fillRect(0,0,w,h);
     const ent=entranceMs(),tw=titleWindowMs();
-    const titleActive=tw>0&&ms<tw;
-    if(titleActive)drawIntro(ctx,w,h);
-    if(!titleActive&&ms>=ent)drawApple(ctx,lines[ci(ms)]||lines[0],ms,w,h);
+    if(tw>0&&ms<tw&&ms<ent)drawIntro(ctx,w,h);
+    if(ms>=ent)drawApple(ctx,lines[ci(ms)]||lines[0],ms,w,h);
   };
 
   const queueWebKitFrame=(secondsNow=0,force=false)=>{
