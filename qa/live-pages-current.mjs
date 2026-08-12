@@ -20,13 +20,17 @@ const liveState=await page.evaluate(()=>({
   resetHref:document.querySelector('#resetProjectVisible')?.getAttribute('href'),
   oldResetCount:document.querySelectorAll('#quickResetLayout,#linaFreshReset,#resetLyricsBtn,#resetBtn').length,
   appEvents:[...document.scripts].map(s=>s.src).find(src=>src.includes('/app-events.js'))||'',
-  sticky:{position:getComputedStyle(document.querySelector('.stage-wrap')).position,top:getComputedStyle(document.querySelector('.stage-wrap')).top}
+  sticky:{position:getComputedStyle(document.querySelector('.stage-wrap')).position,top:getComputedStyle(document.querySelector('.stage-wrap')).top},
+  hasFastExport:typeof window.linaFastExport==='function',
+  hasFilename:typeof window.linaExportFilename==='function'
 }));
 assert.equal(liveState.resetCount,1,'live: expected exactly one Reset project control');
 assert.equal(liveState.oldResetCount,0,'live: retired Reset control still exists');
 assert.match(liveState.resetHref||'',/^reset\.html\?v=p72$/,'live: Reset project is not the standalone reset');
-assert.match(liveState.appEvents,/p74-20260812-fast-export/,'live: published site is not running p74');
+assert.match(liveState.appEvents,/p75-20260812-webcodecs-export/,'live: published site is not running p75');
 assert.deepEqual(liveState.sticky,{position:'sticky',top:'64px'},'live: Preview is not sticky');
+assert.equal(liveState.hasFastExport,true,'live: WebCodecs fast export is missing');
+assert.equal(liveState.hasFilename,true,'live: export filename helper is missing');
 
 await page.fill('#titleInput','Garden Of Eden');
 assert.equal(await page.evaluate(()=>window.linaExportFilename?.()),'Garden Of Eden - lyric video visualiser.mp4','live: export filename does not use song title');
@@ -59,4 +63,4 @@ assert.ok(pinned.top>=62&&pinned.top<=66,`live: Preview did not stay pinned; top
 
 assert.deepEqual(errors,[],`live: page errors ${errors.join(' | ')}`);
 await browser.close();
-console.log('LIVE GITHUB PAGES P74 RESET + STICKY + EXPORT NAME PASS');
+console.log('LIVE GITHUB PAGES P75 FAST EXPORT + RESET + STICKY PASS');
