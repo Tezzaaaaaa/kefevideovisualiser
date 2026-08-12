@@ -253,10 +253,11 @@
       try{return Array.isArray(lines)&&lines.length>0}catch{return $('#timeline [data-i]').length>0}
     }
     if(tool==='background'){
-      const custom=$('#bgImageFile')?.files?.length||$('#bgVideoFile')?.files?.length;
-      const artwork=$('#useArtworkBg')?.checked||$('#useArtworkBg2')?.checked;
-      const status=$('#bgStatus')?.textContent||'';
-      return !!(custom||artwork||(!/No custom background selected/i.test(status)&&status.trim()));
+      const imageChosen=Number($('#bgImageFile')?.files?.length||0)>0;
+      const videoChosen=Number($('#bgVideoFile')?.files?.length||0)>0;
+      let manualChosen=false;
+      try{manualChosen=!!manualBgFile}catch{}
+      return imageChosen||videoChosen||manualChosen;
     }
     return true;
   }
