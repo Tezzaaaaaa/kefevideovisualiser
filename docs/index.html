@@ -9,11 +9,29 @@
 <body>
 <script>
 (async()=>{
-  const BUILD='p81-20260812-finalise-video-controls';
+  const BUILD='p82-20260812-hard-reset-clean-boot';
 
-  if(new URLSearchParams(location.search).get('reset')==='1'){
-    location.replace(`reset.html?v=${BUILD}`);
+  const params=new URLSearchParams(location.search);
+  if(params.get('reset')==='1'){
+    location.replace(`reset.html?v=${BUILD}&nonce=${Date.now()}`);
     return;
+  }
+
+  if(params.get('freshReset')==='1'){
+    const linaKey=key=>/^lina(?:[.:-]|$)/i.test(String(key||''));
+    for(const storage of [localStorage,sessionStorage]){
+      try{for(let i=storage.length-1;i>=0;i--){const key=storage.key(i);if(linaKey(key))storage.removeItem(key)}}catch{}
+    }
+    const deleteDb=name=>new Promise(resolve=>{
+      if(!('indexedDB'in window)){resolve();return}
+      let done=false;const finish=()=>{if(done)return;done=true;clearTimeout(timer);resolve()};const timer=setTimeout(finish,1800);
+      try{const req=indexedDB.deleteDatabase(name);req.onsuccess=finish;req.onerror=finish;req.onblocked=()=>setTimeout(finish,900)}catch{finish()}
+    });
+    const databases=new Set(['lina-project-media']);
+    if(typeof indexedDB?.databases==='function')try{for(const info of await indexedDB.databases())if(info?.name&&/lina|lyric.?video|story.?lyrics/i.test(info.name))databases.add(info.name)}catch{}
+    const cleanCaches=async()=>{if(!('caches'in window))return;for(const name of await caches.keys()){const cache=await caches.open(name);for(const request of await cache.keys())try{if(new URL(request.url).pathname.includes('/lyricvideovisualiser/'))await cache.delete(request)}catch{}}};
+    await Promise.all([[...databases].map(deleteDb),cleanCaches()].flat());
+    try{history.replaceState(null,'',`./index.html?v=${BUILD}`)}catch{}
   }
 
   try{
