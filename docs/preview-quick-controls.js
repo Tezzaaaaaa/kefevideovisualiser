@@ -163,7 +163,7 @@
         <button id="quickExport" class="btn primary" type="button">Export video</button>
       </div>`;
 
-    const tools=$('.transport-tools'),transport=$('.transport');(tools||transport||stageWrap).after(box);
+    const stickyShell=$('.preview-sticky-shell');(stickyShell||stageWrap).after(box);
     const sourceStash=stash(),previewControls=$('.preview-controls'),exportBlock=$('.stage-export'),stylePanel=$('[data-panel="style"]');
     if(previewControls)sourceStash.append(previewControls);if(exportBlock)sourceStash.append(exportBlock);if(stylePanel)sourceStash.append(stylePanel);
     $('.navbtn[data-tool="style"]')?.remove();
