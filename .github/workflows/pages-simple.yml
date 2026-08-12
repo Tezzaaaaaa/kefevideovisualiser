@@ -93,7 +93,7 @@ jobs:
 
           grep -q 'app-events.js' docs/index.html || { echo 'index.html does not load the LINA bootstrap'; exit 1; }
           grep -q 'reset.html' docs/index.html || { echo 'index.html does not preserve legacy reset routing'; exit 1; }
-          grep -q 'reset.html?v=p72' docs/preview-quick-controls.js || { echo 'Quick Settings does not expose the standalone project reset'; exit 1; }
+          grep -Eq 'reset\.html\?v=p[0-9]+' docs/preview-quick-controls.js || { echo 'Quick Settings does not expose a versioned standalone project reset'; exit 1; }
           grep -q 'sticky-preview.css' docs/app-events.js || { echo 'bootstrap does not load sticky preview'; exit 1; }
           grep -q 'app-core-safe.js' docs/app-events.js || { echo 'bootstrap does not load canonical core'; exit 1; }
           grep -q 'app-media-safe.js' docs/app-events.js || { echo 'bootstrap does not load canonical media'; exit 1; }
