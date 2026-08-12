@@ -115,7 +115,7 @@
     box.innerHTML=`
       <div class="quick-control-head"><b>Finalise video</b><span>Every final adjustment is here, in order.</span></div>
       <div class="quick-group quick-priority-1">
-        <div class="quick-group-head"><b>1. Typography & readability</b><span>Everything affecting lyric legibility</span></div>
+        <div class="quick-group-head"><b>1. Lyric look & readability</b><span>Typography · title card · legibility</span></div>
         <div class="quick-control-grid">
           <label><span>Effect</span><select id="quickEffect"><option value="apple">Apple Music</option><option value="charli">Charli xcx · Apple</option><option value="eternal">Eternal Sunshine</option></select></label>
           <label><span>Font</span><select id="quickFont"></select></label>
