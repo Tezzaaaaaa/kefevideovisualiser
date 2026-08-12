@@ -45,7 +45,7 @@ assert.ok(before.audioState.duration>1,'loaded audio was not playable before Res
 assert.equal(before.media?.name,'must-disappear.wav','loaded audio was not persisted before Reset');
 
 await page.locator('#resetProjectVisible').click();
-await page.waitForURL(/\/index\.html\?(?:freshReset=1.*|v=p82-20260812-hard-reset-clean-boot$)/,{timeout:20000});
+await page.waitForURL(/\/index\.html\?(?:freshReset=1.*|v=p83-20260812-three-tab-finalise$)/,{timeout:20000});
 await page.waitForFunction(()=>document.documentElement.dataset.linaReady==='true',null,{timeout:20000});
 await page.waitForSelector('#resetProjectVisible',{state:'visible',timeout:10000});
 
