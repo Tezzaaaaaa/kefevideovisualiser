@@ -270,7 +270,7 @@
 
   function updateStepReadiness(){
     const nav=$('#nav'),next=$('#nextStep');if(!nav)return;
-    const buttons=$('#nav [data-tool]');
+    const buttons=Array.from(document.querySelectorAll('#nav [data-tool]'));
     buttons.forEach(btn=>{
       const ready=stepReady(btn.dataset.tool);
       btn.classList.toggle('step-ready',ready);
