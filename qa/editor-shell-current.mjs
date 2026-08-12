@@ -24,14 +24,14 @@ for(const [browserName,type] of browsers){
         oldPreviewParent:document.querySelector('.preview-controls')?.parentElement?.id||'',oldExportParent:document.querySelector('.stage-export')?.parentElement?.id||'',
         editDisplay:css('#transportEdit','display'),editExists:!!document.querySelector('#transportEdit'),toolBoxes:tools,
         quickGroups:document.querySelectorAll('#previewQuickControls > .quick-group').length,
-        advancedOpen:document.querySelector('#quickAdvanced')?.open||false,
-        fineOwnsInspector:!!document.querySelector('#quickFineTiming .quick-fine-body .right'),
+        tweakOpen:document.querySelector('#tweakLyricsDetails')?.open||false,
+        tweakOwnsInspector:!!document.querySelector('#tweakLyricsDetails .tweak-lyrics-body .right'),
         docWidth:document.documentElement.scrollWidth
       };
     });
 
     assert.deepEqual(state.workspace,{display:'flex',direction:'column'},`${browserName}/${vpName}: workspace is not vertical`);
-    assert.equal(state.navCount,5,`${browserName}/${vpName}: five workflow tabs are not present`);
+    assert.equal(state.navCount,3,`${browserName}/${vpName}: Setup/Lyrics/Background tabs are not present`);
     assert.ok(state.left&&state.stage&&state.left.y<state.stage.y,`${browserName}/${vpName}: active workflow panel is not above Preview`);
     const minStageWidth=Math.min(400,viewport.width-56);
     assert.ok(state.stage.width>=minStageWidth,`${browserName}/${vpName}: Preview is squeezed (${state.stage?.width||0}px < ${minStageWidth}px)`);
@@ -40,17 +40,14 @@ for(const [browserName,type] of browsers){
     assert.equal(state.oldPreviewParent,'linaQuickSourceStash',`${browserName}/${vpName}: legacy preview controls escaped the hidden source stash`);
     assert.equal(state.oldExportParent,'linaQuickSourceStash',`${browserName}/${vpName}: legacy output controls escaped the hidden source stash`);
     assert.ok(!state.editExists||state.editDisplay==='none',`${browserName}/${vpName}: obsolete Edit transport button returned`);
-    assert.equal(state.quickGroups,5,`${browserName}/${vpName}: priority Quick Settings groups changed`);
-    assert.equal(state.advancedOpen,false,`${browserName}/${vpName}: Advanced controls should start collapsed`);
-    assert.equal(state.fineOwnsInspector,true,`${browserName}/${vpName}: detailed lyric inspector is not inside Fine timing`);
+    assert.equal(state.quickGroups,3,`${browserName}/${vpName}: Finalise groups changed`);
+    assert.equal(state.tweakOpen,false,`${browserName}/${vpName}: Tweak lyrics should start collapsed`);
+    assert.equal(state.tweakOwnsInspector,true,`${browserName}/${vpName}: lyric inspector is not inside collapsed Tweak lyrics`);
     assert.ok(state.docWidth<=viewport.width+2,`${browserName}/${vpName}: horizontal overflow ${state.docWidth}>${viewport.width}`);
 
     for(const b of state.toolBoxes)assert.ok(b&&b.width>=44&&b.height>=30,`${browserName}/${vpName}: transport tool collapsed`);
     assert.ok(Math.max(...state.toolBoxes.map(b=>b.y))-Math.min(...state.toolBoxes.map(b=>b.y))<=4,`${browserName}/${vpName}: Prev/Sync/Next are not on one row`);
 
-    await page.click('#nav [data-tool="review"]');
-    const review=await page.evaluate(()=>({active:document.querySelector('#nav .navbtn.active')?.dataset.tool,activePanels:document.querySelectorAll('.tool[data-panel].active').length,destination:document.documentElement.dataset.reviewDestination}));
-    assert.deepEqual(review,{active:'review',activePanels:0,destination:'quick-controls'},`${browserName}/${vpName}: Review does not target production controls`);
 
     await page.close();
   }
