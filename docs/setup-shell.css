@@ -231,3 +231,13 @@
   .navbtn .step{width:17px!important;height:17px!important;font-size:8px!important}
   .flow-controls.workflow-inline{display:grid!important;grid-template-columns:auto 1fr auto!important}
 }
+
+
+/* Canonical workflow tabs: exactly three equal columns. */
+#nav.nav,.nav{
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+}
+#nav .navbtn{
+  width:100%!important;
+  min-width:0!important;
+}
