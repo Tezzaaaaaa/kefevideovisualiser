@@ -65,3 +65,33 @@
   .preview-sticky-shell{min-height:230px!important}
   .preview-sticky-shell .transport-tools{display:none!important}
 }
+
+
+/* Never crop the preview inside the half-screen sticky workspace. */
+.preview-sticky-shell{
+  min-height:0!important;
+  overflow:hidden!important;
+}
+.preview-sticky-shell .stage-wrap{
+  overflow:hidden!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+}
+.preview-sticky-shell .stage-wrap #story,
+.preview-sticky-shell .stage-wrap #story[data-aspect]{
+  flex:0 1 auto!important;
+  width:auto!important;
+  height:100%!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  aspect-ratio:var(--story-ratio,9/16)!important;
+  object-fit:contain!important;
+}
+.preview-sticky-shell .stage-wrap #story[data-aspect="16:9"]{--story-ratio:16/9}
+.preview-sticky-shell .stage-wrap #story[data-aspect="1:1"]{--story-ratio:1/1}
+.preview-sticky-shell .stage-wrap #story[data-aspect="4:5"]{--story-ratio:4/5}
+.preview-sticky-shell .stage-wrap #story[data-aspect="9:16"]{--story-ratio:9/16}
+@media(max-height:650px){
+  .preview-sticky-shell{min-height:0!important}
+}
