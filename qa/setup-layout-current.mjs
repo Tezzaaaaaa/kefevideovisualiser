@@ -22,7 +22,7 @@ for(const [browserName,type] of browsers){
       return{
         workspace:{display:getComputedStyle(workspace).display,direction:getComputedStyle(workspace).flexDirection},
         sections:setup?.querySelectorAll('.setup-shell-section').length||0,
-        audio:!!setup?.querySelector('#audioFile'),title:!!setup?.querySelector('#titleInput'),artist:!!setup?.querySelector('#artistInput'),album:!!setup?.querySelector('#albumInput'),lyricsLookup:!!setup?.querySelector('#findLyricsBtn'),
+        audio:!!setup?.querySelector('#audioFile'),songSearch:!!document.querySelector('#songSearch,#songResults,#findLyricsBtn'),trackSettings:!!setup?.querySelector('#titleInput,#artistInput,#albumInput'),
         titleInSetup:!!setup?.querySelector('#showTitle,#titleDuration'),
         titleInStash:!!document.querySelector('#linaHiddenControlStash #showTitle')&&!!document.querySelector('#linaHiddenControlStash #titleDuration'),
         artwork:document.querySelectorAll('#userArtworkFile,#userArtworkIntro,label[for="userArtworkFile"],.track-art').length,
@@ -32,8 +32,8 @@ for(const [browserName,type] of browsers){
     });
 
     assert.deepEqual(state.workspace,{display:'flex',direction:'column'},`${browserName}/${vpName}: workspace is not vertical`);
-    assert.equal(state.sections,3,`${browserName}/${vpName}: Setup should contain Audio + Track details + synced lyrics`);
-    assert.ok(state.audio&&state.title&&state.artist&&state.album&&state.lyricsLookup,`${browserName}/${vpName}: required Setup controls missing`);
+    assert.equal(state.sections,1,`${browserName}/${vpName}: Setup must contain only the audio uploader`);
+    assert.equal(state.audio,true,`${browserName}/${vpName}: audio uploader missing`);assert.equal(state.songSearch,false,`${browserName}/${vpName}: deleted song search returned`);assert.equal(state.trackSettings,false,`${browserName}/${vpName}: settings returned to Setup`);
     assert.equal(state.titleInSetup,false,`${browserName}/${vpName}: title-card controls returned to Setup`);
     assert.equal(state.titleInStash,true,`${browserName}/${vpName}: title-card source controls missing`);
     assert.equal(state.artwork,0,`${browserName}/${vpName}: retired artwork controls returned`);
@@ -43,7 +43,7 @@ for(const [browserName,type] of browsers){
     assert.ok(state.navBox&&state.navBox.y+state.navBox.height<=state.setupBox.y+6,`${browserName}/${vpName}: navigation overlaps Setup`);
     assert.ok(state.docWidth<=viewport.width+2,`${browserName}/${vpName}: horizontal overflow ${state.docWidth}>${viewport.width}`);
 
-    for(const selector of ['#titleInput','#artistInput','#albumInput','label.upload:has(#audioFile)']){
+    for(const selector of ['label.upload:has(#audioFile)']){
       const b=await page.locator(selector).boundingBox();
       assert.ok(b&&b.width>=44&&b.height>=30,`${browserName}/${vpName}: ${selector} collapsed`);
     }
