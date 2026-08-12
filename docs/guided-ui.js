@@ -51,7 +51,7 @@
     const panel=$('[data-panel="lyrics"]'),body=panel?.querySelector('.body'),sync=$('#syncMethod');
     if(!panel||!body||!sync||panel.dataset.guidedLyrics==='true')return false;
     panel.dataset.guidedLyrics='true';
-    addGuide(panel,'Add the lyrics','Recommended: press “Find my synced lyrics”. LINA will search using the song details from Setup and show the lyrics in the preview below.');
+    addGuide(panel,'Add lyrics','Open “Other ways to get lyrics” and choose an import method.');
 
     const source=sync.closest('.subsection');
     const syncField=sync.closest('.field');
@@ -62,17 +62,13 @@
     const manualTiming=$('#manualTimingBox');
 
     if(source){
-      renameSubsection(source,'1. Find synced lyrics','Recommended');
-      if(searchBox){
-        const btn=$('#findLyricsBtn');
-        if(btn)btn.textContent='Find my synced lyrics';
-        source.append(searchBox);
-      }
+      renameSubsection(source,'Other ways to get lyrics','Import or time lyrics');
+      if(searchBox)searchBox.remove();
       let other=source.querySelector('.other-lyrics-methods');
       if(!other){
         other=document.createElement('details');
         other.className='other-lyrics-methods';
-        other.innerHTML='<summary>Other ways to add lyrics</summary><div class="other-lyrics-body"></div>';
+        other.innerHTML='<summary>Other ways to get lyrics</summary><div class="other-lyrics-body"></div>';
         source.append(other);
       }
       const otherBody=other.querySelector('.other-lyrics-body');
@@ -84,22 +80,9 @@
       [pasteBox,fileBox,manualBox,manualTiming].forEach(el=>{if(el)otherBody.append(el)});
     }
 
-    let advanced=body.querySelector(':scope > .advanced-lyrics-settings');
-    if(!advanced){
-      advanced=document.createElement('details');
-      advanced.className='advanced-lyrics-settings';
-      advanced.innerHTML='<summary>Advanced lyric settings</summary><div class="advanced-lyrics-body"></div>';
-      body.append(advanced);
-    }
-    const advancedBody=advanced.querySelector('.advanced-lyrics-body');
-    $$('[data-panel="lyrics"] .subsection').forEach(sec=>{
-      const label=sec.querySelector(':scope > .subhead b')?.textContent?.trim();
-      if(label==='Lyric phrasing'||label==='Lyrics entrance')advancedBody.append(sec);
-    });
-    const clear=$('#clearLyrics');if(clear)advancedBody.append(clear);
 
     if(!(typeof lines!=='undefined'&&Array.isArray(lines)&&lines.length)){
-      sync.value='search';
+      sync.value='pasteTimed';
       sync.dispatchEvent(new Event('change',{bubbles:true}));
     }
     return true;
