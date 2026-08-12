@@ -50,7 +50,6 @@
     if(!audioUpload||!titleLabel||!artistLabel)return false;
 
     preserveIntroControls();
-    const legacyLookup=q('#legacySongLookup');if(legacyLookup)hiddenStash().append(legacyLookup);
 
     const audio=section('Upload or drop audio here','Required · Start here');
     audio.append(audioUpload);
