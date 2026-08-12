@@ -149,7 +149,7 @@
   function buildPreviewAspectToggle(){
     const head=$('.preview-sticky-shell .stage-head'),source=$('#aspect');if(!head||!source||$('#previewAspectSelect'))return;
     const label=document.createElement('label');label.id='previewAspectToggle';label.className='preview-aspect-select';label.innerHTML='<span>Preview size</span><select id="previewAspectSelect" aria-label="Preview aspect ratio"><option value="9:16">9:16 Story</option><option value="4:5">4:5 Portrait</option><option value="1:1">1:1 Square</option><option value="16:9">16:9 Landscape</option></select>';
-    const select=label.querySelector('select');select.value=source.value;select.addEventListener('change',()=>{source.value=select.value;fire(source,'input');fire(source,'change');syncPreviewAspectToggle();setTimeout(syncAll,0)});
+    const select=label.querySelector('select');select.value=source.value;select.addEventListener('change',()=>{source.value=select.value;fire(source,'input');fire(source,'change');try{window.aspect?.()}catch{}syncPreviewAspectToggle();setTimeout(syncAll,0)});
     head.append(label);syncPreviewAspectToggle();
   }
   function syncPreviewAspectToggle(){const value=$('#aspect')?.value,select=$('#previewAspectSelect');if(select&&select.value!==value)select.value=value}
