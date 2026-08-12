@@ -185,8 +185,6 @@
         </div>
         <div class="quick-mini-head"><b>Background readability</b><span>Darken or soften behind the lyrics</span></div>
         <div class="quick-control-grid quick-typography-readable"></div>
-        <div class="quick-mini-head"><b>Track details</b><span>Used on the title card and export metadata</span></div>
-        <div class="quick-control-grid quick-track-details"></div>
         <div class="quick-mini-head"><b>Lyric flow & entrance</b><span>Phrasing · timing · visibility</span></div>
         <div class="quick-control-grid quick-lyric-flow"></div>
         <div class="quick-mini-head"><b>Position & timing</b><span>Place it · sync it</span></div>
@@ -211,7 +209,7 @@
       </div>
       <div id="quickHiddenEditorMarker" hidden aria-hidden="true"></div>
       <div class="quick-actions">
-        <a id="resetProjectVisible" class="btn subtle" href="reset.html?v=p106-20260813-aspect-geometry" role="button" data-lina-owner="project-hard-v3">Reset project</a>
+        <a id="resetProjectVisible" class="btn subtle" href="reset.html?v=p108-20260813-workflow-reset" role="button" data-lina-owner="project-hard-v3">Reset project</a>
         <button id="quickExport" class="btn primary" type="button">Export video</button>
       </div>`;
 
@@ -221,7 +219,8 @@
     $('.navbtn[data-tool="style"]')?.remove();
     const inspector=$('.right');
     $('.more-controls')?.remove();moveBackgroundControls(box);
-    const trackGrid=box.querySelector('.quick-track-details');for(const id of ['titleInput','artistInput','albumInput']){const field=takeField(id);if(field&&trackGrid)trackGrid.append(field)}
+    // Track identity belongs in Setup beside automatic lyric lookup. Finalise must
+    // not steal these live fields out of the first workflow step.
     const flowGrid=box.querySelector('.quick-lyric-flow'),grouping=takeField('grouping'),entrance=takeField('lyricsEntrance'),custom=$('#customEntranceWrap'),clear=$('#clearLyrics');
     if(grouping&&flowGrid)flowGrid.append(grouping);if(entrance&&flowGrid)flowGrid.append(entrance);if(custom&&flowGrid)flowGrid.append(custom);if(clear&&flowGrid)flowGrid.append(clear);
     const contextSource=takeField('contextMode');if(contextSource)stash().append(contextSource);

@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const BUILD='p106-20260813-aspect-geometry';
+  const BUILD='p108-20260813-workflow-reset';
   const load=src=>new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=`${src}?v=${BUILD}`;s.onload=resolve;s.onerror=()=>reject(new Error(`Failed to load ${src}`));document.body.append(s)});
   for(const href of ['apple-motion.css','ui-solid.css','intro-layout.css','production-consolidated.css','consolidated-studio.css','editor-shell.css','editor-shell-mobile-safety.css','editor-shell-density-fix.css','setup-shell.css','guided-ui.css','setup-lyrics-bridge.css','background-dropzone.css','effect-typography.css','eternal-sunshine-effect.css','preview-quick-controls.css','sticky-preview.css']){const css=document.createElement('link');css.rel='stylesheet';css.href=`${href}?v=${BUILD}`;document.head.append(css)}
   (async()=>{
@@ -36,6 +36,7 @@
 
       await load('setup-shell.js');
       await load('lyrics-workflow-fix.js');
+      await load('setup-lyrics-bridge.js');
       await load('guided-ui.js');
       await load('background-dropzone.js');
       await load('effect-typography.js');

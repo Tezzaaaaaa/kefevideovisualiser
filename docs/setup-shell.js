@@ -55,13 +55,19 @@
     audio.append(audioUpload);
     if(mediaStatus)audio.append(mediaStatus);
 
-    const stash=hiddenStash();stash.append(titleLabel,artistLabel);if(albumLabel)stash.append(albumLabel);
-    body.replaceChildren(audio);
+    const details=section('Song details','Used for lyrics search');
+    const detailsGrid=document.createElement('div');
+    detailsGrid.className='setup-details-grid';
+    detailsGrid.append(titleLabel,artistLabel);
+    if(albumLabel)detailsGrid.append(albumLabel);
+    details.append(detailsGrid);
+
+    body.replaceChildren(audio,details);
 
     q('#useArtworkBg2')?.closest('.subsection')?.remove();
     qa('#userArtworkFile,#userArtworkPreview,#artworkEmpty,#userArtworkIntro,#showArtworkIntro,#useArtworkBg,#pickedArt,#introArt').forEach(el=>el.remove());
 
-    document.documentElement.dataset.setupStructure='vertical-v2';
+    document.documentElement.dataset.setupStructure='vertical-v3';
     document.documentElement.dataset.setupAudioFirst='true';
     document.documentElement.dataset.artworkRetired='true';
     return true;
