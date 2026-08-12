@@ -291,3 +291,9 @@ html[data-preview-finalise="v4"] #quickAdvanced .quick-advanced-body{padding-top
   #previewQuickControls .quick-title-pair .quick-toggle{padding:5px!important}
   #previewQuickControls .quick-title-pair .quick-title-duration>span{font-size:8px!important}
 }
+
+.preview-sticky-shell .stage-head{gap:10px;flex-wrap:wrap}
+.preview-aspect-toggle{display:flex;gap:4px;margin-left:auto;padding:3px;border:1px solid rgba(255,255,255,.13);border-radius:10px;background:rgba(10,10,12,.78)}
+.preview-aspect-toggle button{appearance:none;border:0;border-radius:7px;background:transparent;color:rgba(255,255,255,.62);font:700 11px/1 system-ui;padding:7px 8px;cursor:pointer}
+.preview-aspect-toggle button.active{background:#2ff28b;color:#07140d;box-shadow:0 0 14px rgba(47,242,139,.34)}
+@media(max-width:700px){.preview-aspect-toggle{order:3;width:100%;display:grid;grid-template-columns:repeat(4,1fr)}.preview-aspect-toggle button{padding:8px 3px}}
