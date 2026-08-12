@@ -47,18 +47,18 @@
     const artistLabel=q('#artistInput')?.closest('label');
     const albumLabel=q('#albumInput')?.closest('label');
 
-    if(!audioUpload||!titleLabel||!artistLabel||!albumLabel)return false;
+    if(!audioUpload||!titleLabel||!artistLabel)return false;
 
     preserveIntroControls();
 
-    const audio=section('Audio','Start here');
+    const audio=section('Upload or drop audio here','Required · Start here');
     audio.append(audioUpload);
     if(mediaStatus)audio.append(mediaStatus);
 
     const details=section('Track details','User supplied');
     const detailsGrid=document.createElement('div');
     detailsGrid.className='setup-details-grid';
-    detailsGrid.append(titleLabel,artistLabel,albumLabel);
+    detailsGrid.append(titleLabel,artistLabel);if(albumLabel)detailsGrid.append(albumLabel);
     details.append(detailsGrid);
 
     body.replaceChildren(audio,details);
