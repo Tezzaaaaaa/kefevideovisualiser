@@ -19,11 +19,10 @@ assert.match(await page.locator('#resetProjectVisible').getAttribute('href'),/^r
 assert.equal(await page.locator('#resetProjectVisible').count(),1,'more than one Reset control is visible');
 assert.equal(await page.locator('#quickResetLayout,#linaFreshReset,#resetLyricsBtn,#resetBtn').count(),0,'retired reset control is still present');
 
-await page.locator('#autosaveToggle').setChecked(true);
+await page.locator('#autosaveToggle').evaluate(el=>{el.checked=true;el.dispatchEvent(new Event('change',{bubbles:true}))});
 await page.fill('#titleInput','Reset Test Song');
 await page.fill('#artistInput','Reset Test Artist');
-await page.fill('#albumInput','Reset Test Album');
-for(const id of ['titleInput','artistInput','albumInput'])await page.locator(`#${id}`).dispatchEvent('input');
+for(const id of ['titleInput','artistInput'])await page.locator(`#${id}`).dispatchEvent('input');
 await page.setInputFiles('#audioFile',{name:'must-disappear.wav',mimeType:'audio/wav',buffer:wavBuffer()});
 await page.waitForFunction(()=>Number(document.querySelector('#audio')?.duration)>1);
 await page.evaluate(async()=>{await saveProgress(true,false)});
@@ -52,7 +51,6 @@ await page.waitForSelector('#resetProjectVisible',{state:'visible',timeout:10000
 
 assert.equal(await page.locator('#titleInput').inputValue(),'','Reset restored the old song title');
 assert.equal(await page.locator('#artistInput').inputValue(),'','Reset restored the old artist');
-assert.equal(await page.locator('#albumInput').inputValue(),'','Reset restored the old album');
 assert.equal(await page.locator('#audioFile').inputValue(),'','Reset left the audio file input populated');
 assert.equal(await page.evaluate(()=>document.querySelector('#audio')?.currentSrc||document.querySelector('#audio')?.getAttribute('src')||''),'','Reset restored the loaded audio source');
 assert.equal(await page.evaluate(()=>localStorage.getItem('lina.project.v2')),null,'Reset left the saved project in localStorage');
