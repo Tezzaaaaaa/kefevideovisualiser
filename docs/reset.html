@@ -31,37 +31,26 @@ p{color:#b8b8bd}
     }
   }
 
-  function clearDatabase(name){
+  function deleteDatabase(name){
     return new Promise(resolve=>{
-      if(!name||!('indexedDB' in window)){resolve();return}
-      let open;
-      try{open=indexedDB.open(name)}catch{resolve();return}
-      open.onerror=()=>resolve();
-      open.onupgradeneeded=()=>{};
-      open.onsuccess=()=>{
-        const db=open.result;
-        const stores=[...db.objectStoreNames];
-        if(!stores.length){db.close();deleteDatabase(name).then(resolve);return}
-        let tx;
-        try{tx=db.transaction(stores,'readwrite')}catch{db.close();deleteDatabase(name).then(resolve);return}
-        for(const store of stores){try{tx.objectStore(store).clear()}catch{}}
-        const finish=()=>{try{db.close()}catch{};deleteDatabase(name).then(resolve)};
-        tx.oncomplete=finish;
-        tx.onerror=finish;
-        tx.onabort=finish;
-      };
+      if(!name||!('indexedDB' in window)){resolve(false);return}
+      let settled=false;
+      const finish=value=>{if(settled)return;settled=true;clearTimeout(timer);resolve(value)};
+      const timer=setTimeout(()=>finish(false),1800);
+      try{
+        const req=indexedDB.deleteDatabase(name);
+        req.onsuccess=()=>finish(true);
+        req.onerror=()=>finish(false);
+        req.onblocked=()=>setTimeout(()=>finish(false),700);
+      }catch{finish(false)}
     });
   }
 
-  function deleteDatabase(name){
-    return new Promise(resolve=>{
-      try{
-        const req=indexedDB.deleteDatabase(name);
-        req.onsuccess=()=>resolve();
-        req.onerror=()=>resolve();
-        req.onblocked=()=>resolve();
-      }catch{resolve()}
-    });
+  async function clearDatabase(name){
+    for(let attempt=0;attempt<3;attempt++){
+      if(await deleteDatabase(name))return;
+      await new Promise(resolve=>setTimeout(resolve,200*(attempt+1)));
+    }
   }
 
   async function clearIndexedDB(){
@@ -102,7 +91,7 @@ p{color:#b8b8bd}
     await Promise.all([clearIndexedDB(),clearCaches(),clearWorkers()]);
     clearWebStorage();
     state.textContent='Project cleared.';
-    location.replace(`./index.html?fresh=${Date.now()}`);
+    location.replace(`./index.html?freshReset=1&v=p82&nonce=${Date.now()}`);
   }catch(error){
     console.error('LINA hard reset failed',error);
     state.textContent='Reset failed. The editor was not reopened.';
