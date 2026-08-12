@@ -243,6 +243,64 @@
     return true;
   }
 
+
+  function stepReady(tool){
+    if(tool==='setup'){
+      const audio=$('#audio');
+      return !!($('#audioFile')?.files?.length||audio?.currentSrc||audio?.getAttribute('src'));
+    }
+    if(tool==='lyrics'){
+      try{return Array.isArray(lines)&&lines.length>0}catch{return $('#timeline [data-i]').length>0}
+    }
+    if(tool==='background'){
+      const custom=$('#bgImageFile')?.files?.length||$('#bgVideoFile')?.files?.length;
+      const artwork=$('#useArtworkBg')?.checked||$('#useArtworkBg2')?.checked;
+      const status=$('#bgStatus')?.textContent||'';
+      return !!(custom||artwork||(!/No custom background selected/i.test(status)&&status.trim()));
+    }
+    return true;
+  }
+
+  function readinessMessage(tool){
+    if(tool==='setup')return 'Add an audio file to continue.';
+    if(tool==='lyrics')return 'Add and confirm lyrics to continue.';
+    if(tool==='background')return 'Choose artwork, an image, or a video to finish.';
+    return '';
+  }
+
+  function updateStepReadiness(){
+    const nav=$('#nav'),next=$('#nextStep');if(!nav)return;
+    const buttons=$('#nav [data-tool]');
+    buttons.forEach(btn=>{
+      const ready=stepReady(btn.dataset.tool);
+      btn.classList.toggle('step-ready',ready);
+      btn.setAttribute('data-ready',ready?'true':'false');
+    });
+    const active=buttons.find(btn=>btn.classList.contains('active'))||buttons[0];
+    if(!active||!next)return;
+    const tool=active.dataset.tool,ready=stepReady(tool);
+    next.classList.toggle('next-ready',ready);
+    next.classList.toggle('next-waiting',!ready);
+    next.setAttribute('aria-disabled',ready?'false':'true');
+    next.dataset.readiness=ready?'ready':'waiting';
+    let hint=$('#stepReadinessHint');
+    if(!hint){
+      hint=document.createElement('span');hint.id='stepReadinessHint';hint.className='step-readiness-hint';
+      next.before(hint);
+    }
+    hint.textContent=ready?(tool==='background'?'Ready to finalise.':'Ready — continue to the next step.'):readinessMessage(tool);
+    hint.classList.toggle('ready',ready);
+  }
+
+  function bindStepReadiness(){
+    if(document.documentElement.dataset.stepReadinessBound==='true')return;
+    document.documentElement.dataset.stepReadinessBound='true';
+    for(const type of ['input','change','click'])document.addEventListener(type,()=>setTimeout(updateStepReadiness,40),true);
+    const audio=$('#audio');for(const type of ['loadedmetadata','emptied'])audio?.addEventListener(type,updateStepReadiness);
+    setInterval(updateStepReadiness,700);
+    updateStepReadiness();
+  }
+
   function bindGuidance(){
     if(document.documentElement.dataset.guidedUiBound==='true')return;
     document.documentElement.dataset.guidedUiBound='true';
@@ -264,6 +322,8 @@
       guideReview();
       simplifyBottomControls();
       bindGuidance();
+      bindStepReadiness();
+      updateStepReadiness();
       if(tries<20&&(!document.documentElement.dataset.guidedUiReady))setTimeout(run,80);
       else document.documentElement.dataset.guidedUiReady='true';
     };
