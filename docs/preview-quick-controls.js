@@ -147,12 +147,12 @@
   }
 
   function buildPreviewAspectToggle(){
-    const head=$('.preview-sticky-shell .stage-head'),source=$('#aspect');if(!head||!source||$('#previewAspectToggle'))return;
-    const wrap=document.createElement('div');wrap.id='previewAspectToggle';wrap.className='preview-aspect-toggle';wrap.setAttribute('aria-label','Preview aspect ratio');
-    for(const value of ['9:16','4:5','1:1','16:9']){const button=document.createElement('button');button.type='button';button.dataset.aspect=value;button.textContent=value;button.addEventListener('click',()=>{source.value=value;fire(source,'input');fire(source,'change');syncPreviewAspectToggle();setTimeout(syncAll,0)});wrap.append(button)}
-    head.append(wrap);syncPreviewAspectToggle();
+    const head=$('.preview-sticky-shell .stage-head'),source=$('#aspect');if(!head||!source||$('#previewAspectSelect'))return;
+    const label=document.createElement('label');label.id='previewAspectToggle';label.className='preview-aspect-select';label.innerHTML='<span>Preview size</span><select id="previewAspectSelect" aria-label="Preview aspect ratio"><option value="9:16">9:16 Story</option><option value="4:5">4:5 Portrait</option><option value="1:1">1:1 Square</option><option value="16:9">16:9 Landscape</option></select>';
+    const select=label.querySelector('select');select.value=source.value;select.addEventListener('change',()=>{source.value=select.value;fire(source,'input');fire(source,'change');syncPreviewAspectToggle();setTimeout(syncAll,0)});
+    head.append(label);syncPreviewAspectToggle();
   }
-  function syncPreviewAspectToggle(){const value=$('#aspect')?.value;$('#previewAspectToggle button').forEach(button=>{const active=button.dataset.aspect===value;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active))})}
+  function syncPreviewAspectToggle(){const value=$('#aspect')?.value,select=$('#previewAspectSelect');if(select&&select.value!==value)select.value=value}
 
   function build(){
     ensureCanonicalSources();
@@ -217,7 +217,7 @@
     const sourceStash=stash(),previewControls=$('.preview-controls'),exportBlock=$('.stage-export'),stylePanel=$('[data-panel="style"]');
     if(previewControls)sourceStash.append(previewControls);if(exportBlock)sourceStash.append(exportBlock);if(stylePanel)sourceStash.append(stylePanel);
     $('.navbtn[data-tool="style"]')?.remove();
-    const inspector=$('.right');if(inspector)stash().append(inspector);
+    const inspector=$('.right');
     $('.more-controls')?.remove();moveBackgroundControls(box);
     const trackGrid=box.querySelector('.quick-track-details');for(const id of ['titleInput','artistInput','albumInput']){const field=takeField(id);if(field&&trackGrid)trackGrid.append(field)}
     const flowGrid=box.querySelector('.quick-lyric-flow'),grouping=takeField('grouping'),entrance=takeField('lyricsEntrance'),custom=$('#customEntranceWrap'),clear=$('#clearLyrics');
@@ -225,7 +225,19 @@
     const contextSource=takeField('contextMode');if(contextSource)stash().append(contextSource);
     const applyGrouping=$('#applyGrouping');if(applyGrouping)stash().append(applyGrouping);$('#grouping')?.addEventListener('change',()=>$('#applyGrouping')?.click());
     for(const section of [...document.querySelectorAll('[data-panel="lyrics"] .subsection')]){const label=section.querySelector(':scope > .subhead b')?.textContent?.trim();if(label==='Lyric phrasing'||label==='Lyrics entrance')section.remove()}
-    document.documentElement.dataset.tweakLyrics='hidden';
+    const lyricsBody=$('[data-panel="lyrics"] .body'),other=$('.other-lyrics-methods');
+    if(lyricsBody&&other){
+      const oldSource=other.closest('.subsection');lyricsBody.prepend(other);
+      if(oldSource&&oldSource!==lyricsBody)oldSource.remove();
+      $('[data-panel="lyrics"] .step-guide')?.remove();
+      $('[data-panel="lyrics"] .advanced-lyrics-settings')?.remove();
+      let tweak=$('#tweakLyricsDetails');
+      if(!tweak){tweak=document.createElement('details');tweak.id='tweakLyricsDetails';tweak.className='tweak-lyrics-details';tweak.innerHTML='<summary>Tweak lyrics</summary><div class="tweak-lyrics-body"></div>';lyricsBody.append(tweak)}
+      if(inspector)tweak.querySelector('.tweak-lyrics-body')?.append(inspector);
+      tweak.open=false;
+    }else if(inspector)stash().append(inspector);
+    document.documentElement.dataset.lyricsPanel='other-ways-and-tweak';
+    document.documentElement.dataset.tweakLyrics='collapsed';
 
     const qe=$('#quickEffect');qe.value=currentEffect();qe.addEventListener('change',()=>setEffect(qe.value));
     bindSelect('fontChoice','quickFont');bindSize();bindSelect('contextMode','quickLyricsView');bindSelect('textAlign','quickAlign');bindColor();
