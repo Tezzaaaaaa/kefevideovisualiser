@@ -2,7 +2,7 @@ name: Deploy LINA
 on:
   push:
     branches: [main]
-    paths: ["docs/**", ".github/workflows/deploy-lina.yml"]
+    paths: ["docs/**", "qa/five-step-export.mjs", ".github/workflows/deploy-lina.yml"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -29,6 +29,15 @@ jobs:
           test -f docs/src/exporter.js
           for file in docs/src/*.js; do node --check "$file"; done
           ! find docs -type f \( -name '*-fix*' -o -name '*-safe*' -o -name '*-guard*' -o -name '*-bridge*' \) | grep .
+      - name: Install WebKit test browser
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps webkit
+      - name: Prove all three exports work
+        run: |
+          python3 -m http.server 4173 --directory docs >/tmp/lina.log 2>&1 &
+          for i in {1..20}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
+          node qa/five-step-export.mjs
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
