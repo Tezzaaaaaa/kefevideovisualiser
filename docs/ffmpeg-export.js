@@ -172,8 +172,9 @@
     }
     ctx.fillStyle=`rgba(0,0,0,${+($('#dim')?.value||0)/100})`;ctx.fillRect(0,0,w,h);
     const ms=t*1000,ent=entranceMs(),tw=titleWindowMs();
-    if(tw>0&&ms<tw&&ms<ent)drawIntro(ctx,w,h);
-    if(ms>=ent)drawApple(ctx,lines[ci(ms)]||lines[0],ms,w,h);
+    const titleActive=tw>0&&ms<tw;
+    if(titleActive)drawIntro(ctx,w,h);
+    if(!titleActive&&ms>=ent)drawApple(ctx,lines[ci(ms)]||lines[0],ms,w,h);
     drawExportWatermark(ctx,w,h);
     ctx.restore();
   }
@@ -291,7 +292,7 @@
   async function exportVideoFast(){
     if(active)return status('An export is already running.');
     if(!audioFile||!lines.length)return status('Add audio and synced lyrics before exporting.');
-    const requestedQuality=+($('#quality')?.value||$('#quickQuality')?.value||720);
+    const requestedQuality=+($('#quality')?.value||720);
     if(requestedQuality>720&&!window.linaHasPaidMembership?.())return status('1080p export is available to paid members.');
     active=true;cancelled=false;phase='starting';openDialog();status('Export starting…');
     try{
@@ -300,7 +301,15 @@
         if(cancelled||String(err?.message||err).includes('LINA_FFMPEG_CANCELLED'))throw err;
         console.warn('LINA fast export unavailable; using compatibility export.',err);
         setProgress(2,'Using compatibility encoder…');
-        await ffmpegFallbackExport();
+        try{await ffmpegFallbackExport()}
+        catch(compatibilityError){
+          if(cancelled)throw compatibilityError;
+          console.warn('LINA compatibility encoder unavailable; using browser recorder.',compatibilityError);
+          closeDialog();active=false;
+          if(typeof window.linaMediaRecorderExport!=='function')throw compatibilityError;
+          await window.linaMediaRecorderExport();
+          return;
+        }
       }
       status('Export complete.');phase='complete';
     }catch(err){

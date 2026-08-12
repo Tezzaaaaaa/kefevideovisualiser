@@ -2,18 +2,6 @@
 (()=>{
   const $=s=>document.querySelector(s);
 
-  function stash(){
-    let el=$('#backgroundUploadSourceStash');
-    if(!el){
-      el=document.createElement('div');
-      el.id='backgroundUploadSourceStash';
-      el.className='background-upload-source-stash';
-      el.hidden=true;
-      document.body.append(el);
-    }
-    return el;
-  }
-
   function kindOf(file){
     const type=String(file?.type||'').toLowerCase();
     const name=String(file?.name||'').toLowerCase();
@@ -76,21 +64,13 @@
       setState('error','Unsupported background file','Use an image or video file.');
       return;
     }
-    const target=$(kind==='video'?'#bgVideoFile':'#bgImageFile');
-    if(!target){
+    if(typeof window.setBgFile!=='function'){
       setState('error','Background uploader unavailable','The original media input could not be found.');
       return;
     }
     setState('loading',`Loading background ${kind}…`,file.name);
     try{
-      if(typeof window.setBgFile==='function'){
-        window.setBgFile(file,kind);
-      }else{
-        const dt=new DataTransfer();
-        dt.items.add(file);
-        target.files=dt.files;
-        target.dispatchEvent(new Event('change',{bubbles:true}));
-      }
+      window.setBgFile(file,kind);
       setTimeout(()=>confirmMedia(file,kind),0);
     }catch(err){
       console.error('LINA background drop failed',err);
@@ -104,11 +84,10 @@
     const section=image.closest('.subsection')||video.closest('.subsection');
     if(!section)return false;
 
-    const sourceStash=stash();
     const imageLabel=image.closest('label');
     const videoLabel=video.closest('label');
-    if(imageLabel)sourceStash.append(imageLabel);
-    if(videoLabel)sourceStash.append(videoLabel);
+    imageLabel?.remove();
+    videoLabel?.remove();
 
     const zone=document.createElement('label');
     zone.id='backgroundDropZone';

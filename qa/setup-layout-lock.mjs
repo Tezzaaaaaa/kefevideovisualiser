@@ -38,10 +38,9 @@ for(const [name,type] of browsers){
     await page.waitForFunction(()=>document.documentElement.dataset.linaReady==='true',null,{timeout:20000});
     await page.waitForFunction(()=>{
       const panel=document.querySelector('[data-panel="setup"]');
-      const stash=document.querySelector('#linaHiddenControlStash');
       return document.documentElement.dataset.setupStructure==='vertical-v3'&&
         !!panel?.querySelector('#audioFile')&&!!panel?.querySelector('#titleInput')&&!!panel?.querySelector('#artistInput')&&!!panel?.querySelector('#albumInput')&&
-        !!stash?.querySelector('#showTitle')&&!!stash?.querySelector('#titleDuration')&&
+        !!document.querySelector('#previewQuickControls #showTitle')&&!!document.querySelector('#previewQuickControls #titleDuration')&&
         !panel?.querySelector('#userArtworkFile')&&!panel?.querySelector('#userArtworkIntro');
     },null,{timeout:10000});
     await page.click('#nav [data-tool="setup"]');
@@ -51,8 +50,8 @@ for(const [name,type] of browsers){
     assert.equal(await setup.locator('.setup-audio-drop-section').count(),1,`${name}/${vpName}: Add audio section is missing`);
     assert.equal(await setup.locator('.setup-details-grid').count(),1,`${name}/${vpName}: Track details grid is missing`);
     assert.equal(await setup.locator('#showTitle,#titleDuration').count(),0,`${name}/${vpName}: title-card controls returned to Setup`);
-    assert.equal(await page.locator('#linaHiddenControlStash #showTitle').count(),1,`${name}/${vpName}: title-card toggle source is missing`);
-    assert.equal(await page.locator('#linaHiddenControlStash #titleDuration').count(),1,`${name}/${vpName}: title-card duration source is missing`);
+    assert.equal(await page.locator('#previewQuickControls #showTitle').count(),1,`${name}/${vpName}: title-card toggle is missing from Finalise`);
+    assert.equal(await page.locator('#previewQuickControls #titleDuration').count(),1,`${name}/${vpName}: title-card duration is missing from Finalise`);
     assert.equal(await page.locator('#userArtworkFile,#userArtworkIntro,label[for="userArtworkFile"],.track-art').count(),0,`${name}/${vpName}: retired artwork controls returned`);
 
     const flow=page.locator('.flow-controls');

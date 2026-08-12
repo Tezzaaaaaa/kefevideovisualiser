@@ -19,12 +19,8 @@ jobs:
         run: |
           node --check docs/canonical-runtime.js
           node --check docs/canonical-controls.js
-          node --check docs/canonical-ui-lock.js
           node --check docs/canonical-export.js
-          node --check docs/canonical-audit.js
           node --check docs/preview-quick-controls.js
-          node --check docs/style-effect-selector.js
-          node --check docs/runtime-guard.js
           node --check docs/transport-lock.js
           node --check docs/apple-letter-highlight.js
           node --check docs/eternal-sunshine-effect.js
@@ -48,9 +44,7 @@ jobs:
           test ! -e docs/project-reset-button.js
           grep -q "canonical-runtime.js" docs/app-events.js
           grep -q "canonical-controls.js" docs/app-events.js
-          grep -q "canonical-ui-lock.js" docs/app-events.js
           grep -q "canonical-export.js" docs/app-events.js
-          grep -q "canonical-audit.js" docs/app-events.js
           grep -q "sticky-preview.css" docs/app-events.js
           grep -q "resetProjectVisible" docs/preview-quick-controls.js
           grep -Eq "reset\\.html\\?v=p[0-9]+" docs/preview-quick-controls.js

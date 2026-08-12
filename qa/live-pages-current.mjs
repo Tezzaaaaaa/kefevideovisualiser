@@ -26,8 +26,8 @@ const liveState=await page.evaluate(()=>({
 }));
 assert.equal(liveState.resetCount,1,'live: expected exactly one Reset project control');
 assert.equal(liveState.oldResetCount,0,'live: retired Reset control still exists');
-assert.match(liveState.resetHref||'',/^reset\.html\?v=p72$/,'live: Reset project is not the standalone reset');
-assert.match(liveState.appEvents,/p76-20260812-synced-smooth-export/,'live: published site is not running p76');
+assert.match(liveState.resetHref||'',/^reset\.html\?v=p110-single-controller$/,'live: Reset project is not the standalone reset');
+assert.match(liveState.appEvents,/p110-20260813-single-source-controls/,'live: published site is not running p110');
 assert.deepEqual(liveState.sticky,{position:'sticky',top:'64px'},'live: Preview is not sticky');
 assert.equal(liveState.hasFastExport,true,'live: WebCodecs fast export is missing');
 assert.equal(liveState.hasFilename,true,'live: export filename helper is missing');
@@ -55,7 +55,6 @@ assert.equal(await page.evaluate(()=>document.querySelector('#audio')?.currentSr
 assert.equal(await page.evaluate(()=>localStorage.getItem('lina.project.v2')),null,'live: Reset left saved project');
 assert.equal(await page.evaluate(async()=>!!(await loadMedia('audio'))),false,'live: Reset left saved audio in IndexedDB');
 
-await page.locator('#quickAdvanced').evaluate(el=>el.open=true);
 await page.locator('#resetProjectVisible').scrollIntoViewIfNeeded();
 await page.waitForTimeout(100);
 const pinned=await page.locator('.stage-wrap').evaluate(el=>({top:el.getBoundingClientRect().top,scrollY:window.scrollY}));
@@ -64,4 +63,4 @@ assert.ok(pinned.top>=62&&pinned.top<=66,`live: Preview did not stay pinned; top
 
 assert.deepEqual(errors,[],`live: page errors ${errors.join(' | ')}`);
 await browser.close();
-console.log('LIVE GITHUB PAGES P76 SYNCED SMOOTH EXPORT + RESET + STICKY PASS');
+console.log('LIVE GITHUB PAGES P110 SINGLE-SOURCE EXPORT + RESET + STICKY PASS');
