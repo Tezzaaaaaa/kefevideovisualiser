@@ -31,6 +31,8 @@ jobs:
           ! find docs -type f \( -name '*-fix*' -o -name '*-safe*' -o -name '*-guard*' -o -name '*-bridge*' \) | grep .
       - name: Install export test browser
         run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
           npm install --no-save playwright@1.55.0
           npx playwright install --with-deps chromium
       - name: Prove all three exports work
