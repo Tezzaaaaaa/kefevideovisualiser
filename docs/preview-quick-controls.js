@@ -161,7 +161,7 @@
         </div>
       </details>
       <div class="quick-actions">
-        <a id="resetProjectVisible" class="btn subtle" href="reset.html?v=p99-20260813-audio-first-tabs" role="button" data-lina-owner="project-hard-v3">Reset project</a>
+        <a id="resetProjectVisible" class="btn subtle" href="reset.html?v=p100-20260813-proportional-preview" role="button" data-lina-owner="project-hard-v3">Reset project</a>
         <button id="quickExport" class="btn primary" type="button">Export video</button>
       </div>`;
 
