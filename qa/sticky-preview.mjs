@@ -9,7 +9,6 @@ for(const [name,type] of targets){
   const page=await browser.newPage({viewport:{width:1280,height:800}});
   await page.goto(base,{waitUntil:'networkidle'});
   await page.waitForFunction(()=>document.documentElement.dataset.linaReady==='true',{timeout:20000});
-  await page.locator('#quickAdvanced').evaluate(el=>el.open=true);
 
   const css=await page.locator('.stage-wrap').evaluate(el=>({position:getComputedStyle(el).position,top:getComputedStyle(el).top}));
   assert.equal(css.position,'sticky',`${name}: preview is not sticky`);
@@ -27,7 +26,6 @@ const browser=await chromium.launch({headless:true});
 const page=await browser.newPage({viewport:{width:390,height:844}});
 await page.goto(base,{waitUntil:'networkidle'});
 await page.waitForFunction(()=>document.documentElement.dataset.linaReady==='true',{timeout:20000});
-await page.locator('#quickAdvanced').evaluate(el=>el.open=true);
 const mobileCss=await page.locator('.stage-wrap').evaluate(el=>({position:getComputedStyle(el).position,top:getComputedStyle(el).top}));
 assert.equal(mobileCss.position,'sticky','mobile: preview is not sticky');
 assert.equal(mobileCss.top,'54px','mobile: sticky offset changed');
