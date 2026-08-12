@@ -119,9 +119,11 @@
         <div class="quick-control-grid">
           <label><span>Effect</span><select id="quickEffect"><option value="apple">Apple Music</option><option value="charli">Charli xcx · Apple</option><option value="eternal">Eternal Sunshine</option></select></label>
           <label><span>Font</span><select id="quickFont"></select></label>
-          <label><span>Text size</span><select id="quickSize"></select></label>
-          <label class="quick-toggle quick-title-inline"><span><b>Title card</b><small>Show at opening</small></span><input id="quickTitle" type="checkbox"></label>
-          <label class="quick-title-duration"><span>Title duration</span><select id="quickTitleDuration"></select></label>
+          <label class="quick-text-size"><span>Text size</span><select id="quickSize"></select></label>
+          <div class="quick-title-pair">
+            <label class="quick-toggle quick-title-inline"><span><b>Title card</b><small>Show at opening</small></span><input id="quickTitle" type="checkbox"></label>
+            <label class="quick-title-duration"><span>Duration</span><select id="quickTitleDuration"></select></label>
+          </div>
           <label><span>Weight</span><select id="quickWeight"></select></label>
           <label><span>Alignment</span><select id="quickAlign"></select></label>
           <label><span>Letter case</span><select id="quickCase"></select></label>
