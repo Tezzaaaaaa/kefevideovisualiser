@@ -293,7 +293,17 @@ html[data-preview-finalise="v4"] #quickAdvanced .quick-advanced-body{padding-top
 }
 
 .preview-sticky-shell .stage-head{gap:10px;flex-wrap:wrap}
-.preview-aspect-toggle{display:flex;gap:4px;margin-left:auto;padding:3px;border:1px solid rgba(255,255,255,.13);border-radius:10px;background:rgba(10,10,12,.78)}
-.preview-aspect-toggle button{appearance:none;border:0;border-radius:7px;background:transparent;color:rgba(255,255,255,.62);font:700 11px/1 system-ui;padding:7px 8px;cursor:pointer}
-.preview-aspect-toggle button.active{background:#2ff28b;color:#07140d;box-shadow:0 0 14px rgba(47,242,139,.34)}
-@media(max-width:700px){.preview-aspect-toggle{order:3;width:100%;display:grid;grid-template-columns:repeat(4,1fr)}.preview-aspect-toggle button{padding:8px 3px}}
+
+/* Lyrics owns input and editing only; configuration renders in Finalise. */
+[data-panel="lyrics"] .advanced-lyrics-settings,
+[data-panel="lyrics"] .subsection:has(#grouping),
+[data-panel="lyrics"] .subsection:has(#lyricsEntrance){display:none!important}
+[data-panel="lyrics"]>.body>.other-lyrics-methods,
+[data-panel="lyrics"]>.body>.tweak-lyrics-details{display:block;width:100%;margin:0 0 12px;border:1px solid rgba(255,255,255,.12);border-radius:16px;background:#141416}
+[data-panel="lyrics"]>.body>.other-lyrics-methods>summary,
+[data-panel="lyrics"]>.body>.tweak-lyrics-details>summary{padding:18px 20px;font-weight:800;cursor:pointer}
+[data-panel="lyrics"] .tweak-lyrics-body{padding:0 16px 16px}
+.preview-aspect-select{display:grid;grid-template-columns:auto minmax(112px,1fr);align-items:center;gap:8px;margin-left:auto}
+.preview-aspect-select>span{font-size:11px;color:rgba(255,255,255,.62);font-weight:700}
+.preview-aspect-select select{min-height:34px;border:1px solid rgba(255,255,255,.16);border-radius:9px;background:#171719;color:#fff;padding:5px 28px 5px 9px;font:700 12px/1 system-ui}
+@media(max-width:700px){.preview-aspect-select{width:100%;grid-template-columns:auto 1fr;order:3}.preview-aspect-select select{width:100%}}
