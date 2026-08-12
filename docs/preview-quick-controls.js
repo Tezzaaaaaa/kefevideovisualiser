@@ -209,7 +209,7 @@
       </div>
       <div id="quickHiddenEditorMarker" hidden aria-hidden="true"></div>
       <div class="quick-actions">
-        <a id="resetProjectVisible" class="btn subtle" href="reset.html?v=p104-20260813-finalise-only-settings" role="button" data-lina-owner="project-hard-v3">Reset project</a>
+        <a id="resetProjectVisible" class="btn subtle" href="reset.html?v=p105-20260813-clean-lyrics-aspect-menu" role="button" data-lina-owner="project-hard-v3">Reset project</a>
         <button id="quickExport" class="btn primary" type="button">Export video</button>
       </div>`;
 
