@@ -291,6 +291,8 @@
   async function exportVideoFast(){
     if(active)return status('An export is already running.');
     if(!audioFile||!lines.length)return status('Add audio and synced lyrics before exporting.');
+    const requestedQuality=+($('#quality')?.value||$('#quickQuality')?.value||720);
+    if(requestedQuality>720&&!window.linaHasPaidMembership?.())return status('1080p export is available to paid members.');
     active=true;cancelled=false;phase='starting';openDialog();status('Export starting…');
     try{
       try{await fastWebCodecsExport()}
