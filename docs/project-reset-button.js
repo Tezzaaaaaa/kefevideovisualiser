@@ -6,24 +6,18 @@
     const actions=$('#previewQuickControls .quick-actions');
     if(!actions)return false;
 
-    for(const selector of ['#quickResetLayout','#linaFreshReset','#resetLyricsBtn','#resetBtn']){
+    for(const selector of ['#quickResetLayout','#linaFreshReset','#resetLyricsBtn','#resetBtn','#resetProjectVisible']){
       const old=$(selector);if(old)old.remove();
     }
-    if($('#resetProjectVisible'))return true;
 
-    const button=document.createElement('button');
-    button.id='resetProjectVisible';
-    button.className='btn subtle';
-    button.type='button';
-    button.textContent='Reset project';
-    button.dataset.linaOwner='project-hard-v2';
-    button.addEventListener('click',e=>{
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-      if(typeof window.linaResetProject==='function')void window.linaResetProject();
-    },true);
-    actions.prepend(button);
+    const link=document.createElement('a');
+    link.id='resetProjectVisible';
+    link.className='btn subtle';
+    link.href='?reset=1';
+    link.textContent='Reset project';
+    link.dataset.linaOwner='project-hard-v2';
+    link.setAttribute('role','button');
+    actions.prepend(link);
     return true;
   }
 
