@@ -16,7 +16,9 @@ document.getElementById('cancel')?.addEventListener('click',requestLinaExportCan
 async function exportVideo(){
   if(linaExportActive)return status('An export is already running.');
   if(!audioFile||!lines.length)return status('Add audio and synced lyrics before exporting.');
-  if(!HTMLCanvasElement.prototype.captureStream||!window.MediaRecorder)return status('This browser cannot record canvas video.');
+  const hasCanvasCapture=typeof HTMLCanvasElement.prototype.captureStream==='function';
+  const hasGeneratedVideo=typeof VideoTrackGenerator==='function'&&typeof VideoFrame==='function';
+  if(!window.MediaRecorder||(!hasCanvasCapture&&!hasGeneratedVideo))return status('This browser cannot record canvas video.');
 
   abort=false;linaExportActive=true;linaExportPhase='initialising';
   const ua=navigator.userAgent||'';
@@ -236,7 +238,9 @@ async function exportVideo(){
       if(cancelled)throw cancelError;
     }
 
-    rec.start(500);
+    // WebKit is more reliable when it owns chunk timing and we flush once at the end.
+    // Other engines can emit periodic chunks to limit in-memory buffering.
+    if(isWebKit)rec.start();else rec.start(500);
     drawExportFrame(0);
     if(webkitWriter)await cancelable(queueWebKitFrame(0,true));
     else try{videoTrack.requestFrame?.()}catch{}
