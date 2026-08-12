@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0b">
+<title>Updating LINA</title>
+<style>
+html,body{margin:0;min-height:100%;background:#0a0a0b;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+main{min-height:100vh;display:grid;place-items:center;text-align:center;padding:24px;box-sizing:border-box}
+p{color:#b8b8bd}
+</style>
+</head>
+<body>
+<main><div><h1>LINA</h1><p id="state">Loading the latest version…</p></div></main>
+<script>
+(async()=>{
+  const APP_PATH='/lyricvideovisualiser/';
+  try{
+    if('serviceWorker' in navigator){
+      for(const registration of await navigator.serviceWorker.getRegistrations()){
+        if(String(registration.scope||'').includes(APP_PATH))await registration.unregister();
+      }
+    }
+    if('caches' in window){
+      for(const name of await caches.keys()){
+        const cache=await caches.open(name);
+        for(const request of await cache.keys()){
+          try{if(new URL(request.url).pathname.includes(APP_PATH))await cache.delete(request)}catch{}
+        }
+      }
+    }
+  }catch(error){console.warn('LINA cache refresh warning',error)}
+  location.replace('./index.html?v=p95-20260813-cache-refresh&nonce='+Date.now());
+})();
+</script>
+</body>
+</html>
