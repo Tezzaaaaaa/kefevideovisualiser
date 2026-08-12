@@ -87,7 +87,7 @@
     await Promise.race([deleteMediaDatabase(),wait(900)]);
     clearLinaStorage();
 
-    const clean=`${location.pathname}?reset=${Date.now()}`;
+    const clean=`${location.pathname}?reset=1&nonce=${Date.now()}`;
     location.replace(clean);
   }
 
