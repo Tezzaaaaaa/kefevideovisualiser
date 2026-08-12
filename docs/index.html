@@ -9,7 +9,7 @@
 <body>
 <script>
 (async()=>{
-  const BUILD='p84-20260812-unified-lyric-look';
+  const BUILD='p86-20260812-reset-layout-stable';
 
   const params=new URLSearchParams(location.search);
   if(params.get('reset')==='1'){
@@ -43,6 +43,7 @@
       .replace('app-core.js','app-core.js?v='+BUILD)
       .replace('app-media.js','app-media.js?v='+BUILD)
       .replace('app-events.js?v=20260811a','app-events.js?v='+BUILD);
+    html=html.replace('</head>','<style id="lina-boot-style">html{background:#0a0a0b}body{visibility:hidden}</style></head>');
     document.open();
     document.write(html);
     document.close();
