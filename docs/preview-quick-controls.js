@@ -103,6 +103,13 @@
       videoWrap.append(videoBox);advancedBody.prepend(videoWrap);
       if(oldParent?.tagName==='DETAILS'&&!oldParent.querySelector('.subsection'))oldParent.remove();
     }
+    const backgroundBody=$('[data-panel="background"] .body'),uploadSection=$('#backgroundDropZone')?.closest('.subsection');
+    if(backgroundBody&&uploadSection){
+      backgroundBody.querySelectorAll(':scope > .subsection').forEach(section=>{if(section!==uploadSection)section.remove()});
+      const head=uploadSection.querySelector('.subhead b');if(head)head.textContent='Upload or drop image/video here';
+      const meta=uploadSection.querySelector('.subhead span');if(meta)meta.textContent='Image or video';
+      document.documentElement.dataset.backgroundPanel='upload-only';
+    }
   }
 
   function titleEnabledState(){const toggle=$('#quickTitle'),duration=$('#quickTitleDuration');if(duration)duration.disabled=toggle?!toggle.checked:false}
