@@ -25,8 +25,11 @@ const liveState=await page.evaluate(()=>({
 assert.equal(liveState.resetCount,1,'live: expected exactly one Reset project control');
 assert.equal(liveState.oldResetCount,0,'live: retired Reset control still exists');
 assert.match(liveState.resetHref||'',/^reset\.html\?v=p72$/,'live: Reset project is not the standalone reset');
-assert.match(liveState.appEvents,/p73-20260812-final-lock/,'live: published site is not running p73');
+assert.match(liveState.appEvents,/p74-20260812-fast-export/,'live: published site is not running p74');
 assert.deepEqual(liveState.sticky,{position:'sticky',top:'64px'},'live: Preview is not sticky');
+
+await page.fill('#titleInput','Garden Of Eden');
+assert.equal(await page.evaluate(()=>window.linaExportFilename?.()),'Garden Of Eden - lyric video visualiser.mp4','live: export filename does not use song title');
 
 await page.locator('#autosaveToggle').setChecked(true);
 await page.fill('#titleInput','LIVE RESET QA');
@@ -56,4 +59,4 @@ assert.ok(pinned.top>=62&&pinned.top<=66,`live: Preview did not stay pinned; top
 
 assert.deepEqual(errors,[],`live: page errors ${errors.join(' | ')}`);
 await browser.close();
-console.log('LIVE GITHUB PAGES RESET + STICKY PREVIEW PASS');
+console.log('LIVE GITHUB PAGES P74 RESET + STICKY + EXPORT NAME PASS');
