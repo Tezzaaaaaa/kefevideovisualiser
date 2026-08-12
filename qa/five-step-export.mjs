@@ -11,7 +11,7 @@ function wav(seconds=2.4,rate=44100){
 const background=Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920"><rect width="1080" height="1920" fill="#542788"/><circle cx="540" cy="720" r="360" fill="#ef8a62"/></svg>');
 const browser=await webkit.launch({headless:true});
 const page=await browser.newPage({acceptDownloads:true,viewport:{width:1280,height:900}});
-const errors=[];page.on('pageerror',e=>errors.push(e.message));
+const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',message=>console.log('BROWSER',message.type(),message.text()));
 await page.route('https://lrclib.net/api/search**',route=>route.fulfill({contentType:'application/json',body:JSON.stringify([{trackName:'Test Song',artistName:'Lady Gaga',syncedLyrics:'[00:00.00]First lyric line\n[00:00.80]Second lyric line\n[00:01.60]Final lyric line'}])}));
 await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
 await page.setInputFiles('#audioInput',{name:'Lady Gaga - Test Song.wav',mimeType:'audio/wav',buffer:wav()});
@@ -21,9 +21,14 @@ await page.waitForFunction(()=>!document.querySelector('#exportBottom').disabled
 for(const ratio of ['9:16','1:1','16:9']){await page.click(`[data-aspect="${ratio}"]`);assert.equal(await page.locator(`[data-aspect="${ratio}"]`).getAttribute('class'),'active')}
 for(const effect of ['apple','charli','eternal']){
   await page.click(`[data-effect="${effect}"]`);
-  const downloadPromise=page.waitForEvent('download',{timeout:30000});
+  const downloadPromise=page.waitForEvent('download',{timeout:15000});
   await page.click('#exportBottom');
-  const download=await downloadPromise,path=await download.path();
+  let download;
+  try{download=await downloadPromise}catch(error){
+    const diagnostic=await page.evaluate(()=>({toast:document.querySelector('#toast')?.textContent,toastClass:document.querySelector('#toast')?.className,overlayHidden:document.querySelector('#exportOverlay')?.classList.contains('hidden'),percent:document.querySelector('#exportPct')?.textContent,status:document.querySelector('#exportStatus')?.textContent,mediaRecorder:typeof MediaRecorder,canvasCapture:typeof HTMLCanvasElement.prototype.captureStream,audioDuration:document.querySelector('#audioEl')?.duration,audioTime:document.querySelector('#audioEl')?.currentTime}));
+    throw new Error(`${effect}: no download; ${JSON.stringify(diagnostic)}; page errors: ${errors.join(' | ')}`);
+  }
+  const path=await download.path();
   assert.ok(path,`${effect}: no exported file`);
   const streams=execFileSync('ffprobe',['-v','error','-show_entries','stream=codec_type','-of','csv=p=0',path],{encoding:'utf8'}).trim().split(/\s+/);
   assert.ok(streams.includes('video'),`${effect}: video stream missing`);assert.ok(streams.includes('audio'),`${effect}: audio stream missing`);
