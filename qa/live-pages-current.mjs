@@ -24,8 +24,8 @@ const liveState=await page.evaluate(()=>({
 }));
 assert.equal(liveState.resetCount,1,'live: expected exactly one Reset project control');
 assert.equal(liveState.oldResetCount,0,'live: retired Reset control still exists');
-assert.match(liveState.resetHref||'',/^reset\.html\?v=p72$/,'live: Reset project is not the p72 standalone reset');
-assert.match(liveState.appEvents,/p72-20260812-final-lock/,'live: published site is not running p72');
+assert.match(liveState.resetHref||'',/^reset\.html\?v=p72$/,'live: Reset project is not the standalone reset');
+assert.match(liveState.appEvents,/p73-20260812-final-lock/,'live: published site is not running p73');
 assert.deepEqual(liveState.sticky,{position:'sticky',top:'64px'},'live: Preview is not sticky');
 
 await page.locator('#autosaveToggle').setChecked(true);
