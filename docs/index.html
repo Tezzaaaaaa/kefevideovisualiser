@@ -31,7 +31,7 @@
     if(typeof indexedDB?.databases==='function')try{for(const info of await indexedDB.databases())if(info?.name&&/lina|lyric.?video|story.?lyrics/i.test(info.name))databases.add(info.name)}catch{}
     const cleanCaches=async()=>{if(!('caches'in window))return;for(const name of await caches.keys()){const cache=await caches.open(name);for(const request of await cache.keys())try{if(new URL(request.url).pathname.includes('/lyricvideovisualiser/'))await cache.delete(request)}catch{}}};
     await Promise.all([[...databases].map(deleteDb),cleanCaches()].flat());
-    try{history.replaceState(null,'',`./index.html?v=${BUILD}`)}catch{}
+    window.LINA_FRESH_RESET=true;
   }
 
   try{
