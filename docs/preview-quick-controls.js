@@ -26,20 +26,6 @@
     return effect==='charli'?'34':effect==='eternal'?'30':'32';
   }
 
-  function resetLayout(){
-    if(window.linaRuntime?.resetLayout){
-      window.linaRuntime.resetLayout();
-      setTimeout(syncAll,0);
-      return;
-    }
-    $('#resetLyricsTransform')?.click();
-    const size=$('#size');if(size){size.value=String(safeSize());fire(size,'input');fire(size,'change')}
-    const y=$('#yPos');if(y){y.value='50';fire(y,'input');fire(y,'change')}
-    try{window.invalidateLinaMotion?.(true)}catch{}
-    try{window.render?.((Number($('#audio')?.currentTime)||0)*1000)}catch{}
-    setTimeout(syncAll,0);
-  }
-
   function bindSelect(sourceId,quickId){
     const source=$('#'+sourceId),quick=$('#'+quickId);if(!source||!quick)return;
     copyOptions(source,quick);
@@ -83,11 +69,7 @@
   }
 
   function setEffect(value){
-    if(window.linaRuntime?.setEffect){
-      window.linaRuntime.setEffect(value);
-      setTimeout(syncAll,0);
-      return;
-    }
+    if(window.linaRuntime?.setEffect){window.linaRuntime.setEffect(value);setTimeout(syncAll,0);return}
     const hidden=$('#lyricEffect');if(hidden)hidden.value=value;
     const option=$(`.effect-option[data-effect="${value}"]`);
     if(option)option.click();
@@ -99,10 +81,7 @@
     setTimeout(()=>{window.linaSyncTypography?.();syncAll()},20);
   }
 
-  function takeField(id){
-    const el=$('#'+id);if(!el)return null;
-    return el.closest('label')||el;
-  }
+  function takeField(id){const el=$('#'+id);if(!el)return null;return el.closest('label')||el}
 
   function moveBackgroundControls(box){
     const group=box.querySelector('#quickBackgroundGroup');if(!group)return;
@@ -111,47 +90,30 @@
     const frameGrid=group.querySelector('.quick-background-frame');
     const readableGrid=group.querySelector('.quick-background-readable');
     const actionGrid=group.querySelector('.quick-background-actions');
-
-    for(const id of ['bgFit','cropZoom','cropX','cropY']){
-      const field=takeField(id);if(field&&frameGrid)frameGrid.append(field);
-    }
-    for(const id of ['dim','blur']){
-      const field=takeField(id);if(field&&readableGrid)readableGrid.append(field);
-    }
-    const reset=$('#resetCrop'),remove=$('#removeBg');
-    if(reset&&actionGrid)actionGrid.append(reset);
-    if(remove&&actionGrid)actionGrid.append(remove);
-
+    for(const id of ['bgFit','cropZoom','cropX','cropY']){const field=takeField(id);if(field&&frameGrid)frameGrid.append(field)}
+    for(const id of ['dim','blur']){const field=takeField(id);if(field&&readableGrid)readableGrid.append(field)}
+    const reset=$('#resetCrop'),remove=$('#removeBg');if(reset&&actionGrid)actionGrid.append(reset);if(remove&&actionGrid)actionGrid.append(remove);
     if(frameSection&&frameSection!==group)frameSection.remove();
     if(readableSection&&readableSection!==group)readableSection.remove();
-
-    const advancedBody=box.querySelector('.quick-advanced-body');
-    const videoBox=$('#videoTrimBox');
+    const advancedBody=box.querySelector('.quick-advanced-body'),videoBox=$('#videoTrimBox');
     if(videoBox&&advancedBody){
-      const oldParent=videoBox.parentElement;
-      const videoWrap=document.createElement('div');
+      const oldParent=videoBox.parentElement,videoWrap=document.createElement('div');
       videoWrap.className='quick-advanced-section quick-video-timing';
       videoWrap.innerHTML='<div class="quick-mini-head"><b>Background video timing</b><span>Only when needed</span></div>';
-      videoWrap.append(videoBox);
-      advancedBody.prepend(videoWrap);
+      videoWrap.append(videoBox);advancedBody.prepend(videoWrap);
       if(oldParent?.tagName==='DETAILS'&&!oldParent.querySelector('.subsection'))oldParent.remove();
     }
   }
 
-  function titleEnabledState(){
-    const toggle=$('#quickTitle'),duration=$('#quickTitleDuration');
-    if(duration)duration.disabled=toggle?!toggle.checked:false;
-  }
+  function titleEnabledState(){const toggle=$('#quickTitle'),duration=$('#quickTitleDuration');if(duration)duration.disabled=toggle?!toggle.checked:false}
 
   function build(){
     const stageWrap=$('.stage-wrap');if(!stageWrap||$('#previewQuickControls'))return false;
     $('#previewEffectSwitcher')?.remove();$('#simpleControlSummary')?.remove();$('#previewTitleControls')?.remove();
-
     const box=document.createElement('section');
     box.id='previewQuickControls';box.className='preview-quick-controls';
     box.innerHTML=`
       <div class="quick-control-head"><b>Quick settings</b><span>Most-used controls first.</span></div>
-
       <div class="quick-group quick-priority-1">
         <div class="quick-group-head"><b>1. Lyric look</b><span>What viewers notice first</span></div>
         <div class="quick-control-grid">
@@ -163,16 +125,12 @@
           <label class="quick-colour"><span>Text colour</span><input id="quickTextColor" type="color" value="#ffffff"></label>
         </div>
       </div>
-
       <div class="quick-group quick-priority-2" id="quickBackgroundGroup">
         <div class="quick-group-head"><b>2. Background</b><span>Frame it · keep lyrics readable</span></div>
-        <div class="quick-mini-head"><b>Framing</b><span>Fit · zoom · focus</span></div>
-        <div class="quick-control-grid quick-background-frame"></div>
-        <div class="quick-mini-head"><b>Readability</b><span>Darken or soften only if needed</span></div>
-        <div class="quick-control-grid quick-background-readable"></div>
+        <div class="quick-mini-head"><b>Framing</b><span>Fit · zoom · focus</span></div><div class="quick-control-grid quick-background-frame"></div>
+        <div class="quick-mini-head"><b>Readability</b><span>Darken or soften only if needed</span></div><div class="quick-control-grid quick-background-readable"></div>
         <div class="quick-background-actions"></div>
       </div>
-
       <div class="quick-group quick-priority-3">
         <div class="quick-group-head"><b>3. Position & sync</b><span>Keep lyrics placed and timed correctly</span></div>
         <div class="quick-control-grid">
@@ -180,7 +138,6 @@
           <label class="quick-range"><span>Lyric offset <b id="quickOffsetVal"></b></span><input id="quickOffset" type="range"></label>
         </div>
       </div>
-
       <div class="quick-group quick-priority-4">
         <div class="quick-group-head"><b>4. Title card</b><span>Optional intro</span></div>
         <div class="quick-control-grid">
@@ -188,7 +145,6 @@
           <label><span>Duration</span><select id="quickTitleDuration"></select></label>
         </div>
       </div>
-
       <div class="quick-group quick-priority-5">
         <div class="quick-group-head"><b>5. Output</b><span>Choose the final format</span></div>
         <div class="quick-control-grid">
@@ -196,7 +152,6 @@
           <label><span>Quality</span><select id="quickQuality"></select></label>
         </div>
       </div>
-
       <details id="quickAdvanced" class="quick-fine quick-advanced">
         <summary>Advanced controls</summary>
         <div class="quick-advanced-body">
@@ -214,59 +169,32 @@
           <details id="quickFineTiming" class="quick-fine quick-timing-editor"><summary>Fine timing & lyric editing</summary><div class="quick-fine-body"></div></details>
         </div>
       </details>
-
       <div class="quick-actions">
-        <button id="quickResetLayout" class="btn subtle" type="button">Reset lyric layout</button>
+        <a id="resetProjectVisible" class="btn subtle" href="reset.html?v=p71" role="button" data-lina-owner="project-hard-v3">Reset project</a>
         <button id="quickExport" class="btn primary" type="button">Export video</button>
       </div>`;
 
-    const tools=$('.transport-tools'),transport=$('.transport');
-    (tools||transport||stageWrap).after(box);
-
-    const sourceStash=stash();
-    const previewControls=$('.preview-controls'),exportBlock=$('.stage-export');
-    if(previewControls)sourceStash.append(previewControls);
-    if(exportBlock)sourceStash.append(exportBlock);
-    const inspector=$('.right'),fineBody=$('#quickFineTiming .quick-fine-body');
-    if(inspector&&fineBody)fineBody.append(inspector);
-    $('.more-controls')?.remove();
-
-    moveBackgroundControls(box);
+    const tools=$('.transport-tools'),transport=$('.transport');(tools||transport||stageWrap).after(box);
+    const sourceStash=stash(),previewControls=$('.preview-controls'),exportBlock=$('.stage-export');
+    if(previewControls)sourceStash.append(previewControls);if(exportBlock)sourceStash.append(exportBlock);
+    const inspector=$('.right'),fineBody=$('#quickFineTiming .quick-fine-body');if(inspector&&fineBody)fineBody.append(inspector);
+    $('.more-controls')?.remove();moveBackgroundControls(box);
 
     const qe=$('#quickEffect');qe.value=currentEffect();qe.addEventListener('change',()=>setEffect(qe.value));
-    bindSelect('fontChoice','quickFont');
-    bindSize();
-    bindSelect('contextMode','quickLyricsView');
-    bindSelect('textAlign','quickAlign');
-    bindColor();
-    bindRange('yPos','quickY','quickYVal',v=>`${v}%`);
-    bindRange('offset','quickOffset','quickOffsetVal',v=>`${Number(v)>0?'+':''}${v} ms`);
-    bindToggle('showTitle','quickTitle',titleEnabledState);
-    bindSelect('titleDuration','quickTitleDuration');
-    bindSelect('aspect','quickFrame');
-    bindSelect('quality','quickQuality');
-
-    bindSelect('fontWeight','quickWeight');
-    bindSelect('letterCase','quickCase');
-    bindRange('lineHeight','quickLineHeight','quickLineHeightVal',v=>Number(v).toFixed(2));
-    bindRange('letterSpacing','quickLetterSpacing','quickLetterSpacingVal',v=>`${Number(v).toFixed(3).replace(/0+$/,'').replace(/\.$/,'')}em`);
-    bindRange('glow','quickGlow','quickGlowVal',v=>`${v}%`);
-    bindToggle('safeToggle','quickSafe');
-
-    $('#quickResetLayout')?.addEventListener('click',resetLayout);
+    bindSelect('fontChoice','quickFont');bindSize();bindSelect('contextMode','quickLyricsView');bindSelect('textAlign','quickAlign');bindColor();
+    bindRange('yPos','quickY','quickYVal',v=>`${v}%`);bindRange('offset','quickOffset','quickOffsetVal',v=>`${Number(v)>0?'+':''}${v} ms`);
+    bindToggle('showTitle','quickTitle',titleEnabledState);bindSelect('titleDuration','quickTitleDuration');bindSelect('aspect','quickFrame');bindSelect('quality','quickQuality');
+    bindSelect('fontWeight','quickWeight');bindSelect('letterCase','quickCase');bindRange('lineHeight','quickLineHeight','quickLineHeightVal',v=>Number(v).toFixed(2));
+    bindRange('letterSpacing','quickLetterSpacing','quickLetterSpacingVal',v=>`${Number(v).toFixed(3).replace(/0+$/,'').replace(/\.$/,'')}em`);bindRange('glow','quickGlow','quickGlowVal',v=>`${v}%`);bindToggle('safeToggle','quickSafe');
     $('#quickExport')?.addEventListener('click',()=>($('#exportBottomBtn')||$('#exportBtn'))?.click());
 
-    document.addEventListener('change',e=>{
-      if(['styleEffectSelect','lyricEffect'].includes(e.target?.id)||e.target?.closest?.('.effect-option'))setTimeout(syncAll,30);
-    },true);
+    document.addEventListener('change',e=>{if(['styleEffectSelect','lyricEffect'].includes(e.target?.id)||e.target?.closest?.('.effect-option'))setTimeout(syncAll,30)},true);
     document.addEventListener('click',e=>{if(e.target.closest?.('.effect-option[data-effect]'))setTimeout(syncAll,30)},true);
-
     const story=$('#story');
     if(story&&story.dataset.geometryLocked!=='true'){
       story.dataset.geometryLocked='true';
       for(const type of ['wheel','pointerdown','pointermove'])story.addEventListener(type,e=>{e.stopPropagation();e.stopImmediatePropagation()},{capture:true,passive:true});
     }
-
     window.linaQuickSettingsSync=syncAll;
     setTimeout(()=>{window.linaSyncTypography?.();syncAll();titleEnabledState()},30);
     document.documentElement.dataset.quickControlsOrder='priority-v2';
