@@ -139,6 +139,8 @@
       ['400','Regular'],['500','Medium'],['600','Semibold'],['700','Bold'],['800','Heavy'],['900','Black']
     ],'700');
     select('textAlign',[['left','Left'],['center','Centre'],['right','Right']],'left');
+    let showTitle=$('#showTitle');if(!showTitle){showTitle=document.createElement('input');showTitle.type='checkbox';showTitle.id='showTitle';showTitle.checked=true;host.append(showTitle)}
+    select('titleDuration',[['1.5','1.5 seconds'],['2','2 seconds'],['2.5','2.5 seconds'],['3','3 seconds'],['4','4 seconds']],'2.5');
     range('lineHeight',.75,1.35,.01,1.02);
     range('letterSpacing',-.08,.1,.005,-.02);
     for(const [id,value] of [['lineHeightVal','1.02'],['letterSpacingVal','-0.02em']]){
