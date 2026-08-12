@@ -159,7 +159,7 @@
         </div>
       </details>
       <div class="quick-actions">
-        <a id="resetProjectVisible" class="btn subtle" href="reset.html?v=p88-20260812-guided-readiness" role="button" data-lina-owner="project-hard-v3">Reset project</a>
+        <a id="resetProjectVisible" class="btn subtle" href="reset.html?v=p89-20260812-unified-lyric-controls" role="button" data-lina-owner="project-hard-v3">Reset project</a>
         <button id="quickExport" class="btn primary" type="button">Export video</button>
       </div>`;
 
