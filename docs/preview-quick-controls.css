@@ -188,3 +188,15 @@ html[data-preview-finalise="v4"] .quick-wide{grid-column:1/-1!important}
 html[data-preview-finalise="v4"] .quick-priority-1{border-color:rgba(255,255,255,.12)!important;background:rgba(255,255,255,.024)!important}
 html[data-preview-finalise="v4"] .quick-priority-4{background:rgba(255,255,255,.032)!important}
 html[data-preview-finalise="v4"] #quickAdvanced .quick-advanced-body{padding-top:9px!important}
+
+
+/* Compact opening-card controls belong beside text size in Lyric look. */
+#previewQuickControls .quick-title-inline,
+#previewQuickControls .quick-title-duration{align-self:end!important}
+#previewQuickControls .quick-title-inline{min-height:42px!important}
+#previewQuickControls .quick-title-inline small{display:block!important;font-size:8px!important;color:var(--muted)!important}
+@media(min-width:760px){
+  #previewQuickControls .quick-priority-1>.quick-control-grid:first-of-type{
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  }
+}
