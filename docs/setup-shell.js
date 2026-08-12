@@ -115,7 +115,7 @@
     const prev=q('#prevStep');
     const next=q('#nextStep');
     if(prev)prev.disabled=index===0;
-    if(next)next.textContent='Next';
+    if(next)next.textContent=index===STEPS.length-1?'Preview & finalise':'Next';
 
     window.scrollTo({top:0,behavior:'auto'});
   }
@@ -142,7 +142,8 @@
         e.preventDefault();
         e.stopImmediatePropagation();
         const current=Math.max(0,STEPS.indexOf(q('#nav .navbtn.active')?.dataset.tool||'setup'));
-        showPanel(STEPS[Math.min(STEPS.length-1,current+1)]);
+        if(current===STEPS.length-1){const target=q('.preview-sticky-shell')||q('#previewQuickControls')||q('#preview');if(target){target.setAttribute('tabindex','-1');target.scrollIntoView({behavior:'smooth',block:'start'});setTimeout(()=>target.focus({preventScroll:true}),350)}return}
+        showPanel(STEPS[current+1]);
       }
     },true);
   }
