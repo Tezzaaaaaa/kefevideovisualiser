@@ -9,9 +9,9 @@
 
   async function waitForCanonicalOwnership(){
     for(let i=0;i<80;i++){
-      const reset=$('#resetProjectVisible'),quick=$('#quickEffect'),style=$('#styleEffectSelect');
+      const reset=$('#resetProjectVisible'),quick=$('#quickEffect');
       const ready=window.linaRuntime&&window.linaAuditSystem&&
-        reset?.dataset.linaOwner==='project-hard-v3'&&quick?.dataset.linaOwner==='canonical'&&style?.dataset.linaOwner==='canonical'&&
+        reset?.dataset.linaOwner==='project-hard-v3'&&quick?.dataset.linaOwner==='canonical'&&
         String(document.documentElement.dataset.transportOwner||'').startsWith('canonical')&&
         document.documentElement.dataset.exportOwner==='canonical-v1'&&
         document.documentElement.dataset.controlsOwner==='canonical-v1'&&
@@ -26,13 +26,13 @@
   async function verify(){
     document.documentElement.dataset.linaReady='checking';
     await waitForCanonicalOwnership();
-    const requiredIds=['nav','play','stop','audioFile','lyricsText','story','lyrics','exportBtn','resetProjectVisible','quickEffect','styleEffectSelect'];
+    const requiredIds=['nav','play','stop','audioFile','lyricsText','story','lyrics','exportBtn','resetProjectVisible','quickEffect'];
     const missing=requiredIds.filter(id=>!document.getElementById(id));
     const requiredFns=['goStep','parseTimed','render','exportVideo','restoreSavedProject'];
     const missingFns=requiredFns.filter(n=>typeof window[n]!=='function');
     const failures=[];
 
-    if([...document.querySelectorAll('#nav .navbtn')].length<5)failures.push('navigation');
+    if([...document.querySelectorAll('#nav .navbtn[data-tool]')].length!==3)failures.push('navigation');
     if(!window.linaTiming)failures.push('timing-layer');
     if(!window.linaMediaLifecycle)failures.push('media-lifecycle');
     if(typeof window.linaExportState!=='function')failures.push('export-lifecycle');
@@ -57,6 +57,9 @@
     if($('#resetProjectVisible')?.dataset.linaOwner!=='project-hard-v3')failures.push('full-project-reset-link');
     if($('#quickResetLayout')||$('#linaFreshReset')||$('#resetLyricsBtn')||$('#resetBtn'))failures.push('retired-reset-control');
     if($('#rightsConfirm'))failures.push('retired-rights-control');
+    if($('#nav [data-tool="style"]')||$('[data-panel="style"]'))failures.push('retired-style-ui');
+    if(!$('.preview-sticky-shell')||!$('.stage-wrap')||!$('#story'))failures.push('preview-stack');
+    if(!$('#previewQuickControls'))failures.push('quick-settings');
 
     const audit=window.linaAuditSystem?.();
     if(!audit)failures.push('system-audit');
