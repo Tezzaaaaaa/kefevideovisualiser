@@ -1,7 +1,7 @@
 // renderer.js — one draw function shared by preview and export.
 // All lyric motion is derived from playback time so pause/seek/export remain in sync.
 
-import { getSyncState, getContext } from "./sync.js";
+import { getSyncState } from "./sync.js";
 
 const clamp = (v, min = 0, max = 1) => Math.max(min, Math.min(max, v));
 const smoothstep = v => { const t = clamp(v); return t * t * (3 - 2 * t); };
@@ -180,7 +180,7 @@ function drawBrat(ctx, w, h, style, syncState) {
   let y = -totalHeight / 2 + lineHeight / 2;
   for (const row of rows) {
     const width = ctx.measureText(row).width;
-    let rectX = style.align === "left" ? 0 : style.align === "right" ? -width : -width / 2;
+    const rectX = style.align === "left" ? 0 : style.align === "right" ? -width : -width / 2;
     const insetX = style.fontSize * 0.28, insetY = style.fontSize * 0.17;
     ctx.fillStyle = "#8ACE00";
     ctx.fillRect(rectX - insetX, y - lineHeight / 2 + insetY * 0.1, width + insetX * 2, lineHeight - insetY * 0.2);
@@ -232,11 +232,11 @@ function drawClassic(ctx, w, h, style, syncState) {
   ctx.font = `500 ${style.fontSize * 0.8}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
   ctx.textBaseline = "middle"; ctx.textAlign = style.align; ctx.fillStyle = style.textColor;
   const x = textX(style.align, w, w * 0.1);
-  wrapAndDraw(ctx, applyCase(line.text, style.textCase), x, h * 0.82, w - w * 0.2, style.fontSize * style.lineSpacing, style.align);
+  wrapAndDraw(ctx, applyCase(line.text, style.textCase), x, h * 0.82, w - w * 0.2, style.fontSize * style.lineSpacing);
   ctx.globalAlpha = 1;
 }
 
-function wrapAndDraw(ctx, text, x, centerY, maxWidth, lineHeight, align) {
+function wrapAndDraw(ctx, text, x, centerY, maxWidth, lineHeight) {
   const rows = wrapText(ctx, text, maxWidth);
   const totalHeight = rows.length * lineHeight;
   let y = centerY - totalHeight / 2 + lineHeight / 2;
@@ -247,10 +247,12 @@ export function render(ctx, w, h, appState, mediaCache) {
   ctx.clearRect(0, 0, w, h);
   drawBackground(ctx, w, h, appState.background, mediaCache);
   const sync = getSyncState(appState.lyrics.lines, appState.playback.currentTime);
-  const style = appState.style;
+  const baseStyle = appState.style;
+  const effectProfile = baseStyle.effects?.[baseStyle.effect] || {};
+  const style = { ...baseStyle, ...effectProfile };
   if (style.letterSpacing) ctx.letterSpacing = `${style.letterSpacing}px`;
 
-  switch (style.effect) {
+  switch (baseStyle.effect) {
     case "apple": drawAppleMusic(ctx, w, h, style, sync, appState.lyrics.lines); break;
     case "brat": drawBrat(ctx, w, h, style, sync); break;
     case "eternal": drawHandwriting(ctx, w, h, style, sync); break;
