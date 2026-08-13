@@ -10,8 +10,8 @@ function wav(seconds=2.4,rate=44100){
   return b;
 }
 const background=Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920"><rect width="1080" height="1920" fill="#542788"/><circle cx="540" cy="720" r="360" fill="#ef8a62"/></svg>');
-execFileSync('ffmpeg',['-y','-v','error','-f','lavfi','-i','color=c=0x542788:s=320x568:d=1','-c:v','libx264','-pix_fmt','yuv420p','-movflags','+faststart','/tmp/lina-background.mp4']);
-execFileSync('ffmpeg',['-y','-v','error','-f','lavfi','-i','color=c=0x542788:s=320x568:d=1','-c:v','libvpx-vp9','-pix_fmt','yuv420p','/tmp/lina-background.webm']);
+execFileSync('ffmpeg',['-y','-v','error','-f','lavfi','-i','testsrc2=size=320x568:rate=60:duration=1','-c:v','libx264','-pix_fmt','yuv420p','-movflags','+faststart','/tmp/lina-background.mp4']);
+execFileSync('ffmpeg',['-y','-v','error','-f','lavfi','-i','testsrc2=size=320x568:rate=60:duration=1','-c:v','libvpx-vp9','-pix_fmt','yuv420p','/tmp/lina-background.webm']);
 const browser=await chromium.launch({headless:true});
 const page=await browser.newPage({acceptDownloads:true,viewport:{width:1280,height:900}});
 const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',message=>console.log('BROWSER',message.type(),message.text()));
@@ -26,20 +26,42 @@ const canvasSample=()=>page.locator('#stageCanvas').evaluate(canvas=>{
   }
   return {visible,bright,bratGreen};
 });
+const videoDrift=()=>page.evaluate(()=>{
+  const audio=document.querySelector('#audioEl'),video=document.querySelector('#backgroundVideo');
+  if(!Number.isFinite(video.duration)||video.duration<=0)return Infinity;
+  const target=((audio.currentTime%video.duration)+video.duration)%video.duration;
+  const direct=Math.abs(video.currentTime-target);
+  return Math.min(direct,Math.abs(video.duration-direct));
+});
 await page.route('https://lrclib.net/api/search**',route=>route.fulfill({contentType:'application/json',body:JSON.stringify([{trackName:'Test Song',artistName:'Lady Gaga',syncedLyrics:'[00:00.00]First lyric line\n[00:00.80]Second lyric line\n[00:01.60]Final lyric line'}])}));
 await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
 assert.equal((await page.locator('[data-effect="apple"]').textContent()).trim(),'Apple Music');
 assert.equal((await page.locator('[data-effect="brat"]').textContent()).trim(),'Brat');
 assert.equal((await page.locator('[data-effect="eternal"]').textContent()).trim(),'Eternal Sunshine');
 assert.equal(await page.locator('#lyricSize').getAttribute('type'),'range');
-for(const align of ['left','center','right']){
-  await page.click(`[data-align="${align}"]`);
-  assert.match(await page.locator(`[data-align="${align}"]`).getAttribute('class'),/active/);
-}
-await page.click('[data-align="center"]');
-await page.locator('#lyricSize').fill('112');
-assert.equal((await page.locator('#lyricSizeValue').textContent()).trim(),'112');
-await page.locator('#lyricSize').fill('76');
+
+await page.click('[data-align="left"]');
+await page.locator('#lyricSize').fill('90');
+await page.click('[data-effect="brat"]');
+assert.match(await page.locator('[data-align="center"]').getAttribute('class'),/active/);
+assert.equal(await page.locator('#lyricSize').inputValue(),'88');
+await page.click('[data-align="right"]');
+await page.locator('#lyricSize').fill('110');
+await page.click('[data-effect="eternal"]');
+assert.match(await page.locator('[data-align="center"]').getAttribute('class'),/active/);
+assert.equal(await page.locator('#lyricSize').inputValue(),'82');
+await page.click('[data-align="left"]');
+await page.locator('#lyricSize').fill('65');
+await page.click('[data-effect="apple"]');
+assert.match(await page.locator('[data-align="left"]').getAttribute('class'),/active/);
+assert.equal(await page.locator('#lyricSize').inputValue(),'90');
+await page.click('[data-effect="brat"]');
+assert.match(await page.locator('[data-align="right"]').getAttribute('class'),/active/);
+assert.equal(await page.locator('#lyricSize').inputValue(),'110');
+await page.click('[data-effect="eternal"]');
+assert.match(await page.locator('[data-align="left"]').getAttribute('class'),/active/);
+assert.equal(await page.locator('#lyricSize').inputValue(),'65');
+await page.click('[data-effect="apple"]');
 
 let chooserPromise=page.waitForEvent('filechooser');
 await page.click('label[for="audioInput"]');
@@ -84,9 +106,16 @@ const videoMime=supportsMp4?'video/mp4':'video/webm';
 const videoPath=supportsMp4?'/tmp/lina-background.mp4':'/tmp/lina-background.webm';
 await chooser.setFiles({name:videoName,mimeType:videoMime,buffer:readFileSync(videoPath)});
 await page.waitForFunction(name=>!document.querySelector('#exportBottom').disabled && document.querySelector('#backgroundStatus').textContent.includes(name),videoName,{timeout:10000});
-await page.waitForTimeout(250);
+await page.locator('#seek').fill('0.4');
+await page.waitForTimeout(180);
+assert.ok(await videoDrift()<.08,`paused video background drifted by ${await videoDrift()}s`);
 sample=await canvasSample();
 assert.ok(sample.visible>10000 && sample.bright>0,`video preview blank: ${JSON.stringify(sample)}`);
+await page.click('#playBtn');
+await page.waitForTimeout(420);
+assert.ok(await videoDrift()<.14,`playing 60fps video background drifted by ${await videoDrift()}s`);
+await page.click('#playBtn');
+await page.waitForFunction(()=>document.querySelector('#audioEl').paused);
 for(const effect of ['apple','brat','eternal']){
   await page.click(`[data-effect="${effect}"]`);
   assert.match(await page.locator(`[data-effect="${effect}"]`).getAttribute('class'),/active/);
@@ -98,7 +127,7 @@ for(const effect of ['apple','brat','eternal']){
   await page.click('#exportBottom');
   let download;
   try{download=await downloadPromise}catch(error){
-    const diagnostic=await page.evaluate(()=>({toast:document.querySelector('#toast')?.textContent,toastClass:document.querySelector('#toast')?.className,overlayHidden:document.querySelector('#exportOverlay')?.classList.contains('hidden'),percent:document.querySelector('#exportPct')?.textContent,status:document.querySelector('#exportStatus')?.textContent,mediaRecorder:typeof MediaRecorder,canvasCapture:typeof HTMLCanvasElement.prototype.captureStream,audioDuration:document.querySelector('#audioEl')?.duration,audioTime:document.querySelector('#audioEl')?.currentTime}));
+    const diagnostic=await page.evaluate(()=>({toast:document.querySelector('#toast')?.textContent,toastClass:document.querySelector('#toast')?.className,overlayHidden:document.querySelector('#exportOverlay')?.classList.contains('hidden'),percent:document.querySelector('#exportPct')?.textContent,status:document.querySelector('#exportStatus')?.textContent,mediaRecorder:typeof MediaRecorder,canvasCapture:typeof HTMLCanvasElement.prototype.captureStream,audioDuration:document.querySelector('#audioEl')?.duration,audioTime:document.querySelector('#audioEl')?.currentTime,videoTime:document.querySelector('#backgroundVideo')?.currentTime}));
     throw new Error(`${effect}: no download; ${JSON.stringify(diagnostic)}; page errors: ${errors.join(' | ')}`);
   }
   const path=await download.path();
