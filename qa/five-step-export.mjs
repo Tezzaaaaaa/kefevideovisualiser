@@ -17,9 +17,14 @@ const page=await browser.newPage({acceptDownloads:true,viewport:{width:1280,heig
 const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',message=>console.log('BROWSER',message.type(),message.text()));
 const canvasSample=()=>page.locator('#stageCanvas').evaluate(canvas=>{
   const pixels=canvas.getContext('2d',{willReadFrequently:true}).getImageData(0,0,canvas.width,canvas.height).data;
-  let visible=0,bright=0;
-  for(let i=0;i<pixels.length;i+=64){if(pixels[i]+pixels[i+1]+pixels[i+2]>12)visible++;if(pixels[i]+pixels[i+1]+pixels[i+2]>450)bright++;}
-  return {visible,bright};
+  let visible=0,bright=0,bratGreen=0;
+  for(let i=0;i<pixels.length;i+=64){
+    const r=pixels[i],g=pixels[i+1],b=pixels[i+2];
+    if(r+g+b>12)visible++;
+    if(r+g+b>450)bright++;
+    if(g>150&&g>r+35&&g>b+80)bratGreen++;
+  }
+  return {visible,bright,bratGreen};
 });
 await page.route('https://lrclib.net/api/search**',route=>route.fulfill({contentType:'application/json',body:JSON.stringify([{trackName:'Test Song',artistName:'Lady Gaga',syncedLyrics:'[00:00.00]First lyric line\n[00:00.80]Second lyric line\n[00:01.60]Final lyric line'}])}));
 await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
@@ -87,7 +92,8 @@ for(const effect of ['apple','brat','eternal']){
   assert.match(await page.locator(`[data-effect="${effect}"]`).getAttribute('class'),/active/);
   await page.waitForTimeout(100);
   sample=await canvasSample();
-  assert.ok(sample.visible>10000 && sample.bright>0,`${effect} preview blank: ${JSON.stringify(sample)}`);
+  const effectVisible=effect==='brat'?sample.bratGreen>0:sample.bright>0;
+  assert.ok(sample.visible>10000&&effectVisible,`${effect} preview blank: ${JSON.stringify(sample)}`);
   const downloadPromise=page.waitForEvent('download',{timeout:15000});
   await page.click('#exportBottom');
   let download;
