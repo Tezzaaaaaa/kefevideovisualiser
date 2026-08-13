@@ -26,11 +26,23 @@ function syncHazeControls(){
   });
 }
 function applyFirstBratHaze(){if(bratHazeInitialized)return;bratHazeInitialized=true;state.background.hazeEnabled=true;state.background.hazeColor=BRAT_GREEN;if(!(state.background.hazeOpacity>0))state.background.hazeOpacity=.24;syncHazeControls()}
+function waitForStylesheet(link,timeoutMs=5000){
+  if(!link||link.dataset.loaded==='true')return Promise.resolve();
+  link.media='all';
+  return new Promise((resolve,reject)=>{
+    let settled=false;
+    const finish=error=>{if(settled)return;settled=true;clearTimeout(timer);link.removeEventListener('load',loaded);link.removeEventListener('error',failed);error?reject(error):resolve()};
+    const loaded=()=>{link.dataset.loaded='true';finish()};
+    const failed=()=>finish(new Error('Homemade Apple could not be loaded. Check your connection and try again.'));
+    const timer=setTimeout(failed,timeoutMs);
+    link.addEventListener('load',loaded,{once:true});link.addEventListener('error',failed,{once:true});
+  });
+}
 async function ensureActiveEffectFont(){
   if(state.style.effect!=='eternal'||!document.fonts?.load)return;
+  await waitForStylesheet($('#homemadeAppleStylesheet'));
   const size=activeEffectStyle().fontSize||82;
-  const timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Homemade Apple could not be loaded. Check your connection and try again.')),5000));
-  await Promise.race([document.fonts.load(`${size}px "Homemade Apple"`),timeout]);
+  await Promise.race([document.fonts.load(`${size}px "Homemade Apple"`),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Homemade Apple could not be loaded. Check your connection and try again.')),5000))]);
   if(!document.fonts.check(`${size}px "Homemade Apple"`))throw new Error('Homemade Apple could not be loaded. Check your connection and try again.');
 }
 function wrappedVideoTime(time,duration){if(!Number.isFinite(duration)||duration<=0)return 0;return ((Number(time)||0)%duration+duration)%duration}
@@ -93,4 +105,4 @@ async function startExport(){
 $('#exportBtn').addEventListener('click',startExport);$('#exportBottom').addEventListener('click',startExport);$('#cancelExport').addEventListener('click',()=>exportJob?.cancel());
 
 function tick(){const renderTime=exportClockTime!==null?exportClockTime:(audio.currentTime||0);state.playback.currentTime=renderTime;$('#seek').value=renderTime;$('#clock').textContent=`${fmt(renderTime)} / ${fmt(audio.duration)}`;syncBackgroundClock(renderTime,exportClockTime!==null||!audio.paused);render(ctx,canvas.width,canvas.height,state,media);requestAnimationFrame(tick)}
-state.canvas.aspect='9:16';state.style.effect='apple';state.style.textColor='#fff';state.style.accentColor='#fff';state.style.dimColor='rgba(255,255,255,.42)';state.background.dim=.35;syncEffectControls();syncHazeControls();readiness();requestAnimationFrame(tick);
+state.canvas.aspect='9:16';state.style.effect='apple';state.style.textColor='#fff';state.style.accentColor='#fff';state.style.dimColor='rgba(255,255,255,.42)';state.background.dim=.35;syncEffectControls();syncHazeControls();readiness();document.documentElement.dataset.linaReady='true';requestAnimationFrame(tick);
