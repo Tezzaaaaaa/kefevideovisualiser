@@ -6,7 +6,8 @@ import {exportVideo,downloadBlob} from './exporter.js';
 const $=s=>document.querySelector(s);
 const canvas=$('#stageCanvas'),ctx=canvas.getContext('2d'),audio=$('#audioEl'),backgroundVideo=$('#backgroundVideo');
 const media={image:null,video:null};
-let audioURL='',backgroundURL='',exportJob=null,backgroundLoadId=0,exportClockTime=null,previewTimeBeforeExport=0;
+const BRAT_GREEN='#8ACE00',HAZE_WHITE='#FFFFFF';
+let audioURL='',backgroundURL='',exportJob=null,backgroundLoadId=0,exportClockTime=null,previewTimeBeforeExport=0,bratHazeInitialized=false;
 const fmt=t=>`${Math.floor((t||0)/60)}:${String(Math.floor((t||0)%60)).padStart(2,'0')}`;
 const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
 function toast(message,error=false){const el=$('#toast');el.textContent=message;el.classList.toggle('error',error);el.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('show'),3500)}
@@ -14,6 +15,17 @@ function readiness(){const ready=!!state.audio.file&&state.lyrics.lines.length>0
 function songFromFilename(name){const base=name.replace(/\.[^.]+$/,'').replace(/[_]+/g,' ').trim();const parts=base.split(/\s+-\s+/);return parts.length>1?{artist:parts[0].trim(),track:parts.slice(1).join(' - ').trim()}:{artist:'',track:base}}
 function activeEffectStyle(){const effect=state.style.effect;if(!state.style.effects[effect])state.style.effects[effect]={fontSize:76,align:'center'};return state.style.effects[effect]}
 function syncEffectControls(){const profile=activeEffectStyle();$('#lyricSize').value=profile.fontSize;$('#lyricSizeValue').textContent=String(profile.fontSize);document.querySelectorAll('[data-align]').forEach(button=>button.classList.toggle('active',button.dataset.align===profile.align))}
+function syncHazeControls(){
+  $('#hazeEnabled').checked=!!state.background.hazeEnabled;
+  $('#hazeColor').value=state.background.hazeColor||BRAT_GREEN;
+  const pct=Math.round(clamp(state.background.hazeOpacity||0,0,1)*100);
+  $('#hazeOpacity').value=String(pct);$('#hazeOpacityValue').textContent=`${pct}%`;
+  document.querySelectorAll('[data-haze-preset]').forEach(button=>{
+    const target=button.dataset.hazePreset==='white'?HAZE_WHITE:BRAT_GREEN;
+    button.classList.toggle('active',!!state.background.hazeEnabled&&String(state.background.hazeColor).toUpperCase()===target);
+  });
+}
+function applyFirstBratHaze(){if(bratHazeInitialized)return;bratHazeInitialized=true;state.background.hazeEnabled=true;state.background.hazeColor=BRAT_GREEN;if(!(state.background.hazeOpacity>0))state.background.hazeOpacity=.24;syncHazeControls()}
 function wrappedVideoTime(time,duration){if(!Number.isFinite(duration)||duration<=0)return 0;return ((Number(time)||0)%duration+duration)%duration}
 function circularDrift(current,target,duration){let drift=target-current;if(duration>0){if(drift>duration/2)drift-=duration;else if(drift<-duration/2)drift+=duration}return drift}
 function syncBackgroundClock(targetTime,shouldRun){
@@ -92,9 +104,13 @@ $('#backgroundInput').addEventListener('change',event=>{
   }
 });
 
-$('#effects').addEventListener('click',event=>{const button=event.target.closest('[data-effect]');if(!button)return;state.style.effect=button.dataset.effect;document.querySelectorAll('[data-effect]').forEach(item=>item.classList.toggle('active',item===button));syncEffectControls()});
+$('#effects').addEventListener('click',event=>{const button=event.target.closest('[data-effect]');if(!button)return;state.style.effect=button.dataset.effect;if(state.style.effect==='brat')applyFirstBratHaze();document.querySelectorAll('[data-effect]').forEach(item=>item.classList.toggle('active',item===button));syncEffectControls();syncHazeControls()});
 $('#alignment').addEventListener('click',event=>{const button=event.target.closest('[data-align]');if(!button)return;activeEffectStyle().align=button.dataset.align;syncEffectControls()});
 $('#lyricSize').addEventListener('input',event=>{const value=Number(event.target.value);activeEffectStyle().fontSize=value;$('#lyricSizeValue').textContent=String(value)});
+$('#hazeEnabled').addEventListener('change',event=>{state.background.hazeEnabled=event.target.checked;syncHazeControls()});
+$('#hazeColor').addEventListener('input',event=>{state.background.hazeColor=event.target.value.toUpperCase();state.background.hazeEnabled=true;syncHazeControls()});
+$('#hazeOpacity').addEventListener('input',event=>{state.background.hazeOpacity=Number(event.target.value)/100;syncHazeControls()});
+$('#hazePresets').addEventListener('click',event=>{const button=event.target.closest('[data-haze-preset]');if(!button)return;state.background.hazeColor=button.dataset.hazePreset==='white'?HAZE_WHITE:BRAT_GREEN;state.background.hazeEnabled=true;syncHazeControls()});
 $('#aspects').addEventListener('click',event=>{const button=event.target.closest('[data-aspect]');if(!button)return;state.canvas.aspect=button.dataset.aspect;const size=ASPECTS[state.canvas.aspect];canvas.width=size.w;canvas.height=size.h;document.querySelectorAll('[data-aspect]').forEach(item=>item.classList.toggle('active',item===button))});
 $('#playBtn').addEventListener('click',()=>{if(exportClockTime!==null)return;audio.paused?audio.play():audio.pause()});
 audio.addEventListener('play',()=>$('#playBtn').textContent='❚❚');audio.addEventListener('pause',()=>$('#playBtn').textContent='▶');
@@ -103,17 +119,11 @@ $('#seek').addEventListener('input',event=>{if(exportClockTime!==null)return;aud
 async function startExport(){
   if(exportJob||$('#exportBtn').disabled)return;
   previewTimeBeforeExport=audio.currentTime||0;
-  audio.pause();
-  exportClockTime=0;
-  state.playback.currentTime=0;
-  syncBackgroundClock(0,false);
+  audio.pause();exportClockTime=0;state.playback.currentTime=0;syncBackgroundClock(0,false);
   $('#exportOverlay').classList.remove('hidden');$('#exportPct').textContent='0%';$('#exportProgress').value=0;$('#exportStatus').textContent='Rendering…';
   try{
     exportJob=await exportVideo({
-      canvas,
-      audioEl:audio,
-      fps:60,
-      onTime:time=>{exportClockTime=time},
+      canvas,audioEl:audio,fps:60,onTime:time=>{exportClockTime=time},
       onProgress:p=>{$('#exportPct').textContent=`${Math.round(p*100)}%`;$('#exportProgress').value=p*100},
       onFinalizing:()=>$('#exportStatus').textContent='Finalising video…',
       onDone:(blob,format)=>{exportJob=null;restorePreviewClock();$('#exportOverlay').classList.add('hidden');downloadBlob(blob,`${(state.project.title||'LINA lyric video').replace(/[^a-z0-9 _-]/gi,'')}.${format.extension}`);toast('Video exported')},
@@ -133,4 +143,4 @@ function tick(){
   render(ctx,canvas.width,canvas.height,state,media);
   requestAnimationFrame(tick);
 }
-state.canvas.aspect='9:16';state.style.effect='apple';state.style.textColor='#fff';state.style.accentColor='#fff';state.style.dimColor='rgba(255,255,255,.42)';state.background.dim=.35;syncEffectControls();readiness();requestAnimationFrame(tick);
+state.canvas.aspect='9:16';state.style.effect='apple';state.style.textColor='#fff';state.style.accentColor='#fff';state.style.dimColor='rgba(255,255,255,.42)';state.background.dim=.35;syncEffectControls();syncHazeControls();readiness();requestAnimationFrame(tick);

@@ -40,6 +40,9 @@ export const state = {
     videoEl: null,
     dim: 0.35,
     blur: 0,
+    hazeEnabled: false,
+    hazeColor: "#8ACE00",
+    hazeOpacity: 0.24,
   },
   canvas: {
     aspect: "9:16",
