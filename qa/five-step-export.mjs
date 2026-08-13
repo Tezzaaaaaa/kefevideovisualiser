@@ -19,7 +19,10 @@ assert.doesNotMatch(rendererSource,/insetX|fillRect\(rectX/,'old Brat green-box 
 assert.match(rendererSource,/"Homemade Apple"/,'Eternal Homemade Apple renderer missing');
 assert.doesNotMatch(rendererSource,/Snell Roundhand|Segoe Script|Bradley Hand|Reenie Beanie/,'unapproved Eternal font names must be absent');
 assert.match(indexSource,/family=Homemade\+Apple/,'Homemade Apple web font load missing');
+assert.match(indexSource,/id="homemadeAppleStylesheet"/,'Eternal font stylesheet must be independently loadable');
+assert.match(indexSource,/media="print"/,'Eternal font stylesheet must not block LINA startup');
 assert.match(mainSource,/ensureActiveEffectFont/,'Eternal font preflight missing');
+assert.match(mainSource,/dataset\.linaReady='true'/,'LINA readiness marker missing');
 assert.match(mainSource,/fps\s*:\s*60/,'export must request 60fps');
 assert.doesNotMatch(exporterSource,/audioEl\.currentTime\s*=\s*time/,'export must not force a second audio clock');
 
@@ -44,8 +47,9 @@ const browser=await chromium.launch({headless:true});
 const page=await browser.newPage({acceptDownloads:true,viewport:{width:1280,height:900}});
 const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>console.log('BROWSER',m.type(),m.text()));
 await page.route('https://lrclib.net/api/search**',route=>route.fulfill({contentType:'application/json',body:JSON.stringify([{trackName:'Test Song',artistName:'Lady Gaga',syncedLyrics}])}));
-await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
-await page.waitForFunction(()=>document.querySelector('#exportBtn')?.disabled===true,null,{timeout:5000});
+await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});
+await page.waitForFunction(()=>document.documentElement.dataset.linaReady==='true',null,{timeout:5000});
+assert.equal(await page.locator('#exportBtn').isDisabled(),true,'Export must stay disabled before media is loaded');
 
 const sample=()=>page.locator('#stageCanvas').evaluate(canvas=>{
   const data=canvas.getContext('2d',{willReadFrequently:true}).getImageData(0,0,canvas.width,canvas.height).data;
