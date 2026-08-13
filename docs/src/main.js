@@ -6,7 +6,7 @@ import {exportVideo,downloadBlob} from './exporter.js';
 const $=s=>document.querySelector(s);
 const canvas=$('#stageCanvas'),ctx=canvas.getContext('2d'),audio=$('#audioEl'),backgroundVideo=$('#backgroundVideo');
 const media={image:null,video:null};
-let audioURL='',backgroundURL='',exportJob=null,backgroundLoadId=0;
+let audioURL='',backgroundURL='',exportJob=null,backgroundLoadId=0,exportClockTime=null,previewTimeBeforeExport=0;
 const fmt=t=>`${Math.floor((t||0)/60)}:${String(Math.floor((t||0)%60)).padStart(2,'0')}`;
 const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
 function toast(message,error=false){const el=$('#toast');el.textContent=message;el.classList.toggle('error',error);el.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('show'),3500)}
@@ -31,6 +31,13 @@ function syncBackgroundClock(targetTime,shouldRun){
     if(!video.paused)video.pause();
     if(distance>.018&&!video.seeking)video.currentTime=target;
   }
+}
+function restorePreviewClock(){
+  exportClockTime=null;
+  const duration=Number.isFinite(audio.duration)?audio.duration:previewTimeBeforeExport;
+  audio.currentTime=Math.min(previewTimeBeforeExport,Math.max(0,duration||0));
+  state.playback.currentTime=audio.currentTime||0;
+  syncBackgroundClock(state.playback.currentTime,false);
 }
 
 async function findLyrics(){
@@ -89,23 +96,40 @@ $('#effects').addEventListener('click',event=>{const button=event.target.closest
 $('#alignment').addEventListener('click',event=>{const button=event.target.closest('[data-align]');if(!button)return;activeEffectStyle().align=button.dataset.align;syncEffectControls()});
 $('#lyricSize').addEventListener('input',event=>{const value=Number(event.target.value);activeEffectStyle().fontSize=value;$('#lyricSizeValue').textContent=String(value)});
 $('#aspects').addEventListener('click',event=>{const button=event.target.closest('[data-aspect]');if(!button)return;state.canvas.aspect=button.dataset.aspect;const size=ASPECTS[state.canvas.aspect];canvas.width=size.w;canvas.height=size.h;document.querySelectorAll('[data-aspect]').forEach(item=>item.classList.toggle('active',item===button))});
-$('#playBtn').addEventListener('click',()=>audio.paused?audio.play():audio.pause());
+$('#playBtn').addEventListener('click',()=>{if(exportClockTime!==null)return;audio.paused?audio.play():audio.pause()});
 audio.addEventListener('play',()=>$('#playBtn').textContent='❚❚');audio.addEventListener('pause',()=>$('#playBtn').textContent='▶');
-$('#seek').addEventListener('input',event=>{audio.currentTime=Number(event.target.value);syncBackgroundClock(audio.currentTime,false)});
+$('#seek').addEventListener('input',event=>{if(exportClockTime!==null)return;audio.currentTime=Number(event.target.value);syncBackgroundClock(audio.currentTime,false)});
 
 async function startExport(){
-  if(exportJob)return;if($('#exportBtn').disabled)return;
-  audio.pause();syncBackgroundClock(audio.currentTime,false);$('#exportOverlay').classList.remove('hidden');$('#exportPct').textContent='0%';$('#exportProgress').value=0;
-  try{exportJob=await exportVideo({canvas,audioEl:audio,fps:30,onProgress:p=>{$('#exportPct').textContent=`${Math.round(p*100)}%`;$('#exportProgress').value=p*100},onFinalizing:()=>$('#exportStatus').textContent='Finalising video…',onDone:(blob,format)=>{exportJob=null;syncBackgroundClock(audio.currentTime,false);$('#exportOverlay').classList.add('hidden');downloadBlob(blob,`${(state.project.title||'LINA lyric video').replace(/[^a-z0-9 _-]/gi,'')}.${format.extension}`);toast('Video exported')},onError:error=>{exportJob=null;syncBackgroundClock(audio.currentTime,false);$('#exportOverlay').classList.add('hidden');toast(`Export failed: ${error.message}`,true)},onCancel:()=>{exportJob=null;syncBackgroundClock(audio.currentTime,false);$('#exportOverlay').classList.add('hidden');toast('Export cancelled')}})}catch(error){exportJob=null;syncBackgroundClock(audio.currentTime,false);$('#exportOverlay').classList.add('hidden');toast(`Export failed: ${error.message}`,true)}
+  if(exportJob||$('#exportBtn').disabled)return;
+  previewTimeBeforeExport=audio.currentTime||0;
+  audio.pause();
+  exportClockTime=0;
+  state.playback.currentTime=0;
+  syncBackgroundClock(0,false);
+  $('#exportOverlay').classList.remove('hidden');$('#exportPct').textContent='0%';$('#exportProgress').value=0;$('#exportStatus').textContent='Rendering…';
+  try{
+    exportJob=await exportVideo({
+      canvas,
+      audioEl:audio,
+      fps:60,
+      onTime:time=>{exportClockTime=time},
+      onProgress:p=>{$('#exportPct').textContent=`${Math.round(p*100)}%`;$('#exportProgress').value=p*100},
+      onFinalizing:()=>$('#exportStatus').textContent='Finalising video…',
+      onDone:(blob,format)=>{exportJob=null;restorePreviewClock();$('#exportOverlay').classList.add('hidden');downloadBlob(blob,`${(state.project.title||'LINA lyric video').replace(/[^a-z0-9 _-]/gi,'')}.${format.extension}`);toast('Video exported')},
+      onError:error=>{exportJob=null;restorePreviewClock();$('#exportOverlay').classList.add('hidden');toast(`Export failed: ${error.message}`,true)},
+      onCancel:()=>{exportJob=null;restorePreviewClock();$('#exportOverlay').classList.add('hidden');toast('Export cancelled')}
+    });
+  }catch(error){exportJob=null;restorePreviewClock();$('#exportOverlay').classList.add('hidden');toast(`Export failed: ${error.message}`,true)}
 }
 $('#exportBtn').addEventListener('click',startExport);$('#exportBottom').addEventListener('click',startExport);$('#cancelExport').addEventListener('click',()=>exportJob?.cancel());
 
 function tick(){
-  state.playback.currentTime=audio.currentTime||0;
-  $('#seek').value=state.playback.currentTime;
-  $('#clock').textContent=`${fmt(state.playback.currentTime)} / ${fmt(audio.duration)}`;
-  const exporting=exportJob?.phase==='recording'||exportJob?.phase==='finalizing';
-  syncBackgroundClock(state.playback.currentTime,!audio.paused||exporting);
+  const renderTime=exportClockTime!==null?exportClockTime:(audio.currentTime||0);
+  state.playback.currentTime=renderTime;
+  $('#seek').value=renderTime;
+  $('#clock').textContent=`${fmt(renderTime)} / ${fmt(audio.duration)}`;
+  syncBackgroundClock(renderTime,exportClockTime!==null||!audio.paused);
   render(ctx,canvas.width,canvas.height,state,media);
   requestAnimationFrame(tick);
 }
