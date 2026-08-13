@@ -17,14 +17,17 @@ export const state = {
   },
   style: {
     effect: "apple",
-    fontSize: 76,
-    align: "center", // left | center | right
     textCase: "original",
     letterSpacing: 0,
     lineSpacing: 1.2,
     textColor: "#FFFFFF",
     accentColor: "#FFFFFF",
     dimColor: "rgba(255,255,255,0.42)",
+    effects: {
+      apple: { fontSize: 76, align: "center" },
+      brat: { fontSize: 88, align: "center" },
+      eternal: { fontSize: 82, align: "center" },
+    },
   },
   background: {
     type: "solid",
