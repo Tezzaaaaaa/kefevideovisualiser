@@ -2,6 +2,15 @@ import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {readFileSync} from 'node:fs';
 import {chromium} from 'playwright';
+import {parseLyrics} from '../docs/src/parser.js';
+
+const plain=parseLyrics('[00:00.00]One two three\n[00:01.00]Four five six');
+assert.equal(plain.format,'lrc');
+assert.equal(plain.lines[0].words,null,'plain LRC must not invent word timing');
+const enhanced=parseLyrics('[00:00.00]<00:00.00>One <00:00.30>two <00:00.60>three\n[00:01.00]<00:01.00>Four <00:01.30>five <00:01.60>six');
+assert.equal(enhanced.format,'enhanced');
+assert.equal(enhanced.lines[0].words.length,3);
+assert.equal(enhanced.lines[0].words[1].time,0.30);
 
 function wav(seconds=2.4,rate=44100){
   const count=Math.floor(seconds*rate),bytes=count*2,b=Buffer.alloc(44+bytes);
@@ -9,7 +18,7 @@ function wav(seconds=2.4,rate=44100){
   for(let i=0;i<count;i++)b.writeInt16LE(Math.round(Math.sin(2*Math.PI*440*i/rate)*6000),44+i*2);
   return b;
 }
-const background=Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920"><rect width="1080" height="1920" fill="#542788"/><circle cx="540" cy="720" r="360" fill="#ef8a62"/></svg>');
+const background=Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920"><rect width="1080" height="1920" fill="#111111"/><circle cx="540" cy="720" r="360" fill="#222222"/></svg>');
 execFileSync('ffmpeg',['-y','-v','error','-f','lavfi','-i','testsrc2=size=320x568:rate=60:duration=1','-c:v','libx264','-pix_fmt','yuv420p','-movflags','+faststart','/tmp/lina-background.mp4']);
 execFileSync('ffmpeg',['-y','-v','error','-f','lavfi','-i','testsrc2=size=320x568:rate=60:duration=1','-c:v','libvpx-vp9','-pix_fmt','yuv420p','/tmp/lina-background.webm']);
 const browser=await chromium.launch({headless:true});
@@ -33,7 +42,8 @@ const videoDrift=()=>page.evaluate(()=>{
   const direct=Math.abs(video.currentTime-target);
   return Math.min(direct,Math.abs(video.duration-direct));
 });
-await page.route('https://lrclib.net/api/search**',route=>route.fulfill({contentType:'application/json',body:JSON.stringify([{trackName:'Test Song',artistName:'Lady Gaga',syncedLyrics:'[00:00.00]First lyric line\n[00:00.80]Second lyric line\n[00:01.60]Final lyric line'}])}));
+const syncedLyrics='[00:00.00]<00:00.00>First <00:00.28>lyric <00:00.58>line\n[00:00.80]<00:00.80>Second <00:01.05>lyric <00:01.35>line\n[00:01.60]<00:01.60>Final <00:01.85>lyric <00:02.15>line';
+await page.route('https://lrclib.net/api/search**',route=>route.fulfill({contentType:'application/json',body:JSON.stringify([{trackName:'Test Song',artistName:'Lady Gaga',syncedLyrics}])}));
 await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
 assert.equal((await page.locator('[data-effect="apple"]').textContent()).trim(),'Apple Music');
 assert.equal((await page.locator('[data-effect="brat"]').textContent()).trim(),'Brat');
@@ -78,6 +88,14 @@ let sample=await canvasSample();
 assert.ok(sample.visible>10000,`image preview blank: ${JSON.stringify(sample)}`);
 assert.ok(sample.bright>0,`lyrics not visible in image preview: ${JSON.stringify(sample)}`);
 assert.equal(await page.locator('#exportBtn').isEnabled(),true);
+
+// Apple enhanced timing should progressively illuminate more exact glyphs.
+await page.locator('#seek').fill('0.06');await page.waitForTimeout(80);const earlyApple=await canvasSample();
+await page.locator('#seek').fill('0.22');await page.waitForTimeout(80);const midApple=await canvasSample();
+await page.locator('#seek').fill('0.62');await page.waitForTimeout(80);const lateApple=await canvasSample();
+assert.ok(midApple.bright>earlyApple.bright,`Apple glyph progression did not advance: ${JSON.stringify({earlyApple,midApple})}`);
+assert.ok(lateApple.bright>=midApple.bright,`Apple completed glyphs did not stay highlighted: ${JSON.stringify({midApple,lateApple})}`);
+
 await page.click('#playBtn');
 await page.waitForFunction(()=>!document.querySelector('#audioEl').paused);
 await page.click('#playBtn');
@@ -92,11 +110,13 @@ for(const [ratio,width,height] of [['9:16',1080,1920],['1:1',1080,1080],['16:9',
   assert.match(await page.locator(`[data-aspect="${ratio}"]`).getAttribute('class'),/active/);
   assert.deepEqual(await page.locator('#stageCanvas').evaluate(el=>[el.width,el.height]),[width,height]);
 }
+const beforeCancelTime=await page.locator('#audioEl').evaluate(el=>el.currentTime);
 await page.click('#exportBtn');
 await page.waitForFunction(()=>!document.querySelector('#exportOverlay').classList.contains('hidden'));
 await page.click('#cancelExport');
 await page.waitForFunction(()=>document.querySelector('#exportOverlay').classList.contains('hidden'));
 assert.match(await page.locator('#toast').textContent(),/cancelled/i);
+assert.ok(Math.abs((await page.locator('#audioEl').evaluate(el=>el.currentTime))-beforeCancelTime)<.08,'cancelled export did not restore preview time');
 chooserPromise=page.waitForEvent('filechooser');
 await page.click('label[for="backgroundInput"]');
 chooser=await chooserPromise;
@@ -123,6 +143,7 @@ for(const effect of ['apple','brat','eternal']){
   sample=await canvasSample();
   const effectVisible=effect==='brat'?sample.bratGreen>0:sample.bright>0;
   assert.ok(sample.visible>10000&&effectVisible,`${effect} preview blank: ${JSON.stringify(sample)}`);
+  const previewTime=await page.locator('#audioEl').evaluate(el=>el.currentTime);
   const downloadPromise=page.waitForEvent('download',{timeout:15000});
   await page.click('#exportBottom');
   let download;
@@ -137,8 +158,10 @@ for(const effect of ['apple','brat','eternal']){
   const frameTimes=execFileSync('ffprobe',['-v','error','-select_streams','v:0','-show_entries','frame=best_effort_timestamp_time','-of','csv=p=0',path],{encoding:'utf8'}).trim().split(/\s+/).map(Number).filter(Number.isFinite);
   const duration=Math.max(...frameTimes);
   assert.ok(duration>2,`${effect}: invalid packet duration ${duration}`);
+  assert.ok(frameTimes.length>90,`${effect}: export cadence too low (${frameTimes.length} frames)`);
   execFileSync('ffmpeg',['-v','error','-i',path,'-f','null','-']);
   await page.waitForFunction(()=>document.querySelector('#exportOverlay').classList.contains('hidden'));
+  assert.ok(Math.abs((await page.locator('#audioEl').evaluate(el=>el.currentTime))-previewTime)<.08,`${effect}: export did not restore preview time`);
 }
 assert.deepEqual(errors,[]);
 await browser.close();
