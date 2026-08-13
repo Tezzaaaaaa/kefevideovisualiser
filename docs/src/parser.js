@@ -3,9 +3,7 @@
 // Output shape (always, regardless of input format):
 //   [{ time, endTime, text, words: [{ time, endTime, text }] }]
 //
-// This is the ONLY parser. The original project had lrc_import_fix.js,
-// timing_gap_fix.js and adaptive_karaoke.js all independently touching
-// lyric timing. Here, timing is computed once, in one place.
+// This is the ONLY parser. Timing is computed once, in one place.
 
 const LRC_TAG = /^\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]/;
 const META_TAG = /^\[(ar|ti|al|by|offset):(.*)\]$/i;
@@ -26,18 +24,6 @@ function detectFormat(raw) {
   return "txt";
 }
 
-function splitWordsEven(text, startTime, endTime) {
-  const words = text.split(/\s+/).filter(Boolean);
-  if (words.length === 0) return [];
-  const span = Math.max(0.15, endTime - startTime);
-  const step = span / words.length;
-  return words.map((w, i) => ({
-    text: w,
-    time: startTime + i * step,
-    endTime: startTime + (i + 1) * step,
-  }));
-}
-
 function parseEnhanced(raw) {
   const lines = raw.split(/\r?\n/);
   const out = [];
@@ -56,12 +42,9 @@ function parseEnhanced(raw) {
     const rest = line.slice(lineMatch[0].length);
 
     const words = [];
-    let cursor = 0;
-    let match;
     WORD_TAG.lastIndex = 0;
     const tags = [...rest.matchAll(WORD_TAG)];
     if (tags.length === 0) {
-      // enhanced file but this particular line has no word tags -> treat as plain
       const text = rest.replace(WORD_TAG, "").trim();
       if (text) out.push({ time: lineTime, endTime: lineTime + 3, text, words: null });
       continue;
@@ -97,25 +80,20 @@ function parseLrc(raw) {
       meta[m[1].toLowerCase()] = m[2].trim();
       continue;
     }
-    // a line may carry multiple timestamps, e.g. [00:12.00][00:45.00]same lyric
     const tags = [...line.matchAll(new RegExp(LRC_TAG.source, "g"))];
     if (tags.length === 0) continue;
     const text = line.replace(new RegExp(LRC_TAG.source, "g"), "").trim();
     if (!text) continue;
-    for (const t of tags) {
-      parsed.push({ time: toSeconds(t[1], t[2], t[3]), text });
-    }
+    for (const t of tags) parsed.push({ time: toSeconds(t[1], t[2], t[3]), text });
   }
   parsed.sort((a, b) => a.time - b.time);
-  const out = parsed.map((p, i) => {
-    const endTime = i + 1 < parsed.length ? parsed[i + 1].time : p.time + 4;
-    return {
-      time: p.time,
-      endTime,
-      text: p.text,
-      words: splitWordsEven(p.text, p.time, endTime),
-    };
-  });
+  const out = parsed.map((p, i) => ({
+    time: p.time,
+    endTime: i + 1 < parsed.length ? parsed[i + 1].time : p.time + 4,
+    text: p.text,
+    // Standard LRC has line timing only. Never fabricate word timing.
+    words: null,
+  }));
   return { lines: out, meta };
 }
 
@@ -124,10 +102,6 @@ function parseTxt(raw) {
     .split(/\r?\n/)
     .map((l) => l.trim())
     .filter(Boolean);
-  // No timestamps available yet — lines are staged with time=null until
-  // the user runs Tap Sync. This is intentional: guessing even spacing
-  // across an unknown-length song produces confidently wrong sync,
-  // which is worse than clearly asking for sync input.
   return {
     lines: lines.map((text) => ({ time: null, endTime: null, text, words: null })),
     meta: {},
