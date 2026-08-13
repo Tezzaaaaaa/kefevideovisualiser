@@ -65,6 +65,8 @@ $('#backgroundInput').addEventListener('change',event=>{
 });
 
 $('#effects').addEventListener('click',event=>{const button=event.target.closest('[data-effect]');if(!button)return;state.style.effect=button.dataset.effect;document.querySelectorAll('[data-effect]').forEach(item=>item.classList.toggle('active',item===button))});
+$('#alignment').addEventListener('click',event=>{const button=event.target.closest('[data-align]');if(!button)return;state.style.align=button.dataset.align;document.querySelectorAll('[data-align]').forEach(item=>item.classList.toggle('active',item===button))});
+$('#lyricSize').addEventListener('input',event=>{const value=Number(event.target.value);state.style.fontSize=value;$('#lyricSizeValue').textContent=String(value)});
 $('#aspects').addEventListener('click',event=>{const button=event.target.closest('[data-aspect]');if(!button)return;state.canvas.aspect=button.dataset.aspect;const size=ASPECTS[state.canvas.aspect];canvas.width=size.w;canvas.height=size.h;document.querySelectorAll('[data-aspect]').forEach(item=>item.classList.toggle('active',item===button))});
 $('#playBtn').addEventListener('click',()=>audio.paused?audio.play():audio.pause());
 audio.addEventListener('play',()=>$('#playBtn').textContent='❚❚');audio.addEventListener('pause',()=>$('#playBtn').textContent='▶');
@@ -78,4 +80,4 @@ async function startExport(){
 $('#exportBtn').addEventListener('click',startExport);$('#exportBottom').addEventListener('click',startExport);$('#cancelExport').addEventListener('click',()=>exportJob?.cancel());
 
 function tick(){state.playback.currentTime=audio.currentTime||0;$('#seek').value=state.playback.currentTime;$('#clock').textContent=`${fmt(state.playback.currentTime)} / ${fmt(audio.duration)}`;if(media.video&&Number.isFinite(media.video.duration)&&Math.abs(media.video.currentTime-state.playback.currentTime%media.video.duration)>.25)media.video.currentTime=state.playback.currentTime%media.video.duration;render(ctx,canvas.width,canvas.height,state,media);requestAnimationFrame(tick)}
-state.canvas.aspect='9:16';state.style.effect='apple';state.style.fontSize=76;state.style.align='center';state.style.textColor='#fff';state.style.accentColor='#fff';state.style.dimColor='rgba(255,255,255,.72)';state.background.dim=.35;readiness();requestAnimationFrame(tick);
+state.canvas.aspect='9:16';state.style.effect='apple';state.style.fontSize=76;state.style.align='center';state.style.textColor='#fff';state.style.accentColor='#fff';state.style.dimColor='rgba(255,255,255,.42)';state.background.dim=.35;readiness();requestAnimationFrame(tick);

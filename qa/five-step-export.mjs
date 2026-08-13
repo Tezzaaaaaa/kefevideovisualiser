@@ -23,6 +23,19 @@ const canvasSample=()=>page.locator('#stageCanvas').evaluate(canvas=>{
 });
 await page.route('https://lrclib.net/api/search**',route=>route.fulfill({contentType:'application/json',body:JSON.stringify([{trackName:'Test Song',artistName:'Lady Gaga',syncedLyrics:'[00:00.00]First lyric line\n[00:00.80]Second lyric line\n[00:01.60]Final lyric line'}])}));
 await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+assert.equal((await page.locator('[data-effect="apple"]').textContent()).trim(),'Apple Music');
+assert.equal((await page.locator('[data-effect="brat"]').textContent()).trim(),'Brat');
+assert.equal((await page.locator('[data-effect="eternal"]').textContent()).trim(),'Eternal Sunshine');
+assert.equal(await page.locator('#lyricSize').getAttribute('type'),'range');
+for(const align of ['left','center','right']){
+  await page.click(`[data-align="${align}"]`);
+  assert.match(await page.locator(`[data-align="${align}"]`).getAttribute('class'),/active/);
+}
+await page.click('[data-align="center"]');
+await page.locator('#lyricSize').fill('112');
+assert.equal((await page.locator('#lyricSizeValue').textContent()).trim(),'112');
+await page.locator('#lyricSize').fill('76');
+
 let chooserPromise=page.waitForEvent('filechooser');
 await page.click('label[for="audioInput"]');
 let chooser=await chooserPromise;
@@ -69,7 +82,7 @@ await page.waitForFunction(name=>!document.querySelector('#exportBottom').disabl
 await page.waitForTimeout(250);
 sample=await canvasSample();
 assert.ok(sample.visible>10000 && sample.bright>0,`video preview blank: ${JSON.stringify(sample)}`);
-for(const effect of ['apple','charli','eternal']){
+for(const effect of ['apple','brat','eternal']){
   await page.click(`[data-effect="${effect}"]`);
   assert.match(await page.locator(`[data-effect="${effect}"]`).getAttribute('class'),/active/);
   await page.waitForTimeout(100);

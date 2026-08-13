@@ -1,7 +1,4 @@
-// state.js — the ONLY place app state lives.
-// Every module reads/writes through this. No other file may declare
-// its own copy of "current line", "is playing", etc. That duplication
-// is what caused the original project's race conditions.
+// state.js — the only place app state lives.
 
 export const state = {
   project: {
@@ -16,21 +13,21 @@ export const state = {
   lyrics: {
     raw: "",
     format: "auto",
-    lines: [], // [{ time, endTime, text, words: [{time,text}] }]
+    lines: [],
   },
   style: {
     effect: "apple",
-    fontSize: 64,
+    fontSize: 76,
     align: "center", // left | center | right
-    textCase: "original", // original | upper | lower | title
+    textCase: "original",
     letterSpacing: 0,
     lineSpacing: 1.2,
     textColor: "#FFFFFF",
-    accentColor: "#FFC53D",
-    dimColor: "rgba(255,255,255,0.38)",
+    accentColor: "#FFFFFF",
+    dimColor: "rgba(255,255,255,0.42)",
   },
   background: {
-    type: "solid", // solid | gradient | image | video
+    type: "solid",
     solid: "#0A0A0A",
     gradientFrom: "#0A0A0A",
     gradientTo: "#1C1C1E",
@@ -42,7 +39,7 @@ export const state = {
     blur: 0,
   },
   canvas: {
-    aspect: "9:16", // 9:16 | 16:9 | 1:1
+    aspect: "9:16",
   },
   playback: {
     isPlaying: false,
