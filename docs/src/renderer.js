@@ -87,6 +87,19 @@ function wordFocus(word, time) {
   return 0;
 }
 
+function glyphLayout(ctx, text) {
+  const glyphs = Array.from(text);
+  return glyphs.map((glyph, index) => {
+    const before = glyphs.slice(0, index).join("");
+    const through = glyphs.slice(0, index + 1).join("");
+    return {
+      glyph,
+      x: ctx.measureText(before).width,
+      width: Math.max(0, ctx.measureText(through).width - ctx.measureText(before).width),
+    };
+  });
+}
+
 function drawAppleTimedWord(ctx, ref, x, y, style, time) {
   const text = ref.text;
   const textWidth = ref.textWidth;
@@ -103,39 +116,46 @@ function drawAppleTimedWord(ctx, ref, x, y, style, time) {
   ctx.scale(scale, scale);
   const left = -textWidth / 2;
 
+  // Base layer is always dim. Highlight is drawn only on exact glyphs that
+  // have actually reached their timed turn; there is no clipping, glow or bleed.
+  ctx.shadowBlur = 0;
+  ctx.shadowColor = "transparent";
+  ctx.fillStyle = style.dimColor;
+  ctx.fillText(text, left, 0);
+
   if (completed) {
     ctx.fillStyle = style.accentColor;
     ctx.fillText(text, left, 0);
     ctx.restore();
     return;
   }
-
-  ctx.fillStyle = style.dimColor;
-  ctx.fillText(text, left, 0);
   if (!active) { ctx.restore(); return; }
 
   const progress = clamp((time - start) / duration);
-  const glyphs = Array.from(text);
-  let glyphX = left;
-  for (let i = 0; i < glyphs.length; i++) {
-    const glyph = glyphs[i];
-    const width = ctx.measureText(glyph).width;
-    const letterStart = i / Math.max(1, glyphs.length);
-    const letterEnd = (i + 1) / Math.max(1, glyphs.length);
-    const overlap = Math.min(0.10, (letterEnd - letterStart) * 0.55);
-    const alpha = smootherstep((progress - letterStart + overlap) / Math.max(0.001, letterEnd - letterStart + overlap * 1.7));
-    if (alpha > 0) {
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = style.accentColor;
-      if (alpha > 0.15 && alpha < 0.98) {
-        ctx.shadowColor = "rgba(255,255,255,0.22)";
-        ctx.shadowBlur = style.fontSize * 0.055 * (1 - Math.abs(alpha - 0.5) * 2);
-      }
-      ctx.fillText(glyph, glyphX, 0);
-      ctx.restore();
+  const layout = glyphLayout(ctx, text);
+  const count = Math.max(1, layout.length);
+  const transitionWidth = Math.min(0.22, 1 / count);
+
+  for (let i = 0; i < layout.length; i++) {
+    const { glyph, x: glyphX } = layout[i];
+    const letterStart = i / count;
+    const letterEnd = (i + 1) / count;
+    let alpha = 0;
+
+    if (progress >= letterEnd) alpha = 1;
+    else if (progress > letterStart) {
+      // Fade the whole glyph in as one unit. Never reveal only half its shape.
+      alpha = smootherstep((progress - letterStart) / Math.max(0.001, transitionWidth));
     }
-    glyphX += width;
+
+    if (alpha <= 0) continue;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.shadowBlur = 0;
+    ctx.shadowColor = "transparent";
+    ctx.fillStyle = style.accentColor;
+    ctx.fillText(glyph, left + glyphX, 0);
+    ctx.restore();
   }
   ctx.restore();
 }
