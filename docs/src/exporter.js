@@ -1,5 +1,6 @@
-// The only export implementation. Each run owns fresh audio, Web Audio,
-// streams, recorder, timers and listeners, and destroys them before settling.
+// The only export implementation. Each export owns one playback clock:
+// exportAudio.currentTime. Preview state, lyrics and background video follow
+// that same time through onTime; the normal preview audio stays paused.
 
 const FORMATS = [
   ["video/webm;codecs=vp9,opus", "webm"],
@@ -35,7 +36,7 @@ function waitForAudio(audio) {
   });
 }
 
-export async function exportVideo({ canvas, audioEl, fps = 30, onProgress, onFinalizing, onDone, onError, onCancel }) {
+export async function exportVideo({ canvas, audioEl, fps = 60, onTime, onProgress, onFinalizing, onDone, onError, onCancel }) {
   if (typeof canvas?.captureStream !== "function") throw new Error("Canvas video export is not supported by this browser.");
   const sourceUrl = audioEl.currentSrc || audioEl.src;
   if (!sourceUrl) throw new Error("Load an audio file before exporting.");
@@ -57,7 +58,7 @@ export async function exportVideo({ canvas, audioEl, fps = 30, onProgress, onFin
 
   const canvasStream = canvas.captureStream(fps);
   const outputStream = new MediaStream([...canvasStream.getVideoTracks(), ...audioOutput.stream.getAudioTracks()]);
-  const options = { videoBitsPerSecond: 10_000_000 };
+  const options = { videoBitsPerSecond: 14_000_000 };
   if (format.mimeType) options.mimeType = format.mimeType;
 
   let recorder;
@@ -100,6 +101,7 @@ export async function exportVideo({ canvas, audioEl, fps = 30, onProgress, onFin
     const stop = () => {
       if (phase !== "recording") return;
       phase = "finalizing";
+      onTime?.(duration);
       onProgress?.(1);
       onFinalizing?.();
       try {
@@ -110,9 +112,9 @@ export async function exportVideo({ canvas, audioEl, fps = 30, onProgress, onFin
     const monitor = () => {
       if (phase !== "recording") return;
       const time = Math.min(duration, exportAudio.currentTime || 0);
-      if (Math.abs((audioEl.currentTime || 0) - time) > 0.02) audioEl.currentTime = time;
+      onTime?.(time);
       onProgress?.(time / duration);
-      if (exportAudio.ended || time >= duration - 0.03) stop();
+      if (exportAudio.ended || time >= duration - 0.02) stop();
       else frame = requestAnimationFrame(monitor);
     };
 
@@ -124,7 +126,7 @@ export async function exportVideo({ canvas, audioEl, fps = 30, onProgress, onFin
       const blob = new Blob(chunks, { type: mimeType });
       if (!blob.size) return fail(new Error("The exported video file was empty."));
       phase = "completed";
-      settle({ type: "done", blob, info: { mimeType, extension: format.extension } });
+      settle({ type: "done", blob, info: { mimeType, extension: format.extension, fps } });
     };
     exportAudio.addEventListener("ended", stop, { once: true });
 
@@ -139,7 +141,8 @@ export async function exportVideo({ canvas, audioEl, fps = 30, onProgress, onFin
     (async () => {
       try {
         if (audioContext.state === "suspended") await audioContext.resume();
-        recorder.start(250);
+        onTime?.(0);
+        recorder.start(125);
         phase = "recording";
         await exportAudio.play();
         frame = requestAnimationFrame(monitor);
