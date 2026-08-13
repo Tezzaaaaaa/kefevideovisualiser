@@ -58,8 +58,8 @@ await page.click('[data-align="left"]');await page.locator('#lyricSize').fill('9
 await page.click('[data-effect="brat"]');assert.equal(await page.locator('#hazeEnabled').isChecked(),true,'Brat must auto-enable Haze');assert.equal((await page.locator('#hazeColor').inputValue()).toLowerCase(),'#8ace00');
 await page.click('[data-align="right"]');await page.locator('#lyricSize').fill('110');
 await page.click('[data-effect="eternal"]');assert.equal(await page.locator('#hazeEnabled').isChecked(),true,'Haze must persist into Eternal');await page.click('[data-align="left"]');await page.locator('#lyricSize').fill('65');
-await page.click('[data-effect="apple"]');assert.equal(await page.locator('#lyricSize').inputValue(),'90');assert.match(await page.locator('[data-align="left"]').getAttribute('class'),/active/);
-await page.click('[data-effect="brat"]');assert.equal(await page.locator('#lyricSize').inputValue(),'110');assert.match(await page.locator('[data-align="right"]').getAttribute('class'),/active/);
+await page.click('[data-effect="apple"]');assert.equal(await page.locator('#lyricSize').inputValue(),'90');assert.match(await page.locator('[data-align="left"]').getAttribute('class'),/active/);assert.equal(await page.locator('#hazeEnabled').isChecked(),true,'Haze must persist into Apple');
+await page.click('[data-effect="brat"]');assert.equal(await page.locator('#lyricSize').inputValue(),'110');assert.match(await page.locator('[data-align="right"]').getAttribute('class'),/active/);assert.equal(await page.locator('#hazeEnabled').isChecked(),true,'Brat must retain the shared Haze state');
 await page.click('[data-effect="eternal"]');assert.equal(await page.locator('#lyricSize').inputValue(),'65');assert.match(await page.locator('[data-align="left"]').getAttribute('class'),/active/);
 await page.evaluate(()=>document.fonts.load('65px "Homemade Apple"'));
 assert.equal(await page.evaluate(()=>document.fonts.check('65px "Homemade Apple"')),true,'Homemade Apple failed to load');
@@ -71,14 +71,13 @@ await page.waitForFunction(()=>!document.querySelector('#exportBottom').disabled
 
 // Apple: smooth progressive glyph illumination and completed letters remain lit.
 await page.click('[data-effect="apple"]');
-if(await page.locator('#hazeEnabled').isChecked())await page.click('#hazeEnabled');
 await page.locator('#seek').fill('0.05');await page.waitForTimeout(100);const appleEarly=await sample();
 await page.locator('#seek').fill('0.22');await page.waitForTimeout(100);const appleMid=await sample();
 await page.locator('#seek').fill('0.62');await page.waitForTimeout(100);const appleLate=await sample();
 assert.ok(appleMid.bright>appleEarly.bright,`Apple glyph lighting did not advance: ${JSON.stringify({appleEarly,appleMid})}`);
 assert.ok(appleLate.bright>=appleMid.bright,`Apple completed glyphs did not stay lit: ${JSON.stringify({appleMid,appleLate})}`);
 
-// Brat: Green Haze returns automatically on first entry; words accumulate from top to bottom without smooth interpolation.
+// Brat: words accumulate from top to bottom while the shared Brat-green Haze remains enabled.
 await page.click('[data-effect="brat"]');assert.equal(await page.locator('#hazeEnabled').isChecked(),true);assert.equal((await page.locator('#hazeColor').inputValue()).toLowerCase(),'#8ace00');
 await page.locator('#seek').fill('0.10');await page.waitForTimeout(100);const bratFirst=await sample();
 await page.locator('#seek').fill('0.40');await page.waitForTimeout(100);const bratSecond=await sample();
