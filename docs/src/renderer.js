@@ -109,7 +109,7 @@ function drawAppleTimedWord(ctx, ref, x, y, style, time) {
   const completed = time >= end;
   const active = time >= start && time < end;
   const focus = wordFocus(ref, time);
-  const scale = 1 + focus * 0.055;
+  const scale = 1 + focus * 0.045;
 
   ctx.save();
   ctx.translate(x + textWidth / 2, y);
@@ -131,7 +131,13 @@ function drawAppleTimedWord(ctx, ref, x, y, style, time) {
   }
   if (!active) { ctx.restore(); return; }
 
-  const progress = clamp((time - start) / duration);
+  // Longer sung words reserve the final part of their real timed window as a
+  // full-word hold. This lets a sustained note remain completely highlighted
+  // instead of forcing the final glyph to finish at the exact word boundary.
+  const holdFraction = clamp((duration - 0.50) / 3.0, 0, 0.30);
+  const sweepFraction = 1 - holdFraction;
+  const rawProgress = clamp((time - start) / duration);
+  const progress = clamp(rawProgress / Math.max(0.60, sweepFraction));
   const layout = glyphLayout(ctx, text);
   const count = Math.max(1, layout.length);
   const transitionWidth = Math.min(0.22, 1 / count);
@@ -232,7 +238,7 @@ function drawAppleBlock(ctx, w, yCenter, style, block, alpha, time) {
 function drawAppleMusic(ctx, w, h, style, syncState, lines, time) {
   const { lineIndex } = syncState;
   if (lineIndex < 0 || !lines[lineIndex]) return;
-  ctx.font = `700 ${style.fontSize}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+  ctx.font = `700 ${style.fontSize}px -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif`;
   ctx.textBaseline = "middle";
   ctx.textAlign = "left";
 
