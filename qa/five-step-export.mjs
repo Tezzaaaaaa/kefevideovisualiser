@@ -45,6 +45,7 @@ const page=await browser.newPage({acceptDownloads:true,viewport:{width:1280,heig
 const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>console.log('BROWSER',m.type(),m.text()));
 await page.route('https://lrclib.net/api/search**',route=>route.fulfill({contentType:'application/json',body:JSON.stringify([{trackName:'Test Song',artistName:'Lady Gaga',syncedLyrics}])}));
 await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+await page.waitForFunction(()=>document.querySelector('#exportBtn')?.disabled===true,null,{timeout:5000});
 
 const sample=()=>page.locator('#stageCanvas').evaluate(canvas=>{
   const data=canvas.getContext('2d',{willReadFrequently:true}).getImageData(0,0,canvas.width,canvas.height).data;
