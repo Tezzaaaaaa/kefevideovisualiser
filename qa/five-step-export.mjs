@@ -12,7 +12,7 @@ assert.match(rendererSource,/drawAppleTimedWord/);
 assert.match(rendererSource,/glyphLayout/);
 assert.match(rendererSource,/holdFraction/);
 assert.match(rendererSource,/buildBratPages/);
-assert.match(rendererSource,/impact=age<\.055/);
+assert.match(rendererSource,/impact\s*=\s*age\s*<\s*0\.055/);
 assert.match(rendererSource,/"Arial Narrow"/);
 assert.doesNotMatch(rendererSource,/insetX|fillRect\(rectX/);
 assert.match(rendererSource,/"Homemade Apple"/);
