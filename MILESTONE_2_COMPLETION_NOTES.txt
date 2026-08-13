@@ -1,7 +1,0 @@
-STORY LYRICS — MILESTONE 2 COMPLETION NOTES
-
-Implemented a dedicated 9:16 Story editor with six lyric animation modes, audio/background import, live playback sync, story duration presets, colour cycling, size/position/alignment controls, TXT/LRC lyric parsing, and timeline highlighting.
-
-The implementation recreates familiar interaction patterns but does not copy Instagram branding, proprietary fonts, icons, or source assets.
-
-MP4 export is represented by the UI but will be implemented in the rendering milestone.

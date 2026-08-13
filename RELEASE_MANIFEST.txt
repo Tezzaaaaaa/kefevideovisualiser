@@ -1,9 +1,0 @@
-Product: Story Lyrics
-Release: 1.0.0
-Release date: 2026-08-01
-Primary platform: iPhone Safari / Home Screen PWA
-Host: macOS Go server
-Export: 720x1280 or 1080x1920 H.264/AAC MP4 via FFmpeg
-Lyrics: TXT, LRC, enhanced LRC, SRT
-Access: local Wi-Fi or authenticated HTTPS tunnel
-Safety: for media the user owns or is authorised to use
