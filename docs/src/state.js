@@ -1,20 +1,9 @@
 // state.js — the only place app state lives.
 
 export const state = {
-  project: {
-    title: "",
-    artist: "",
-  },
-  audio: {
-    file: null,
-    url: null,
-    duration: 0,
-  },
-  lyrics: {
-    raw: "",
-    format: "auto",
-    lines: [],
-  },
+  project: { title: "", artist: "" },
+  audio: { file: null, url: null, duration: 0 },
+  lyrics: { raw: "", format: "auto", lines: [] },
   style: {
     effect: "apple",
     textCase: "original",
@@ -40,14 +29,12 @@ export const state = {
     videoEl: null,
     dim: 0.35,
     blur: 0,
+    hazeEnabled: false,
+    hazeColor: "#8ACE00",
+    hazeOpacity: 0.24,
   },
-  canvas: {
-    aspect: "9:16",
-  },
-  playback: {
-    isPlaying: false,
-    currentTime: 0,
-  },
+  canvas: { aspect: "9:16" },
+  playback: { isPlaying: false, currentTime: 0 },
 };
 
 export const ASPECTS = {
