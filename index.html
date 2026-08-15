@@ -653,7 +653,7 @@ function appleTransitionTiming(fromLine, toLine) {
     const fromTime = Number(fromLine?.time) || 0;
     const toTime = Number(toLine?.time) || fromTime + 1;
     const gap = Math.max(0.35, toTime - fromTime);
-    const duration = Math.min(0.42, Math.max(0.30, gap * 0.16));
+    const duration = Math.min(0.46, Math.max(0.38, gap * 0.18));
     return { duration, start: toTime - duration, end: toTime };
 }
 
@@ -764,7 +764,7 @@ function drawAppleMusicTransition(ctx, w, h, settings, lines, time, visibleCount
     const toMap = new Map(toLayout.map(e=>[e.lineIndex,e]));
     const transitioning = motion.fromIndex !== motion.toIndex;
     const p = transitioning ? linaClamp(motion.progress) : 1;
-    const relationOpacity = relation => relation === 0 ? 1 : relation < 0 ? 0.12 : Math.max(0.07,settings.inactiveOpacity*Math.pow(0.72,relation-1));
+    const relationOpacity = relation => relation === 0 ? 1 : relation < 0 ? 0.22 : Math.max(0.07,settings.inactiveOpacity*Math.pow(0.72,relation-1));
     for (const index of [...new Set([...fromMap.keys(),...toMap.keys()])]) {
         const from=fromMap.get(index), to=toMap.get(index), entry=to||from; if(!entry) continue;
         const relation=to?to.relation:-2;
