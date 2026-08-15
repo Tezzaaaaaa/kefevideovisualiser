@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LINA Visualiser</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wdth,wght@75..100,300..800&display=swap" rel="stylesheet">
@@ -40,7 +41,8 @@
     .app { display: flex; flex-direction: column; height: 100dvh; min-height: 100dvh; max-height: 100dvh; overflow: hidden; background: var(--bg); }
 
     header { display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; background: rgba(28,28,30,0.72); backdrop-filter: blur(20px) saturate(1.6); -webkit-backdrop-filter: blur(20px) saturate(1.6); border-bottom: 1px solid var(--hairline); flex-shrink: 0; min-height: 56px; z-index: 10; }
-    .brand { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
+    .brand { display: flex; align-items: center; color: var(--text); }
+    .brand img { display: block; width: 78px; height: auto; }
     .header-actions { display: flex; align-items: center; gap: 8px; }
 
     button { padding: 8px 16px; border: 1px solid var(--hairline); border-radius: 980px; background: var(--surface-2); color: var(--text); cursor: pointer; font-size: 13px; font-weight: 500; letter-spacing: -0.005em; transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease; min-height: 36px; }
@@ -192,7 +194,7 @@
 
 <div class="app">
     <header>
-        <div class="brand">LINA Visualiser</div>
+        <div class="brand"><img src="./lina-logo-light.svg" alt="LINA"></div>
         <div class="header-actions">
             <button id="exportBtn" class="primary">Export</button>
             <button id="stopBtn" title="Stop (Back to start)">Stop</button>

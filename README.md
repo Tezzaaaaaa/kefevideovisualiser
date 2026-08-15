@@ -20,6 +20,9 @@ Then open `http://localhost:8000`.
 lyricvideovisualiser/
 ├── index.html
 ├── HomemadeApple-Regular.woff2
+├── lina-logo.svg
+├── lina-logo-light.svg
+├── favicon.svg
 └── README.md
 ```
 
