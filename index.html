@@ -42,9 +42,9 @@
     .app { display: flex; flex-direction: column; height: 100dvh; min-height: 100dvh; max-height: 100dvh; overflow: hidden; background: var(--bg); }
 
     header { display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; background: rgba(28,28,30,0.72); backdrop-filter: blur(20px) saturate(1.6); -webkit-backdrop-filter: blur(20px) saturate(1.6); border-bottom: 1px solid var(--hairline); flex-shrink: 0; min-height: 56px; z-index: 10; }
-    .brand { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px; color: var(--text); text-decoration: none; cursor: pointer; }
-    .brand img { display: block; width: 92px; height: auto; }
-    .brand-descriptor { padding-left: 2px; color: var(--text-tertiary); font-size: 8px; font-weight: 700; line-height: 1; letter-spacing: 0.18em; text-transform: uppercase; }
+    .brand { display: flex; width: 92px; flex-direction: column; align-items: stretch; justify-content: center; gap: 1px; color: var(--text); text-decoration: none; cursor: pointer; }
+    .brand img { display: block; width: 100%; height: auto; }
+    .brand-descriptor { display: flex; width: 100%; justify-content: space-between; padding: 0 1px; box-sizing: border-box; color: var(--text-tertiary); font-size: 8px; font-weight: 700; line-height: 1; letter-spacing: 0; text-transform: uppercase; }
     .header-actions { display: flex; align-items: center; gap: 8px; }
 
     button { padding: 8px 16px; border: 1px solid var(--hairline); border-radius: 980px; background: var(--surface-2); color: var(--text); cursor: pointer; font-size: 13px; font-weight: 500; letter-spacing: -0.005em; transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease; min-height: 36px; }
@@ -187,8 +187,8 @@
         .effect-buttons button { font-size: 10.5px; padding: 6px 3px; min-height: 26px; }
     }
     @media (max-width: 480px) {
-        .brand img { width: 84px; }
-        .brand-descriptor { font-size: 7px; letter-spacing: 0.16em; }
+        .brand { width: 84px; }
+        .brand-descriptor { font-size: 7px; }
         .sidebar { max-height: 30dvh; padding: 6px; }
         .section { padding: 8px 10px; margin-bottom: 6px; }
         .effect-buttons button { font-size: 9.5px; padding: 5px 2px; min-height: 24px; }
@@ -203,7 +203,7 @@
     <header>
         <a class="brand" href="./" aria-label="TERE Visualiser home" title="Return home">
             <img src="./tere-logo-light.svg" alt="TERE">
-            <span class="brand-descriptor">Visualiser</span>
+            <span class="brand-descriptor" aria-hidden="true"><span>V</span><span>I</span><span>S</span><span>U</span><span>A</span><span>L</span><span>I</span><span>S</span><span>E</span><span>R</span></span>
         </a>
         <div class="header-actions">
             <button id="resetBtn" type="button">Reset</button>
