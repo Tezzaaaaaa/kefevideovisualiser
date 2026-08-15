@@ -219,8 +219,10 @@
             <div class="section">
                 <h3>Lyrics</h3>
                 <div style="display:flex;gap:4px;">
-                    <button id="findLyricsBtn" style="flex:1;">Find Lyrics</button>
+                    <button id="findLyricsBtn" style="flex:1;">Find Synced Lyrics</button>
+                    <button id="uploadLrcMain" title="Upload an LRC file">Upload .lrc</button>
                     <button id="editLyricsBtn" title="Edit lyrics">Edit</button>
+                    <input id="lrcFileInput" type="file" accept=".lrc,.txt,text/plain" hidden>
                 </div>
                 <div id="lyricsStatus" class="status">No lyrics loaded</div>
             </div>
@@ -1970,31 +1972,59 @@ async function fetchWithRetry(url, options, retries = 2, backoffMs = 600) {
     }
 }
 
+function cleanTrackName(value) {
+    return String(value || '')
+        .replace(/\s*[\[(](official\s+)?(music|lyric|lyrics|audio|visuali[sz]er|video).*?[\])]/ig, '')
+        .replace(/\s+(official\s+)?(music|lyric|lyrics|audio|visuali[sz]er|video)\s*$/ig, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+async function requestSyncedLyrics(artist, track, duration, signal) {
+    const candidates = [];
+    const exact = new URLSearchParams({ artist_name: artist, track_name: track });
+    if (Number.isFinite(duration) && duration > 0) exact.set('duration', String(Math.round(duration)));
+    if (artist) {
+        const exactResp = await fetchWithRetry('https://lrclib.net/api/get?' + exact.toString(), { signal }, 1);
+        if (exactResp.ok) candidates.push(await exactResp.json());
+        else if (exactResp.status !== 404) throw new Error(exactResp.status === 429 ? 'Lyrics service is rate-limited, try again shortly' : 'Lyrics service unavailable (' + exactResp.status + ')');
+    }
+
+    const searches = [
+        new URLSearchParams({ track_name: track, ...(artist ? { artist_name: artist } : {}) }),
+        new URLSearchParams({ q: [artist, track].filter(Boolean).join(' ') })
+    ];
+    for (const params of searches) {
+        const response = await fetchWithRetry('https://lrclib.net/api/search?' + params.toString(), { signal });
+        if (!response.ok) throw new Error(response.status === 429 ? 'Lyrics service is rate-limited, try again shortly' : 'Lyrics service unavailable (' + response.status + ')');
+        const results = await response.json();
+        if (Array.isArray(results)) candidates.push(...results);
+        if (candidates.some(item => item?.syncedLyrics)) break;
+    }
+    return candidates.find(item => item?.syncedLyrics) || null;
+}
+
 $('findLyricsBtn').addEventListener('click', async function() {
     if (isExporting) { toast('Finish or cancel the current export first', 'error'); return; }
     if (!state.audio.file) { toast('Load audio first', 'error'); return; }
     const fallback = songFromFilename(state.audio.file.name);
     const artist = state.audio.metadata.artist || fallback.artist;
-    const track = state.audio.metadata.title || fallback.track;
+    const track = cleanTrackName(state.audio.metadata.title || fallback.track);
+    if (!track) { toast('Enter the song title first', 'error'); return; }
     $('lyricsStatus').textContent = 'Searching...';
     $('lyricsStatus').className = 'status loading';
     this.disabled = true;
     try {
-        const params = new URLSearchParams({ track_name: track });
-        if (artist) params.set('artist_name', artist);
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 12000);
-        let resp;
+        const timeoutId = setTimeout(() => controller.abort(), 18000);
+        let match;
         try {
-            resp = await fetchWithRetry('https://lrclib.net/api/search?' + params.toString(), { signal: controller.signal });
+            match = await requestSyncedLyrics(artist, track, state.audio.duration || audio.duration, controller.signal);
         } catch (fetchErr) {
             throw new Error(fetchErr.name === 'AbortError' ? 'Lyrics search timed out' : (fetchErr.message || 'Lyrics search failed (network error)'));
         } finally {
             clearTimeout(timeoutId);
         }
-        if (!resp.ok) throw new Error(resp.status === 429 ? 'Lyrics service is rate-limited, try again shortly' : 'Lyrics service unavailable (' + resp.status + ')');
-        const results = await resp.json();
-        const match = results.find(i => i.syncedLyrics) || results[0];
         if (!match || !match.syncedLyrics) throw new Error('No synced lyrics');
         const parsed = parseLyrics(match.syncedLyrics);
         if (!parsed.lines.length) throw new Error('No valid timed lyrics found');
@@ -2054,22 +2084,38 @@ $('pasteLyrics').addEventListener('click', async function() {
         $('editorStatus').className = 'status error';
     }
 });
-$('uploadLrc').addEventListener('click', function() {
-    const input = document.createElement('input');
-    input.type = 'file'; input.accept = '.lrc,.txt';
-    input.onchange = function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(ev) {
-            $('lyricsText').value = ev.target.result;
-            $('editorStatus').textContent = 'Loaded ' + file.name;
-            $('editorStatus').className = 'status success';
-        };
-        reader.readAsText(file);
-    };
-    input.click();
+async function loadLrcFile(file, openEditor = false) {
+    if (!file) return;
+    if (!/\.(lrc|txt)$/i.test(file.name)) {
+        toast('Choose an .lrc or .txt file', 'error');
+        return;
+    }
+    try {
+        const raw = await file.text();
+        const parsed = parseLyrics(raw);
+        if (!parsed.lines.length) throw new Error('No valid timed lyrics found in ' + file.name);
+        $('lyricsText').value = raw;
+        state.lyrics.lines = parsed.lines;
+        $('lyricsStatus').textContent = parsed.lines.length + ' synced lines loaded';
+        $('lyricsStatus').className = 'status success';
+        $('editorStatus').textContent = 'Loaded ' + file.name;
+        $('editorStatus').className = 'status success';
+        readiness();
+        redrawCurrentPreviewFrame();
+        toast('Loaded ' + file.name, 'success');
+        if (openEditor) $('lyricsEditor').classList.remove('hidden');
+    } catch (error) {
+        $('lyricsStatus').textContent = error.message;
+        $('lyricsStatus').className = 'status error';
+        toast(error.message, 'error');
+    }
+}
+$('uploadLrcMain').addEventListener('click', () => $('lrcFileInput').click());
+$('lrcFileInput').addEventListener('change', function() {
+    loadLrcFile(this.files?.[0]);
+    this.value = '';
 });
+$('uploadLrc').addEventListener('click', () => $('lrcFileInput').click());
 $('saveLyrics').addEventListener('click', function() {
     if (isExporting) { toast('Finish or cancel the current export first', 'error'); return; }
     const raw = $('lyricsText').value.trim();
