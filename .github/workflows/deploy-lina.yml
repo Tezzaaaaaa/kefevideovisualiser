@@ -1,4 +1,4 @@
-name: Deploy LINA
+name: Deploy TERE
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
     paths:
       - index.html
       - HomemadeApple-Regular.woff2
-      - lina-logo.svg
-      - lina-logo-light.svg
+      - tere-logo.svg
+      - tere-logo-light.svg
       - favicon.svg
       - .github/workflows/deploy-lina.yml
   workflow_dispatch:
@@ -18,7 +18,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: lina-pages
+  group: tere-pages
   cancel-in-progress: true
 
 jobs:
@@ -34,8 +34,8 @@ jobs:
           set -euo pipefail
           test -f index.html
           test -f HomemadeApple-Regular.woff2
-          test -f lina-logo.svg
-          test -f lina-logo-light.svg
+          test -f tere-logo.svg
+          test -f tere-logo-light.svg
           test -f favicon.svg
           grep -q 'data-effect="aurora"' index.html
           grep -q 'data-effect="pulse"' index.html
@@ -43,7 +43,7 @@ jobs:
       - name: Prepare site
         run: |
           mkdir _site
-          cp index.html HomemadeApple-Regular.woff2 lina-logo.svg lina-logo-light.svg favicon.svg _site/
+          cp index.html HomemadeApple-Regular.woff2 tere-logo.svg tere-logo-light.svg favicon.svg _site/
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
