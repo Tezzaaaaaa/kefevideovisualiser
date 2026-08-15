@@ -780,7 +780,7 @@ function drawAppleMusicTransition(ctx, w, h, settings, lines, time, visibleCount
 
         const backgroundWeight=1-focus;
         const depth=Math.max(0,relation);
-        const maxBlur=settings.fontSize*(relation<0?0.038:0.032+Math.max(0,depth-1)*0.010);
+        const maxBlur=settings.fontSize*(relation<0?0.070:0.058+Math.max(0,depth-1)*0.012);
         const blur=maxBlur*backgroundWeight;
         const scale=0.98+focus*0.02;
 
