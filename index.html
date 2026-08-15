@@ -2104,6 +2104,30 @@ function cleanTrackName(value) {
         .trim();
 }
 
+function isUsefulExportLabel(value) {
+    const label = String(value || '').trim();
+    return Boolean(label) && !/^(unknown|untitled|audio|track|song|recording|output|new recording|voice memo)(?:\s*\d+)?$/i.test(label);
+}
+function sanitiseExportFilenamePart(value) {
+    return String(value || '')
+        .replace(/[<>:"/\\|?*\u0000-\u001F]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .replace(/[. ]+$/g, '')
+        .trim();
+}
+function buildExportFilename(extension) {
+    const fallback = state.audio.file ? songFromFilename(state.audio.file.name) : { track: '', artist: '' };
+    const enteredTitle = cleanTrackName(state.audio.metadata.title);
+    const enteredArtist = String(state.audio.metadata.artist || '').trim();
+    const title = sanitiseExportFilenamePart(isUsefulExportLabel(enteredTitle) ? enteredTitle : fallback.track) || 'Lyric Video';
+    const artist = sanitiseExportFilenamePart(isUsefulExportLabel(enteredArtist) ? enteredArtist : fallback.artist);
+    const parts = [title];
+    if (artist && artist.toLocaleLowerCase() !== title.toLocaleLowerCase()) parts.push(artist);
+    parts.push('TERE Visualiser');
+    const ext = String(extension || 'mp4').replace(/[^a-z0-9]/gi, '').toLowerCase() || 'mp4';
+    return parts.join(' - ') + '.' + ext;
+}
+
 async function requestSyncedLyrics(artist, track, duration, signal) {
     const candidates = [];
     const exact = new URLSearchParams({ artist_name: artist, track_name: track });
@@ -2662,7 +2686,7 @@ async function startExportRealtime() {
         const a = document.createElement('a');
         a.href = url;
         const ext = (exportRecorder.mimeType || '').includes('mp4') ? 'mp4' : 'webm';
-        a.download = 'lyric-video.' + ext;
+        a.download = buildExportFilename(ext);
         document.body.appendChild(a);
         a.click();
         a.remove();
@@ -2905,7 +2929,7 @@ async function startOfflineExport() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'lyric-video.mp4';
+        a.download = buildExportFilename('mp4');
         document.body.appendChild(a);
         a.click();
         a.remove();
