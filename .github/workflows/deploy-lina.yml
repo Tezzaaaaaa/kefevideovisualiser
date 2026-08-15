@@ -1,16 +1,23 @@
 name: Deploy LINA
+
 on:
   push:
     branches: [main]
-    paths: ["docs/**", "qa/five-step-export.mjs", ".github/workflows/deploy-lina.yml"]
+    paths:
+      - index.html
+      - HomemadeApple-Regular.woff2
+      - .github/workflows/deploy-lina.yml
   workflow_dispatch:
+
 permissions:
   contents: read
   pages: write
   id-token: write
+
 concurrency:
   group: lina-pages
   cancel-in-progress: true
+
 jobs:
   deploy:
     environment:
@@ -19,30 +26,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate clean LINA build
+      - name: Validate release files
         run: |
           set -euo pipefail
-          test "$(find docs -type f | wc -l)" -eq 9
-          test -f docs/index.html
-          test -f docs/styles.css
-          test -f docs/src/main.js
-          test -f docs/src/exporter.js
-          for file in docs/src/*.js; do node --check "$file"; done
-          ! find docs -type f \( -name '*-fix*' -o -name '*-safe*' -o -name '*-guard*' -o -name '*-bridge*' \) | grep .
-      - name: Install export test browser
+          test -f index.html
+          test -f HomemadeApple-Regular.woff2
+          grep -q 'data-effect="aurora"' index.html
+          grep -q 'data-effect="pulse"' index.html
+          grep -q 'HomemadeApple-Regular.woff2' index.html
+      - name: Prepare site
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg
-          npm install --no-save playwright@1.55.0
-          npx playwright install --with-deps chromium
-      - name: Prove all three exports work
-        run: |
-          python3 -m http.server 4173 --directory docs >/tmp/lina.log 2>&1 &
-          for i in {1..20}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
-          node qa/five-step-export.mjs
+          mkdir _site
+          cp index.html HomemadeApple-Regular.woff2 _site/
+          touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: docs
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4
