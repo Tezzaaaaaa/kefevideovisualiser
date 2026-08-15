@@ -3132,7 +3132,6 @@ function init() {
         setEffect(prefs?.effect && EFFECT_LABELS[prefs.effect] ? prefs.effect : (state.style.effect || 'apple'));
         redrawCurrentPreviewFrame();
         toast('TERE Visualiser ready', 'success');
-        console.log('TERE Visualiser ready');
     } catch(err) {
         console.error('Init error:', err);
         toast('Error initializing', 'error');
@@ -3150,11 +3149,13 @@ window.addEventListener('unhandledrejection', function(e) {
 
 function checkExportCapability() {
     const missing = [];
-    if (!isMediaRecorderSupported()) missing.push('video recording');
-    if (typeof HTMLCanvasElement === 'undefined' || typeof canvas.captureStream !== 'function') missing.push('canvas capture');
-    if (!(window.AudioContext || window.webkitAudioContext)) missing.push('web audio');
+    if (typeof WebAssembly === 'undefined') missing.push('WebAssembly');
+    if (typeof HTMLCanvasElement === 'undefined' || typeof HTMLCanvasElement.prototype.toBlob !== 'function') missing.push('canvas image encoding');
+    if (typeof TextEncoder === 'undefined') missing.push('text encoding');
     if (missing.length) {
-        toast('This browser is missing: ' + missing.join(', ') + '. Export may not work — try Chrome, Edge, or Firefox.', 'error');
+        toast('This browser is missing: ' + missing.join(', ') + '. MP4 export is unavailable — try a current Chrome, Edge, Firefox, or Safari release.', 'error');
+        $('exportBtn').disabled = true;
+        $('exportBottom').disabled = true;
         return false;
     }
     return true;
