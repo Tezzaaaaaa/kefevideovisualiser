@@ -330,7 +330,7 @@ const ctx = canvas.getContext('2d', { alpha: false });
 const audio = new Audio();
 
 const state = {
-    audio: { file: null, url: null, duration: 0, metadata: { title: '', artist: '', album: '' }, hasArtwork: false },
+    audio: { file: null, url: null, duration: 0, ready: false, metadata: { title: '', artist: '', album: '' }, hasArtwork: false },
     lyrics: { lines: [] },
     style: {
         effect: 'apple',
@@ -375,6 +375,8 @@ let backgroundURL = null;
 let albumArtworkImage = null;
 let albumArtworkURL = null;
 let mediaTagsLoadPromise = null;
+let audioLoadToken = 0;
+let backgroundLoadToken = 0;
 let exportClockTime = null;
 let previewTimeBeforeExport = 0;
 let renderLoopId = null;
@@ -423,6 +425,7 @@ function loadLinaPrefs() {
 }
 
 const linaClamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
+const hasFiniteNumber = value => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
 function linaSmooth(value) { const t = linaClamp(value); return t * t * (3 - 2 * t); }
 function linaSmoother(value) { const t = linaClamp(value); return t * t * t * (t * (t * 6 - 15) + 10); }
 function linaSeededRandom(seed) { const n = Math.sin(seed * 12.9898 + 78.233) * 43758.5453; return n - Math.floor(n); }
@@ -432,17 +435,17 @@ function linaNormaliseLine(lines, index) {
     if (!Array.isArray(lines) || index < 0 || index >= lines.length) return null;
     const source = lines[index];
     const start = Number(source.time) || 0;
-    const nextLineTime = Number.isFinite(Number(lines[index+1]?.time)) ? Number(lines[index+1].time) : null;
-    const end = Number.isFinite(Number(source.endTime)) ? Number(source.endTime) : (nextLineTime !== null ? nextLineTime : start + 3);
-    const vocalEnd = Number.isFinite(Number(source.vocalEndTime)) ? Number(source.vocalEndTime) :
-        (source.words && source.words.length > 0 && Number.isFinite(Number(source.words[source.words.length-1]?.endTime)) ? Number(source.words[source.words.length-1].endTime) : end);
+    const nextLineTime = hasFiniteNumber(lines[index+1]?.time) ? Number(lines[index+1].time) : null;
+    const end = hasFiniteNumber(source.endTime) ? Number(source.endTime) : (nextLineTime !== null ? nextLineTime : start + 3);
+    const vocalEnd = hasFiniteNumber(source.vocalEndTime) ? Number(source.vocalEndTime) :
+        (source.words && source.words.length > 0 && hasFiniteNumber(source.words[source.words.length-1]?.endTime) ? Number(source.words[source.words.length-1].endTime) : end);
     return { ...source, time: start, endTime: end, vocalEndTime: vocalEnd, nextLineTime };
 }
 
 function linaFindActiveLine(lines, time) {
     let index = -1;
     for (let i = 0; i < lines.length; i++) {
-        if (Number.isFinite(Number(lines[i].time)) && time >= Number(lines[i].time)) index = i;
+        if (hasFiniteNumber(lines[i].time) && time >= Number(lines[i].time)) index = i;
         else break;
     }
     return index;
@@ -478,15 +481,15 @@ function normaliseEnhancedWordEnds(lines) {
         for (let wi = 0; wi < line.words.length; wi++) {
             const word = line.words[wi];
             const nextWord = line.words[wi+1];
-            if (word.explicitEndTime === true && Number.isFinite(Number(word.endTime))) continue;
-            if (nextWord && Number.isFinite(Number(nextWord.time))) {
+            if (word.explicitEndTime === true && hasFiniteNumber(word.endTime)) continue;
+            if (nextWord && hasFiniteNumber(nextWord.time)) {
                 word.endTime = Math.max(Number(word.time) + 0.04, Number(nextWord.time));
             } else {
                 word.endTime = estimateFinalVocalWordEnd(line.words, nextLineTime);
             }
         }
         const finalWord = line.words[line.words.length-1];
-        line.vocalEndTime = Number.isFinite(Number(finalWord.endTime)) ? Number(finalWord.endTime) : Number(line.time) + 0.8;
+        line.vocalEndTime = hasFiniteNumber(finalWord.endTime) ? Number(finalWord.endTime) : Number(line.time) + 0.8;
     }
     return lines;
 }
@@ -514,7 +517,7 @@ function appleWordsForLine(line, nextLine) {
         return line.words.map(w => ({ ...w, estimated: false }));
     }
     const tokens = String(line?.text || "").trim().split(/\s+/).filter(Boolean);
-    if (!tokens.length || !Number.isFinite(Number(line?.time))) return [];
+    if (!tokens.length || !hasFiniteNumber(line?.time)) return [];
     const start = Number(line.time);
     const vocalEnd = estimateLineVocalEnd(line, nextLine);
     const duration = Math.max(0.15, vocalEnd - start);
@@ -646,44 +649,6 @@ function drawAppleLineBlock(ctx, w, centreY, line, time, settings, options = {})
     ctx.restore();
 }
 
-function buildAppleFocusLayout(ctx, w, h, settings, lines, focusIndex, visibleCount) {
-    if (focusIndex < 0 || !lines.length) return [];
-
-    const focalY = Math.max(h * 0.235, settings.fontSize * 1.55);
-    const lineGap = Math.max(settings.fontSize * 0.74, h * 0.020);
-    const entries = [];
-
-    const focusLine = linaNormaliseLine(lines, focusIndex);
-    if (!focusLine) return entries;
-    const focusNext = linaNormaliseLine(lines, focusIndex + 1);
-    const focusMeasurement = measureAppleLineBlock(ctx, w, focusLine, settings, focusNext);
-
-    entries.push({ lineIndex: focusIndex, line: focusLine, nextLine: focusNext, measurement: focusMeasurement, centreY: focalY, distance: 0 });
-
-    let previousCentre = focalY;
-    let previousHeight = focusMeasurement.totalHeight;
-    for (let distance = 1; distance < visibleCount; distance++) {
-        const lineIndex = focusIndex - distance;
-        if (lineIndex < 0) break;
-        const line = linaNormaliseLine(lines, lineIndex);
-        if (!line) continue;
-        const nextLine = linaNormaliseLine(lines, lineIndex + 1);
-        const measurement = measureAppleLineBlock(ctx, w, line, settings, nextLine);
-        const centreY = previousCentre + previousHeight / 2 + lineGap + measurement.totalHeight / 2;
-        entries.push({ lineIndex, line, nextLine, measurement, centreY, distance });
-        previousCentre = centreY;
-        previousHeight = measurement.totalHeight;
-    }
-    return entries;
-}
-
-function appleHistoryFade(distance, visibleCount) {
-    if (distance <= 0) return 1;
-    if (visibleCount <= 2) return 0.60;
-    const t = linaClamp(distance / Math.max(1, visibleCount - 1));
-    return 0.72 - 0.46 * linaSmoother(t);
-}
-
 function appleTransitionTiming(fromLine, toLine) {
     const fromTime = Number(fromLine?.time) || 0;
     const toTime = Number(toLine?.time) || fromTime + 1;
@@ -731,134 +696,6 @@ function getAppleFocalMotion(lines, time) {
     }
 
     return { fromIndex: activeIndex, toIndex: activeIndex, progress: 1, transitionStart: active.time, transitionEnd: active.time };
-}
-
-function drawAppleFocusTransition(ctx, w, h, settings, lines, time, visibleCount, motion) {
-    const toLayout = buildAppleFocusLayout(ctx, w, h, settings, lines, motion.toIndex, visibleCount);
-    if (!toLayout.length) return;
-
-    if (motion.fromIndex === motion.toIndex) {
-        ctx.save();
-        for (const entry of toLayout) {
-            const alpha = appleHistoryFade(entry.distance, visibleCount);
-            const scale = entry.distance === 0 ? 1 : 0.94;
-            drawAppleLineBlock(ctx, w, entry.centreY, entry.line, time, settings, {
-                active: entry.distance === 0,
-                alpha,
-                scale,
-                nextLine: entry.nextLine,
-                measurement: entry.measurement
-            });
-        }
-        ctx.restore();
-        return;
-    }
-
-    const fromLayout = buildAppleFocusLayout(ctx, w, h, settings, lines, motion.fromIndex, visibleCount);
-    const fromMap = new Map(fromLayout.map(entry => [entry.lineIndex, entry]));
-    const toMap = new Map(toLayout.map(entry => [entry.lineIndex, entry]));
-    const allIndices = [...new Set([...fromMap.keys(), ...toMap.keys()])].sort((a, b) => a - b);
-    const p = linaClamp(motion.progress);
-    const focalY = toLayout[0].centreY;
-    const exitDistance = Math.max(settings.fontSize * 1.30, h * 0.070);
-
-    ctx.save();
-    for (const lineIndex of allIndices) {
-        const fromEntry = fromMap.get(lineIndex);
-        const toEntry = toMap.get(lineIndex);
-        const entry = toEntry || fromEntry;
-        if (!entry) continue;
-
-        let y = entry.centreY;
-        let alpha = 1;
-        let scale = 1;
-        let active = false;
-
-        if (lineIndex === motion.toIndex) {
-            // New sentence always forms at the exact focal point.
-            y = focalY;
-            const appearance = linaSmoother(linaClamp((p - 0.02) / 0.72));
-            alpha = 0.18 + appearance * 0.82;
-            scale = 0.965 + appearance * 0.035;
-            active = time >= Number(entry.line.time);
-        } else if (fromEntry && toEntry) {
-            // Every existing line glides to its next history slot using one shared easing curve.
-            y = fromEntry.centreY + (toEntry.centreY - fromEntry.centreY) * p;
-            const fromAlpha = appleHistoryFade(fromEntry.distance, visibleCount);
-            const toAlpha = appleHistoryFade(toEntry.distance, visibleCount);
-            alpha = fromAlpha + (toAlpha - fromAlpha) * p;
-            const fromScale = fromEntry.distance === 0 ? 1 : 0.94;
-            const toScale = toEntry.distance === 0 ? 1 : 0.94;
-            scale = fromScale + (toScale - fromScale) * p;
-        } else if (fromEntry) {
-            y = fromEntry.centreY + exitDistance * p;
-            alpha = appleHistoryFade(fromEntry.distance, visibleCount) * (1 - linaSmoother(p));
-            scale = 0.94 - 0.025 * p;
-        } else {
-            y = entry.centreY;
-            alpha = appleHistoryFade(entry.distance, visibleCount) * linaSmoother(p);
-            scale = 0.94;
-        }
-
-        // Soft lower-edge fade gives the history stack a continuous depth falloff.
-        const blockHeight = (entry.measurement?.totalHeight || settings.fontSize * 1.25) * scale;
-        const bottomEdge = y + blockHeight / 2;
-        const fadeStart = h * 0.79;
-        if (bottomEdge > fadeStart) {
-            alpha *= 1 - linaSmoother((bottomEdge - fadeStart) / Math.max(1, h - fadeStart));
-        }
-        if (alpha <= 0.002) continue;
-
-        drawAppleLineBlock(ctx, w, y, entry.line, time, settings, {
-            active,
-            alpha,
-            scale,
-            nextLine: entry.nextLine,
-            measurement: entry.measurement
-        });
-    }
-    ctx.restore();
-}
-
-function drawAppleEffectLegacy(ctx, w, h, style, lines, time) {
-    if (!Array.isArray(lines) || !lines.length) return;
-
-    const settings = {
-        fontSize: Number(style.fontSize) || 76,
-        align: style.align || 'left',
-        activeColor: style.accentColor || '#FFFFFF',
-        inactiveColor: 'rgb(146,146,152)',
-        backgroundColor: 'rgb(140,140,146)',
-        inactiveOpacity: Number.isFinite(Number(style.appleInactiveOpacity)) ? Number(style.appleInactiveOpacity) : 0.64,
-        glow: Number.isFinite(Number(style.appleGlow)) ? Number(style.appleGlow) : 0.045,
-        depth: Number.isFinite(Number(style.appleDepth)) ? Number(style.appleDepth) : 0.038,
-        lift: Number.isFinite(Number(style.appleLift)) ? Number(style.appleLift) : 0.014,
-        highlightSpan: Number.isFinite(Number(style.appleHighlightSpan)) ? Number(style.appleHighlightSpan) : 0.92
-    };
-
-    const visibleCount = Math.max(1, Math.min(5, Math.round(Number(style.appleVisibleLines) || 3)));
-    const firstLine = linaNormaliseLine(lines, 0);
-
-    if (firstLine) {
-        const visibleFrom = Math.max(0, firstLine.time - 2);
-        if (time >= visibleFrom && time < firstLine.time) {
-            const focalY = Math.max(h * 0.235, settings.fontSize * 1.55);
-            const introDuration = Math.min(0.72, Math.max(0.28, firstLine.time - visibleFrom));
-            const intro = linaSmoother((time - visibleFrom) / introDuration);
-            drawAppleLineBlock(ctx, w, focalY, firstLine, time, settings, {
-                active: false,
-                alpha: 0.30 + intro * 0.34,
-                scale: 0.97 + intro * 0.03,
-                nextLine: linaNormaliseLine(lines, 1)
-            });
-            return;
-        }
-        if (time < visibleFrom) return;
-    }
-
-    const motion = getAppleFocalMotion(lines, time);
-    if (!motion) return;
-    drawAppleFocusTransition(ctx, w, h, settings, lines, time, visibleCount, motion);
 }
 
 function drawAppleMusicHeader(ctx, w, h) {
@@ -1777,8 +1614,16 @@ function toast(msg, type = '') {
     toast._timer = setTimeout(() => el.classList.remove('show'), 3000);
 }
 function readiness() {
-    const ready = state.audio.file && state.lyrics.lines.length > 0 && (media.image || media.video || state.background.type === 'solid');
+    const ready = state.audio.file && state.audio.ready && state.lyrics.lines.length > 0 && (media.image || media.video || state.background.type === 'solid');
     $('exportBtn').disabled = $('exportBottom').disabled = !ready;
+}
+function projectValidationIssues() {
+    const issues = [];
+    if (!state.audio.file) issues.push('audio');
+    else if (!state.audio.ready || !Number.isFinite(state.audio.duration) || state.audio.duration <= 0) issues.push('readable audio');
+    if (!state.lyrics.lines.length) issues.push('synced lyrics');
+    if (!(media.image || media.video || state.background.type === 'solid')) issues.push('background');
+    return issues;
 }
 function songFromFilename(name) {
     if (!name) return { artist: '', track: '' };
@@ -1804,39 +1649,51 @@ function setAspectRatio(key) {
     redrawCurrentPreviewFrame();
 }
 function parseLyrics(raw) {
-    const LRC_TAG = /^\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]/;
-    // Recognised but content-free metadata tags (ID3-style LRC headers) that are fine to skip silently.
+    if (typeof raw !== 'string') throw new Error('Lyrics must be text');
+    const TIME_TAG = /\[(\d{1,3}):([0-5]?\d)(?:[.:](\d{1,3}))?\]/g;
     const METADATA_TAG = /^\[(ar|ti|al|au|length|by|offset|re|tool|ve|cover|coverart|artwork|image):/i;
     const lines = raw.split(/\r?\n/);
     const parsed = [];
     const skipped = [];
     const metadata = { title: '', artist: '', album: '', artwork: '' };
+    const declaredOffset = /^\[offset:([+-]?\d+)\]$/im.exec(raw);
+    let offsetSeconds = declaredOffset ? Number(declaredOffset[1]) / 1000 : 0;
     for (const rawLine of lines) {
         const line = rawLine.trim();
         if (!line) continue;
-        const match = LRC_TAG.exec(line);
-        if (!match) {
-            const metaMatch = /^\[(ar|ti|al|cover|coverart|artwork|image):(.+)\]$/i.exec(line);
+        TIME_TAG.lastIndex = 0;
+        const timeMatches = [];
+        let expectedTimeIndex = 0;
+        let timeMatch;
+        while ((timeMatch = TIME_TAG.exec(line)) !== null) {
+            if (timeMatch.index !== expectedTimeIndex) break;
+            timeMatches.push({ match: timeMatch, time: Number(timeMatch[1]) * 60 + Number(timeMatch[2]) + (timeMatch[3] ? Number('0.' + timeMatch[3]) : 0) });
+            expectedTimeIndex = timeMatch.index + timeMatch[0].length;
+        }
+        if (!timeMatches.length) {
+            const metaMatch = /^\[(ar|ti|al|offset|cover|coverart|artwork|image):(.+)\]$/i.exec(line);
             if (metaMatch) {
                 const key = metaMatch[1].toLowerCase();
                 const value = metaMatch[2].trim();
                 if (key === 'ar') metadata.artist = value;
                 else if (key === 'ti') metadata.title = value;
                 else if (key === 'al') metadata.album = value;
+                else if (key === 'offset') offsetSeconds = (Number(value) || 0) / 1000;
                 else metadata.artwork = value;
             } else if (!METADATA_TAG.test(line)) skipped.push(line);
             continue;
         }
-        const time = Number(match[1]) * 60 + Number(match[2]) + (match[3] ? Number('0.' + match[3]) : 0);
+        const contentStart = Math.max(...timeMatches.map(item => item.match.index + item.match[0].length));
+        const content = line.slice(contentStart);
         const wordMatches = [];
-        const WORD_TAG = /<(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?>/g;
-        const hasWordTimings = line.includes('<') && line.includes('>');
+        const WORD_TAG = /<(\d{1,3}):([0-5]?\d)(?:[.:](\d{1,3}))?>/g;
+        const hasWordTimings = content.includes('<') && content.includes('>');
         if (hasWordTimings) {
-            let temp = line.slice(match[0].length);
+            const temp = content;
             WORD_TAG.lastIndex = 0;
             let wm;
             while ((wm = WORD_TAG.exec(temp)) !== null) {
-                const wt = Number(wm[1]) * 60 + Number(wm[2]) + (wm[3] ? Number('0.' + wm[3]) : 0);
+                const wt = Math.max(0, Number(wm[1]) * 60 + Number(wm[2]) + (wm[3] ? Number('0.' + wm[3]) : 0) + offsetSeconds);
                 const si = wm.index + wm[0].length;
                 const ni = temp.indexOf('<', si);
                 const ei = ni !== -1 ? ni : temp.length;
@@ -1844,21 +1701,25 @@ function parseLyrics(raw) {
                 if (wtxt) wordMatches.push({ text: wtxt, time: wt, explicitEndTime: false, endTime: null });
             }
         }
-        const text = line.slice(match[0].length).replace(/<[^>]*>/g, '').trim();
+        const text = content.replace(/<[^>]*>/g, '').trim();
         if (text) {
-            const entry = { time, endTime: time + 3, text, words: null };
-            if (wordMatches.length > 0) entry.words = wordMatches;
-            parsed.push(entry);
+            for (const item of timeMatches) {
+                const time = Math.max(0, item.time + offsetSeconds);
+                const entry = { time, endTime: time + 3, text, words: null };
+                if (wordMatches.length > 0 && timeMatches.length === 1) entry.words = wordMatches;
+                parsed.push(entry);
+            }
         } else {
             skipped.push(line);
         }
     }
     parsed.sort((a, b) => a.time - b.time);
-    for (let i = 0; i < parsed.length; i++) {
-        if (i < parsed.length - 1) { parsed[i].endTime = parsed[i+1].time; parsed[i].nextLineTime = parsed[i+1].time; }
-        else parsed[i].endTime = parsed[i].time + 5;
+    const unique = parsed.filter((entry, index) => index === 0 || entry.time !== parsed[index-1].time || entry.text !== parsed[index-1].text);
+    for (let i = 0; i < unique.length; i++) {
+        if (i < unique.length - 1) { unique[i].endTime = unique[i+1].time; unique[i].nextLineTime = unique[i+1].time; }
+        else unique[i].endTime = unique[i].time + 5;
     }
-    return { lines: normaliseEnhancedWordEnds(parsed), skippedCount: skipped.length, skippedLines: skipped, metadata };
+    return { lines: normaliseEnhancedWordEnds(unique), skippedCount: skipped.length, skippedLines: skipped, metadata };
 }
 
 function updateMetadataInputs() {
@@ -1868,19 +1729,24 @@ function updateMetadataInputs() {
     if (albumInput) albumInput.value = state.audio.metadata.album || '';
 }
 
-function setAlbumArtworkBlob(blob) {
+function setAlbumArtworkBlob(blob, token = audioLoadToken) {
     if (!blob || !String(blob.type || '').startsWith('image/')) return;
     if (albumArtworkURL) URL.revokeObjectURL(albumArtworkURL);
     albumArtworkURL = URL.createObjectURL(blob);
     const image = new Image();
-    image.onload = () => { albumArtworkImage = image; state.audio.hasArtwork = true; redrawCurrentPreviewFrame(); };
-    image.onerror = () => { state.audio.hasArtwork = false; };
+    image.onload = () => { if (token !== audioLoadToken) return; albumArtworkImage = image; state.audio.hasArtwork = true; redrawCurrentPreviewFrame(); };
+    image.onerror = () => {
+        if (token !== audioLoadToken) return;
+        state.audio.hasArtwork = false;
+        albumArtworkImage = null;
+        if (albumArtworkURL) { URL.revokeObjectURL(albumArtworkURL); albumArtworkURL = null; }
+    };
     image.src = albumArtworkURL;
 }
 
 async function setAlbumArtworkReference(reference) {
     const value = String(reference || '').trim();
-    if (!value.startsWith('data:image/')) return false;
+    if (!value.startsWith('data:image/') || value.length > 14 * 1024 * 1024) return false;
     try { const response = await fetch(value); setAlbumArtworkBlob(await response.blob()); return true; }
     catch (error) { return false; }
 }
@@ -1894,15 +1760,16 @@ function loadMediaTagsLibrary() {
             script.onload = () => window.jsmediatags ? resolve(window.jsmediatags) : reject(new Error('Metadata reader unavailable'));
             script.onerror = () => reject(new Error('Metadata reader failed to load'));
             document.head.appendChild(script);
-        });
+        }).catch(error => { mediaTagsLoadPromise = null; throw error; });
     }
     return mediaTagsLoadPromise;
 }
 
-async function readEmbeddedAudioMetadata(file) {
+async function readEmbeddedAudioMetadata(file, token) {
     try {
         const tagsLibrary = await loadMediaTagsLibrary();
         const result = await new Promise((resolve, reject) => tagsLibrary.read(file, { onSuccess: resolve, onError: reject }));
+        if (token !== audioLoadToken || state.audio.file !== file) return;
         const tags = result?.tags || {};
         if (tags.title) state.audio.metadata.title = String(tags.title).trim();
         if (tags.artist) state.audio.metadata.artist = String(tags.artist).trim();
@@ -1910,7 +1777,7 @@ async function readEmbeddedAudioMetadata(file) {
         updateMetadataInputs();
         const picture = tags.picture;
         if (picture?.data?.length) {
-            setAlbumArtworkBlob(new Blob([new Uint8Array(picture.data)], { type: picture.format || 'image/jpeg' }));
+            setAlbumArtworkBlob(new Blob([new Uint8Array(picture.data)], { type: picture.format || 'image/jpeg' }), token);
             audioStatus.textContent = file.name + ' · embedded artwork';
         }
         saveLinaPrefs();
@@ -1922,6 +1789,7 @@ async function readEmbeddedAudioMetadata(file) {
 
 const MAX_AUDIO_BYTES = 200 * 1024 * 1024;
 const MAX_BACKGROUND_BYTES = 500 * 1024 * 1024;
+const MAX_LRC_BYTES = 5 * 1024 * 1024;
 
 function handleAudioFile(file) {
     if (isExporting) { toast('Finish or cancel the current export first', 'error'); return; }
@@ -1934,13 +1802,21 @@ function handleAudioFile(file) {
         toast('Audio file too large (max ' + Math.round(MAX_AUDIO_BYTES / 1024 / 1024) + 'MB)', 'error');
         return;
     }
+    const replacingAudio = Boolean(state.audio.file);
+    const token = ++audioLoadToken;
     if (audioURL) URL.revokeObjectURL(audioURL);
     audioURL = URL.createObjectURL(file);
     state.audio.file = file;
     state.audio.url = audioURL;
+    state.audio.duration = 0;
+    state.audio.ready = false;
     const parsedMeta = songFromFilename(file.name);
-    if (!state.audio.metadata.title) state.audio.metadata.title = parsedMeta.track || '';
-    if (!state.audio.metadata.artist) state.audio.metadata.artist = parsedMeta.artist || '';
+    state.audio.metadata = { title: parsedMeta.track || '', artist: parsedMeta.artist || '', album: '' };
+    if (replacingAudio) {
+        state.lyrics.lines = [];
+        $('lyricsStatus').textContent = 'No lyrics loaded';
+        $('lyricsStatus').className = 'status';
+    }
     albumArtworkImage = null;
     state.audio.hasArtwork = false;
     if (albumArtworkURL) { URL.revokeObjectURL(albumArtworkURL); albumArtworkURL = null; }
@@ -1951,7 +1827,7 @@ function handleAudioFile(file) {
     audioStatus.className = 'status success';
     toast('Audio loaded: ' + file.name, 'success');
     readiness();
-    readEmbeddedAudioMetadata(file);
+    readEmbeddedAudioMetadata(file, token);
 }
 
 function handleBackgroundFile(file) {
@@ -1965,16 +1841,20 @@ function handleBackgroundFile(file) {
         toast('Background file too large (max ' + Math.round(MAX_BACKGROUND_BYTES / 1024 / 1024) + 'MB)', 'error');
         return;
     }
-    if (backgroundURL) URL.revokeObjectURL(backgroundURL);
-    backgroundURL = URL.createObjectURL(file);
+    const token = ++backgroundLoadToken;
+    const candidateURL = URL.createObjectURL(file);
     if (file.type.startsWith('video/')) {
         const vid = document.createElement('video');
         vid.muted = true; vid.loop = true; vid.playsInline = true;
-        vid.src = backgroundURL;
+        vid.src = candidateURL;
         vid.load();
         vid.addEventListener('loadeddata', function() {
-            if (isExporting) return;
+            if (isExporting || token !== backgroundLoadToken) { vid.pause(); vid.src = ''; URL.revokeObjectURL(candidateURL); return; }
+            if (media.video && media.video !== vid) { media.video.pause(); media.video.src = ''; }
+            if (backgroundURL) URL.revokeObjectURL(backgroundURL);
+            backgroundURL = candidateURL;
             media.video = vid;
+            media.image = null;
             state.background.type = 'video';
             $('backgroundStatus').textContent = file.name;
             $('backgroundStatus').className = 'status success';
@@ -1986,6 +1866,8 @@ function handleBackgroundFile(file) {
             redrawCurrentPreviewFrame();
         });
         vid.addEventListener('error', function() {
+            URL.revokeObjectURL(candidateURL);
+            if (token !== backgroundLoadToken) return;
             toast('Video failed to load', 'error');
             $('backgroundStatus').textContent = 'Error loading video';
             $('backgroundStatus').className = 'status error';
@@ -1993,7 +1875,10 @@ function handleBackgroundFile(file) {
     } else {
         const img = new Image();
         img.onload = function() {
-            if (isExporting) return;
+            if (isExporting || token !== backgroundLoadToken) { URL.revokeObjectURL(candidateURL); return; }
+            if (media.video) { media.video.pause(); media.video.src = ''; media.video = null; }
+            if (backgroundURL) URL.revokeObjectURL(backgroundURL);
+            backgroundURL = candidateURL;
             media.image = img;
             state.background.type = 'image';
             $('backgroundStatus').textContent = file.name;
@@ -2003,11 +1888,13 @@ function handleBackgroundFile(file) {
             redrawCurrentPreviewFrame();
         };
         img.onerror = function() {
+            URL.revokeObjectURL(candidateURL);
+            if (token !== backgroundLoadToken) return;
             toast('Image failed to load', 'error');
             $('backgroundStatus').textContent = 'Error loading image';
             $('backgroundStatus').className = 'status error';
         };
-        img.src = backgroundURL;
+        img.src = candidateURL;
     }
 }
 
@@ -2046,11 +1933,21 @@ backgroundInput.addEventListener('change', function(e) {
 });
 
 audio.addEventListener('loadedmetadata', function() {
+    if (!Number.isFinite(this.duration) || this.duration <= 0) {
+        state.audio.ready = false;
+        readiness();
+        toast('Audio duration could not be read', 'error');
+        return;
+    }
     state.audio.duration = this.duration;
+    state.audio.ready = true;
     const seek = $('seek'); if (seek) seek.max = this.duration;
     $('clock').textContent = '0:00 / ' + fmt(this.duration);
+    readiness();
 });
 audio.addEventListener('error', function() {
+    state.audio.ready = false;
+    readiness();
     toast('Audio error', 'error');
     audioStatus.textContent = 'Error loading audio';
     audioStatus.className = 'status error';
@@ -2264,6 +2161,10 @@ async function loadLrcFile(file, openEditor = false) {
         toast('Choose an .lrc or .txt file', 'error');
         return;
     }
+    if (file.size > MAX_LRC_BYTES) {
+        toast('Lyrics file too large (max 5MB)', 'error');
+        return;
+    }
     try {
         const raw = await file.text();
         const parsed = parseLyrics(raw);
@@ -2423,6 +2324,22 @@ function cleanupExport() {
     exportLastFrameStamp = null;
 }
 
+function restorePreviewAfterExport() {
+    if (previewRestored) return;
+    previewRestored = true;
+    audio.currentTime = Math.min(previewTimeBeforeExport, audio.duration || 0);
+    state.playback.currentTime = audio.currentTime || 0;
+    if (media.video) {
+        media.video.pause();
+        media.video.muted = true;
+        media.video.playbackRate = 1;
+        if (Number.isFinite(media.video.duration) && media.video.duration > 0) {
+            media.video.currentTime = wrappedVideoTime(audio.currentTime, media.video.duration);
+        }
+    }
+    redrawCurrentPreviewFrame();
+}
+
 function createOffscreenExportCanvas(config) {
     const cnv = document.createElement('canvas');
     cnv.width = config.width;
@@ -2446,7 +2363,9 @@ function createOffscreenExportCanvas(config) {
 }
 
 async function startExport() {
-    if (isExporting || $('exportBtn').disabled) return;
+    if (isExporting) return;
+    const issues = projectValidationIssues();
+    if (issues.length) { toast('Before export, add: ' + issues.join(', '), 'error'); return; }
     if ($('offlineExportToggle')?.checked) {
         return startOfflineExport();
     }
@@ -2561,6 +2480,7 @@ async function startExportRealtime() {
         const source = exportAudioContext.createMediaElementSource(exportAudioElement);
         const dest = exportAudioContext.createMediaStreamDestination();
         source.connect(dest);
+        if (!dest.stream.getAudioTracks().length) throw new Error('Export audio track could not be created');
 
         exportOutputStream = new MediaStream([...exportStream.getVideoTracks(), ...dest.stream.getAudioTracks()]);
 
@@ -2683,6 +2603,7 @@ async function startExportRealtime() {
         }
         const blob = await exportPromise;
         if (exportCancelled || exportAbortController.signal.aborted) throw new DOMException('Export cancelled', 'AbortError');
+        if (!blob || blob.size < 1024) throw new Error('Browser produced an empty video file');
 
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -2720,12 +2641,7 @@ async function startExportRealtime() {
         exportCancelled = false;
         $('exportPreset').disabled = false;
         setTimeout(() => $('exportOverlay').classList.add('hidden'), 1200);
-        if (!previewRestored) {
-            previewRestored = true;
-            audio.currentTime = Math.min(previewTimeBeforeExport, audio.duration || 0);
-            state.playback.currentTime = audio.currentTime || 0;
-            redrawCurrentPreviewFrame();
-        }
+        restorePreviewAfterExport();
     }
 }
 
@@ -2755,7 +2671,7 @@ const FFMPEG_UTIL_VERSION = '0.12.1';
 // browser memory holding every frame before the final encode. At 1080x1920
 // this is roughly 2900 frames (~97s at 30fps, ~193s at 15fps); at 1280x720
 // it's roughly ~6500 frames (~3.6min at 30fps).
-const MAX_OFFLINE_FRAME_PIXELS = 6e9;
+const MAX_OFFLINE_FRAME_PIXELS = 3e9;
 
 let ffmpegInstance = null;
 let ffmpegLoadPromise = null;
@@ -2931,6 +2847,7 @@ async function startOfflineExport() {
         if (exportCancelled || exportAbortController.signal.aborted) throw new DOMException('Export cancelled', 'AbortError');
 
         const data = await ffmpeg.readFile(outputName);
+        if (!data || data.byteLength < 1024) throw new Error('Encoder produced an empty video file');
         const blob = new Blob([data.buffer], { type: 'video/mp4' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -2974,12 +2891,7 @@ async function startOfflineExport() {
         exportCancelled = false;
         $('exportPreset').disabled = false;
         setTimeout(() => $('exportOverlay').classList.add('hidden'), 1200);
-        if (!previewRestored) {
-            previewRestored = true;
-            audio.currentTime = Math.min(previewTimeBeforeExport, audio.duration || 0);
-            state.playback.currentTime = audio.currentTime || 0;
-            redrawCurrentPreviewFrame();
-        }
+        restorePreviewAfterExport();
     }
 }
 
@@ -3101,6 +3013,7 @@ window.addEventListener('beforeunload', function() {
     if (exportAnimationFrame) cancelAnimationFrame(exportAnimationFrame);
     if (audioURL) URL.revokeObjectURL(audioURL);
     if (backgroundURL) URL.revokeObjectURL(backgroundURL);
+    if (albumArtworkURL) URL.revokeObjectURL(albumArtworkURL);
     if (media.video) { media.video.pause(); media.video.src = ''; }
     audio.pause();
     audio.src = '';
