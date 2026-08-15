@@ -168,7 +168,8 @@
 
     input[type="file"] { display: block; margin: 8px auto; max-width: 100%; color: var(--text); font-size: 11px; }
     #audioInput { position: fixed; left: -9999px; top: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-    #backgroundInput { display: none; }
+    #backgroundInput { display: block; width: 100%; margin: 0; padding: 7px; border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--text-secondary); font-size: 11px; }
+    #backgroundInput::file-selector-button { margin-right: 10px; padding: 7px 14px; border: 0; border-radius: 980px; background: var(--surface-hover); color: var(--text); font: inherit; font-weight: 600; cursor: pointer; }
 
     @media (max-width: 820px) {
         main { flex-direction: column; }
@@ -230,8 +231,7 @@
             <div class="section">
                 <h3>Background</h3>
                 <div class="drop-zone" id="bgDrop">
-                    <label for="backgroundInput" class="file-button">Choose Image/Video</label>
-                    <input type="file" id="backgroundInput" accept="image/*,video/*">
+                    <input type="file" id="backgroundInput" accept="image/*,video/*" aria-label="Choose background image or video">
                     <div id="backgroundStatus" class="status">No background loaded</div>
                 </div>
             </div>
