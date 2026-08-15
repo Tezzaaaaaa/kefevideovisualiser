@@ -338,7 +338,7 @@ const ctx = canvas.getContext('2d', { alpha: false });
 const audio = new Audio();
 
 const state = {
-    audio: { file: null, url: null, duration: 0, ready: false, metadata: { title: '', artist: '', album: '' }, hasArtwork: false },
+    audio: { file: null, url: null, duration: 0, ready: false, metadata: { title: '', artist: '', album: '' }, metadataSource: 'none', hasArtwork: false },
     lyrics: { lines: [] },
     style: {
         effect: 'apple',
@@ -1682,7 +1682,7 @@ function songFromFilename(name) {
     if (!name) return { artist: '', track: '' };
     const base = name.replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ').trim();
     const parts = base.split(/\s+-\s+/);
-    return parts.length > 1 ? { artist: parts[0].trim(), track: parts.slice(1).join(' - ').trim() } : { artist: '', track: base };
+    return parts.length > 1 ? { track: parts[0].trim(), artist: parts.slice(1).join(' - ').trim() } : { artist: '', track: base };
 }
 const ASPECTS = {
     '9:16': { w: 1080, h: 1920, label: '1080 × 1920 (Vertical)' },
@@ -1827,6 +1827,7 @@ async function readEmbeddedAudioMetadata(file, token) {
         if (tags.title) state.audio.metadata.title = String(tags.title).trim();
         if (tags.artist) state.audio.metadata.artist = String(tags.artist).trim();
         if (tags.album) state.audio.metadata.album = String(tags.album).trim();
+        if (tags.title || tags.artist || tags.album) state.audio.metadataSource = 'embedded';
         updateMetadataInputs();
         const picture = tags.picture;
         if (picture?.data?.length) {
@@ -1865,6 +1866,7 @@ function handleAudioFile(file) {
     state.audio.ready = false;
     const parsedMeta = songFromFilename(file.name);
     state.audio.metadata = { title: parsedMeta.track || '', artist: parsedMeta.artist || '', album: '' };
+    state.audio.metadataSource = 'filename';
     if (replacingAudio) {
         state.lyrics.lines = [];
         $('lyricsStatus').textContent = 'No lyrics loaded';
@@ -1980,6 +1982,7 @@ backgroundInput.addEventListener('change', function(e) {
     input.addEventListener('input', () => {
         const key = id === 'metaTitle' ? 'title' : id === 'metaArtist' ? 'artist' : 'album';
         state.audio.metadata[key] = input.value.trim();
+        state.audio.metadataSource = 'manual';
         redrawCurrentPreviewFrame();
         saveLinaPrefs();
     });
@@ -2174,23 +2177,20 @@ function resolveAudioLabels(audioState = state.audio) {
     const fallback = audioState?.file ? songFromFilename(audioState.file.name) : { track: '', artist: '' };
     const fallbackTitle = cleanTrackName(fallback.track);
     const fallbackArtist = String(fallback.artist || '').trim();
-    let title = cleanTrackName(metadata.title);
-    let artist = String(metadata.artist || '').trim();
-
-    const titleMatchesFilenameArtist = title && fallbackArtist && normalisedMetadataLabel(title) === normalisedMetadataLabel(fallbackArtist);
-    const artistMatchesFilenameTitle = artist && fallbackTitle && normalisedMetadataLabel(artist) === normalisedMetadataLabel(fallbackTitle);
-    if (titleMatchesFilenameArtist && (!artist || artistMatchesFilenameTitle)) {
-        const correctedTitle = artistMatchesFilenameTitle ? artist : fallbackTitle;
-        artist = title;
-        title = correctedTitle;
-    }
+    const useWebsiteFields = audioState === state.audio;
+    const titleField = useWebsiteFields ? $('metaTitle') : null;
+    const artistField = useWebsiteFields ? $('metaArtist') : null;
+    const albumField = useWebsiteFields ? $('metaAlbum') : null;
+    let title = cleanTrackName(titleField ? titleField.value : metadata.title);
+    let artist = String(artistField ? artistField.value : (metadata.artist || '')).trim();
+    const album = String(albumField ? albumField.value : (metadata.album || '')).trim();
 
     if (!isUsefulExportLabel(title)) title = fallbackTitle;
     if (!isUsefulExportLabel(artist)) artist = fallbackArtist;
     return {
         title: String(title || '').trim(),
         artist: String(artist || '').trim(),
-        album: String(metadata.album || '').trim()
+        album
     };
 }
 
@@ -2244,6 +2244,11 @@ $('findLyricsBtn').addEventListener('click', async function() {
         if (!parsed.lines.length) throw new Error('No valid timed lyrics found');
         if (isExporting) return;
         state.lyrics.lines = parsed.lines;
+        if (match.trackName) state.audio.metadata.title = String(match.trackName).trim();
+        if (match.artistName) state.audio.metadata.artist = String(match.artistName).trim();
+        if (match.albumName) state.audio.metadata.album = String(match.albumName).trim();
+        if (match.trackName || match.artistName || match.albumName) state.audio.metadataSource = 'lyrics-service';
+        updateMetadataInputs();
         $('lyricsStatus').textContent = parsed.lines.length + ' lines loaded' + (parsed.skippedCount ? ' (' + parsed.skippedCount + ' unparsable line' + (parsed.skippedCount === 1 ? '' : 's') + ' skipped)' : '');
         $('lyricsStatus').className = 'status success';
         toast('Lyrics loaded' + (parsed.skippedCount ? ', ' + parsed.skippedCount + ' line(s) could not be parsed' : ''), 'success');
@@ -2317,6 +2322,7 @@ async function loadLrcFile(file, openEditor = false) {
         if (parsed.metadata?.title) state.audio.metadata.title = parsed.metadata.title;
         if (parsed.metadata?.artist) state.audio.metadata.artist = parsed.metadata.artist;
         if (parsed.metadata?.album) state.audio.metadata.album = parsed.metadata.album;
+        if (parsed.metadata?.title || parsed.metadata?.artist || parsed.metadata?.album) state.audio.metadataSource = 'lrc';
         updateMetadataInputs();
         if (parsed.metadata?.artwork) await setAlbumArtworkReference(parsed.metadata.artwork);
         $('lyricsStatus').textContent = parsed.lines.length + ' synced lines loaded';
@@ -2355,6 +2361,13 @@ $('saveLyrics').addEventListener('click', function() {
             return;
         }
         state.lyrics.lines = parsed.lines;
+        if (parsed.metadata?.title) state.audio.metadata.title = parsed.metadata.title;
+        if (parsed.metadata?.artist) state.audio.metadata.artist = parsed.metadata.artist;
+        if (parsed.metadata?.album) state.audio.metadata.album = parsed.metadata.album;
+        if (parsed.metadata?.title || parsed.metadata?.artist || parsed.metadata?.album) {
+            state.audio.metadataSource = 'lrc';
+            updateMetadataInputs();
+        }
         $('lyricsStatus').textContent = parsed.lines.length + ' lines loaded' + (parsed.skippedCount ? ' (' + parsed.skippedCount + ' unparsable line' + (parsed.skippedCount === 1 ? '' : 's') + ' skipped)' : '');
         $('lyricsStatus').className = 'status success';
         $('editorStatus').textContent = 'Saved ' + parsed.lines.length + ' lines' + (parsed.skippedCount ? ', skipped ' + parsed.skippedCount + ' unparsable line' + (parsed.skippedCount === 1 ? '' : 's') : '');
