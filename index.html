@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="TERE — a browser-based lyric video visualiser.">
-    <title>TERE Visualiser</title>
+    <meta name="description" content="KEFE — a browser-based lyric video visualiser.">
+    <title>KEFE Visualiser</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -201,8 +201,8 @@
 
 <div class="app">
     <header>
-        <a class="brand" href="./" aria-label="TERE Visualiser home" title="Return home">
-            <img src="./tere-logo-light.svg" alt="TERE">
+        <a class="brand" href="./" aria-label="KEFE Visualiser home" title="Return home">
+            <img src="./kefe-logo-light.svg" alt="KEFE">
             <span class="brand-descriptor" aria-hidden="true"><span>V</span><span>I</span><span>S</span><span>U</span><span>A</span><span>L</span><span>I</span><span>S</span><span>E</span><span>R</span></span>
         </a>
         <div class="header-actions">
@@ -2158,7 +2158,7 @@ function buildExportFilename(extension) {
     const artist = sanitiseExportFilenamePart(resolved.artist);
     const parts = [title];
     if (artist && artist.toLocaleLowerCase() !== title.toLocaleLowerCase()) parts.push(artist);
-    parts.push('TERE Visualiser');
+    parts.push('KEFE Visualiser');
     const ext = String(extension || 'mp4').replace(/[^a-z0-9]/gi, '').toLowerCase() || 'mp4';
     return parts.join(' - ') + '.' + ext;
 }
@@ -3131,7 +3131,7 @@ function init() {
         readiness();
         setEffect(prefs?.effect && EFFECT_LABELS[prefs.effect] ? prefs.effect : (state.style.effect || 'apple'));
         redrawCurrentPreviewFrame();
-        toast('TERE Visualiser ready', 'success');
+        toast('KEFE Visualiser ready', 'success');
     } catch(err) {
         console.error('Init error:', err);
         toast('Error initializing', 'error');
