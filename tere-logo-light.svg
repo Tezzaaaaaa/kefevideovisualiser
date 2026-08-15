@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 160" role="img" aria-labelledby="title">
+  <title id="title">TERE</title>
+  <g fill="#F5F5F7">
+    <path d="M20 30h110v28H90v72H60V58H20z"/>
+    <path d="M155 30h100v27h-70v12h61v25h-61v9h70v27H155z"/>
+    <path d="M280 30h67c35 0 53 15 53 43 0 17-8 29-23 36l25 21h-42l-19-17h-31v17h-30zm30 27v30h34c17 0 25-5 25-15 0-10-8-15-25-15z"/>
+    <path d="M425 30h75v27h-45v12h40v25h-40v9h45v27h-75z"/>
+  </g>
+  <circle cx="492" cy="122" r="8" fill="#0A84FF"/>
+</svg>
