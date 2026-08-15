@@ -1337,7 +1337,8 @@ function toast(msg, type = '') {
     toast._timer = setTimeout(() => el.classList.remove('show'), 3000);
 }
 function readiness() {
-    const ready = state.audio.file && state.audio.ready && state.lyrics.lines.length > 0;
+    const timingValid = state.lyrics.lines.length > 0 && validateLyricTiming(state.lyrics.lines, state.audio.duration).errors.length === 0;
+    const ready = state.audio.file && state.audio.ready && timingValid;
     $('exportBtn').disabled = $('exportBottom').disabled = !ready;
     if (state.lyrics.lines.length) refreshLyricsTimingStatus();
 }
