@@ -338,12 +338,14 @@ const state = {
         accentColor: '#FFFFFF',
         textColor: '#FFFFFF',
         bratTextColor: '#FFFFFF',
-        appleInactiveOpacity: 0.64,
-        appleGlow: 0.045,
-        appleDepth: 0.038,
-        appleLift: 0.014,
+        appleInactiveOpacity: 0.25,
+        appleGlow: 0.012,
+        appleDepth: 0.008,
+        appleLift: 0,
         appleHighlightSpan: 0.92,
-        appleVisibleLines: 3,
+        appleVisibleLines: 4,
+        appleTopOffset: 0.245,
+        appleLineSpacing: 0.72,
         bratSideMargin: 4.5,
         bratTopMargin: 4.5,
         bratTypingSpeed: 1,
@@ -559,7 +561,7 @@ function measureAppleLineBlock(ctx, w, line, settings, nextLine = null) {
     return { rows, rowHeight, totalHeight };
 }
 
-function drawAppleActiveWord(ctx, word, x, y, time, fontSize, settings) {
+function drawAppleActiveWord(ctx, word, x, y, time, fontSize, settings, overallAlpha = 1) {
     const duration = Math.max(0.001, word.endTime - word.time);
     const progress = linaClamp((time - word.time) / duration);
     const enter = linaSmoother(progress / 0.28);
@@ -574,7 +576,7 @@ function drawAppleActiveWord(ctx, word, x, y, time, fontSize, settings) {
     ctx.scale(scale, scale);
     ctx.translate(-centreX, -y);
     ctx.save();
-    ctx.globalAlpha = settings.inactiveOpacity;
+    ctx.globalAlpha = settings.inactiveOpacity * overallAlpha;
     ctx.fillStyle = settings.inactiveColor;
     ctx.shadowBlur = 0;
     ctx.fillText(word.text, x, y);
@@ -587,7 +589,7 @@ function drawAppleActiveWord(ctx, word, x, y, time, fontSize, settings) {
         if (local <= 0.001) continue;
         const charX = x + ctx.measureText(word.text.slice(0, i)).width;
         ctx.save();
-        ctx.globalAlpha = 0.25 + local * 0.75;
+        ctx.globalAlpha = (0.25 + local * 0.75) * overallAlpha;
         ctx.fillStyle = settings.activeColor;
         ctx.shadowColor = settings.activeColor;
         ctx.shadowBlur = fontSize * settings.glow * local;
@@ -606,6 +608,7 @@ function drawAppleLineBlock(ctx, w, centreY, line, time, settings, options = {})
     const nextLine = options.nextLine || null;
     const measurement = options.measurement || measureAppleLineBlock(ctx, w, line, settings, nextLine);
     ctx.save();
+    ctx.filter = Number(options.blur) > 0 ? `blur(${Number(options.blur)}px)` : "none";
     ctx.font = `650 ${fontSize}px system-ui,-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif`;
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
@@ -625,11 +628,11 @@ function drawAppleLineBlock(ctx, w, centreY, line, time, settings, options = {})
             if (!active) {
                 ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = settings.backgroundColor; ctx.shadowBlur = 0; ctx.fillText(word.text, x, y); ctx.restore();
             } else if (time < word.time) {
-                ctx.save(); ctx.globalAlpha = settings.inactiveOpacity; ctx.fillStyle = settings.inactiveColor; ctx.shadowBlur = 0; ctx.fillText(word.text, x, y); ctx.restore();
+                ctx.save(); ctx.globalAlpha = settings.inactiveOpacity * alpha; ctx.fillStyle = settings.inactiveColor; ctx.shadowBlur = 0; ctx.fillText(word.text, x, y); ctx.restore();
             } else if (time >= word.endTime) {
-                ctx.save(); ctx.globalAlpha = 0.96; ctx.fillStyle = settings.activeColor; ctx.shadowColor = settings.activeColor; ctx.shadowBlur = fontSize * 0.014; ctx.fillText(word.text, x, y); ctx.restore();
+                ctx.save(); ctx.globalAlpha = 0.96 * alpha; ctx.fillStyle = settings.activeColor; ctx.shadowColor = settings.activeColor; ctx.shadowBlur = fontSize * 0.014; ctx.fillText(word.text, x, y); ctx.restore();
             } else {
-                drawAppleActiveWord(ctx, word, x, y, time, fontSize, settings);
+                drawAppleActiveWord(ctx, word, x, y, time, fontSize, settings, alpha);
             }
             x += word.width;
             if (i < row.words.length - 1) x += spaceWidth;
@@ -813,7 +816,7 @@ function drawAppleFocusTransition(ctx, w, h, settings, lines, time, visibleCount
     ctx.restore();
 }
 
-function drawAppleEffect(ctx, w, h, style, lines, time) {
+function drawAppleEffectLegacy(ctx, w, h, style, lines, time) {
     if (!Array.isArray(lines) || !lines.length) return;
 
     const settings = {
@@ -852,6 +855,99 @@ function drawAppleEffect(ctx, w, h, style, lines, time) {
     const motion = getAppleFocalMotion(lines, time);
     if (!motion) return;
     drawAppleFocusTransition(ctx, w, h, settings, lines, time, visibleCount, motion);
+}
+
+function drawAppleMusicHeader(ctx, w, h) {
+    const fallback = state.audio.file ? songFromFilename(state.audio.file.name) : { track: '', artist: '' };
+    const title = String(state.audio.metadata.title || fallback.track || '').trim();
+    const artist = String(state.audio.metadata.artist || fallback.artist || '').trim();
+    if (!title && !artist) return;
+    const margin = Math.max(40, w * 0.075);
+    const artSize = Math.max(58, Math.min(w, h) * 0.067);
+    const y = Math.max(34, h * 0.052);
+    const source = media.image || (media.video?.readyState >= 2 ? media.video : null);
+    ctx.save();
+    if (source) {
+        ctx.beginPath(); ctx.roundRect(margin, y, artSize, artSize, artSize * 0.12); ctx.clip();
+        const sw = source.videoWidth || source.naturalWidth || source.width;
+        const sh = source.videoHeight || source.naturalHeight || source.height;
+        if (sw && sh) { const side = Math.min(sw, sh); ctx.drawImage(source, (sw-side)/2, (sh-side)/2, side, side, margin, y, artSize, artSize); }
+        ctx.restore(); ctx.save();
+    } else {
+        ctx.fillStyle = 'rgba(255,255,255,0.14)'; ctx.beginPath(); ctx.roundRect(margin, y, artSize, artSize, artSize * 0.12); ctx.fill();
+    }
+    const tx = margin + artSize + Math.max(16, w * 0.018);
+    const maxText = w - tx - margin * 1.8;
+    const titleSize = Math.max(18, Math.min(w, h) * 0.025);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.font = `700 ${titleSize}px "Open Sans",Arial,sans-serif`;
+    let shownTitle = title || 'Untitled';
+    while (shownTitle.length > 1 && ctx.measureText(shownTitle).width > maxText) shownTitle = shownTitle.slice(0,-2).trim() + '…';
+    ctx.fillStyle = '#fff'; ctx.globalAlpha = 0.96; ctx.fillText(shownTitle, tx, y + artSize * 0.38);
+    ctx.font = `500 ${Math.max(14, titleSize * 0.72)}px "Open Sans",Arial,sans-serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.62)'; ctx.fillText(artist, tx, y + artSize * 0.68);
+    ctx.fillStyle = 'rgba(255,255,255,0.82)'; ctx.beginPath();
+    const dotY = y + artSize * 0.5, dotX = w - margin;
+    for (let i=-1;i<=1;i++) ctx.arc(dotX + i * 10, dotY, 2.3, 0, Math.PI*2);
+    ctx.fill(); ctx.restore();
+}
+
+function buildAppleMusicLayout(ctx, w, h, settings, lines, focusIndex, visibleCount) {
+    const output = [];
+    const focusY = h * settings.topOffset;
+    const gap = Math.max(settings.fontSize * settings.lineSpacing, h * 0.018);
+    const add = (index, centreY, relation, measurement = null) => {
+        const line = linaNormaliseLine(lines, index); if (!line) return null;
+        const nextLine = linaNormaliseLine(lines, index + 1);
+        measurement ||= measureAppleLineBlock(ctx, w, line, settings, nextLine);
+        const item = { lineIndex:index, line, nextLine, measurement, centreY, relation };
+        output.push(item); return item;
+    };
+    const focus = add(focusIndex, focusY, 0); if (!focus) return output;
+    const previous = linaNormaliseLine(lines, focusIndex - 1);
+    if (previous) {
+        const pm = measureAppleLineBlock(ctx, w, previous, settings, focus.line);
+        add(focusIndex - 1, focusY - focus.measurement.totalHeight/2 - gap - pm.totalHeight/2, -1, pm);
+    }
+    let cursorY = focusY + focus.measurement.totalHeight/2 + gap;
+    for (let distance=1; distance<=visibleCount; distance++) {
+        const line = linaNormaliseLine(lines, focusIndex + distance); if (!line) break;
+        const next = linaNormaliseLine(lines, focusIndex + distance + 1);
+        const measurement = measureAppleLineBlock(ctx, w, line, settings, next);
+        add(focusIndex + distance, cursorY + measurement.totalHeight/2, distance, measurement);
+        cursorY += measurement.totalHeight + gap;
+    }
+    return output;
+}
+
+function drawAppleMusicTransition(ctx, w, h, settings, lines, time, visibleCount, motion) {
+    const fromLayout = buildAppleMusicLayout(ctx,w,h,settings,lines,motion.fromIndex,visibleCount);
+    const toLayout = buildAppleMusicLayout(ctx,w,h,settings,lines,motion.toIndex,visibleCount);
+    const fromMap = new Map(fromLayout.map(e=>[e.lineIndex,e]));
+    const toMap = new Map(toLayout.map(e=>[e.lineIndex,e]));
+    const p = motion.fromIndex === motion.toIndex ? 1 : linaSmoother(motion.progress);
+    const relationOpacity = relation => relation === 0 ? 1 : relation < 0 ? 0.12 : Math.max(0.07,settings.inactiveOpacity*Math.pow(0.72,relation-1));
+    for (const index of [...new Set([...fromMap.keys(),...toMap.keys()])]) {
+        const from=fromMap.get(index), to=toMap.get(index), entry=to||from; if(!entry) continue;
+        const relation=to?to.relation:-2;
+        const y=from&&to ? from.centreY+(to.centreY-from.centreY)*p : (to ? to.centreY+h*0.035*(1-p) : from.centreY-h*0.055*p);
+        let alpha=from&&to ? relationOpacity(from.relation)+(relationOpacity(to.relation)-relationOpacity(from.relation))*p : relationOpacity(relation);
+        if(!from) alpha*=p; if(!to) alpha*=1-p;
+        const isActive=(from?.relation===0)||(to?.relation===0);
+        const blur=isActive?0:settings.fontSize*(relation<0?0.075:0.052+Math.max(0,relation-1)*0.014);
+        drawAppleLineBlock(ctx,w,y,entry.line,time,settings,{active:isActive,alpha,scale:isActive?1:0.98,blur,nextLine:entry.nextLine,measurement:entry.measurement});
+    }
+}
+
+function drawAppleEffect(ctx, w, h, style, lines, time) {
+    if (!Array.isArray(lines) || !lines.length) return;
+    const wash=ctx.createLinearGradient(0,0,0,h); wash.addColorStop(0,'rgba(18,18,20,0.20)'); wash.addColorStop(0.55,'rgba(8,8,10,0.08)'); wash.addColorStop(1,'rgba(0,0,0,0.34)');
+    ctx.save(); ctx.fillStyle=wash; ctx.fillRect(0,0,w,h); ctx.restore();
+    drawAppleMusicHeader(ctx,w,h);
+    const settings={fontSize:Number(style.fontSize)||76,align:style.align||'left',activeColor:'#FFFFFF',inactiveColor:'rgba(255,255,255,0.46)',backgroundColor:'#FFFFFF',inactiveOpacity:Number.isFinite(Number(style.appleInactiveOpacity))?Number(style.appleInactiveOpacity):0.25,glow:0.012,depth:0.008,lift:0,highlightSpan:0.96,topOffset:Number(style.appleTopOffset)||0.245,lineSpacing:Number(style.appleLineSpacing)||0.72};
+    const visibleCount=Math.max(2,Math.min(6,Math.round(Number(style.appleVisibleLines)||4)));
+    const first=linaNormaliseLine(lines,0); if(!first||time<Math.max(0,first.time-1.2)) return;
+    const motion=getAppleFocalMotion(lines,time)||{fromIndex:0,toIndex:0,progress:1};
+    drawAppleMusicTransition(ctx,w,h,settings,lines,time,visibleCount,motion);
 }
 
 function buildBratWords(lines) {
@@ -1487,7 +1583,7 @@ function startSingleRenderLoop() {
 }
 
 const EFFECT_LABELS = {
-    apple: "Smooth line transitions + flowing light through words",
+    apple: "Apple Music-style focus line with a continuous scrolling lyric stack",
     brat: "5-line album-cover typewriter (edge-to-edge justified)",
     eternal: "Three-line handwritten cycle (Homemade Apple only)",
     aurora: "Flowing colour-gradient lyrics with a soft aurora glow",
@@ -1506,11 +1602,10 @@ function renderEffectControls() {
     let extraControls = [];
     if (effect === "apple") {
         extraControls = [
-            { key: "appleGlow", label: "Glow", type: "range", min: 0, max: 10, step: 0.1, suffix: "%", scale: 0.01 },
-            { key: "appleDepth", label: "Word depth", type: "range", min: 0, max: 10, step: 0.1, suffix: "%", scale: 0.01 },
-            { key: "appleLift", label: "Word lift", type: "range", min: 0, max: 5, step: 0.1, suffix: "%", scale: 0.01 },
-            { key: "appleInactiveOpacity", label: "Inactive opacity", type: "range", min: 20, max: 90, step: 1, suffix: "%", scale: 0.01 },
-            { key: "appleVisibleLines", label: "Visible lines", type: "range", min: 1, max: 5, step: 1, suffix: "", scale: 1 }
+            { key: "appleTopOffset", label: "Lyrics position", type: "range", min: 20, max: 38, step: 0.5, suffix: "%", scale: 0.01 },
+            { key: "appleLineSpacing", label: "Line spacing", type: "range", min: 45, max: 110, step: 1, suffix: "%", scale: 0.01 },
+            { key: "appleInactiveOpacity", label: "Upcoming opacity", type: "range", min: 10, max: 45, step: 1, suffix: "%", scale: 0.01 },
+            { key: "appleVisibleLines", label: "Upcoming lines", type: "range", min: 2, max: 6, step: 1, suffix: "", scale: 1 }
         ];
     }
     if (effect === "brat") {
