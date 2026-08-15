@@ -19,6 +19,8 @@ Then open `http://localhost:8000`.
 ```text
 lyricvideovisualiser/
 ├── index.html
+├── styles.css
+├── app.js
 ├── HomemadeApple-Regular.woff2
 ├── kefe-logo.svg
 ├── kefe-logo-light.svg
@@ -41,4 +43,7 @@ lyricvideovisualiser/
 - Supports LRC and enhanced LRC timing.
 - Supports image and video backgrounds.
 - Includes 9:16, 1:1, and 16:9 layouts.
+- Saves and restores portable `.kefe` project settings.
+- Uses a built-in solid background when no image or video is supplied.
+- Validates lyric timestamps before export.
 - Export performance depends on browser support, device memory, resolution, and duration.
