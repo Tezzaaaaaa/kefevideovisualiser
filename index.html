@@ -273,14 +273,7 @@
                     <option value="instagram">Instagram Reel</option>
                     <option value="tiktok">TikTok</option>
                 </select>
-                <div class="toggle-row">
-                    <label for="offlineExportToggle">Frame-accurate (experimental)</label>
-                    <div class="toggle-switch">
-                        <input type="checkbox" id="offlineExportToggle">
-                        <span class="slider"></span>
-                    </div>
-                </div>
-                <div class="aspect-info" id="offlineExportInfo">Renders every frame exactly regardless of device speed. Much slower, uses a ~25MB one-time download, and works best on clips under ~2 minutes at 720p or lower.</div>
+                <div class="aspect-info" id="offlineExportInfo">Frame-accurate MP4 export. Every frame uses a fixed timestamp so motion stays smooth and audio remains at the correct speed.</div>
                 <button id="exportBottom" class="primary full-width">Export Video</button>
             </div>
         </aside>
@@ -2522,10 +2515,7 @@ async function startExport() {
     if (isExporting) return;
     const issues = projectValidationIssues();
     if (issues.length) { toast('Before export, add: ' + issues.join(', '), 'error'); return; }
-    if ($('offlineExportToggle')?.checked) {
-        return startOfflineExport();
-    }
-    return startExportRealtime();
+    return startOfflineExport();
 }
 
 async function startExportRealtime() {
@@ -2802,33 +2792,13 @@ async function startExportRealtime() {
 }
 
 // ---------------------------------------------------------------------------
-// Experimental frame-accurate export via ffmpeg.wasm.
-//
-// Unlike the real-time exporter above (which plays audio live and captures
-// whatever the canvas looks like as it goes), this renders every frame on
-// its own deterministic timeline — frame i is always exactly i/fps seconds
-// in, regardless of how fast this device can draw it — then hands the frame
-// sequence plus the original audio file to ffmpeg.wasm to mux into an MP4.
-// That makes it immune to the dropped/duplicate-frame problem entirely, at
-// the cost of being much slower and memory-hungrier, since every frame is
-// held in the browser's in-memory filesystem until the final encode step.
-//
-// This is genuinely experimental: it depends on a ~25MB WASM download from
-// a public CDN (unpkg) succeeding, and on the browser having enough memory
-// to hold every rendered frame for the whole clip. Both can fail in ways a
-// static code review can't catch, which is why this defaults to off and
-// falls back to the real-time exporter automatically if the encoder can't
-// be loaded.
+// Frame-accurate export via ffmpeg.wasm. Frames are rendered against fixed
+// timestamps and encoded in short segments, so device rendering speed cannot
+// change the output playback speed and a full song is never held as raw frames.
 // ---------------------------------------------------------------------------
 const FFMPEG_VERSION = '0.12.10';
 const FFMPEG_CORE_VERSION = '0.12.6';
 const FFMPEG_UTIL_VERSION = '0.12.1';
-// Rough ceiling on total (width * height * frameCount) to avoid exhausting
-// browser memory holding every frame before the final encode. At 1080x1920
-// this is roughly 2900 frames (~97s at 30fps, ~193s at 15fps); at 1280x720
-// it's roughly ~6500 frames (~3.6min at 30fps).
-const MAX_OFFLINE_FRAME_PIXELS = 3e9;
-
 let ffmpegInstance = null;
 let ffmpegLoadPromise = null;
 let offlineExportActive = false;
@@ -2892,11 +2862,9 @@ async function startOfflineExport() {
     const preset = $('exportPreset').value;
     const config = getExportDimensions(preset);
     const totalFrames = Math.max(1, Math.ceil(duration * config.fps));
-    const pixelBudget = totalFrames * config.width * config.height;
-    if (pixelBudget > MAX_OFFLINE_FRAME_PIXELS) {
-        toast('This clip is too long/high-res for frame-accurate export in this browser (~' + totalFrames + ' frames). Try a lower resolution preset, or use the standard export instead.', 'error');
-        return;
-    }
+    const pixelsPerFrame = config.width * config.height;
+    const segmentSeconds = pixelsPerFrame > 1500000 ? 2 : 4;
+    const framesPerSegment = Math.max(config.fps, Math.floor(config.fps * segmentSeconds));
 
     isExporting = true;
     offlineExportActive = true;
@@ -2911,7 +2879,8 @@ async function startOfflineExport() {
     $('exportProgress').value = 0;
     $('exportStatus').textContent = 'Loading frame-accurate encoder…';
 
-    const frameNames = [];
+    const exportFiles = new Set();
+    const segmentNames = [];
     let ffmpeg = null;
     try {
         if (state.style.effect === 'eternal') {
@@ -2923,12 +2892,7 @@ async function startOfflineExport() {
             ffmpeg = await loadFFmpegOnce();
         } catch (loadErr) {
             console.error('ffmpeg.wasm load failed:', loadErr);
-            toast('Could not load the frame-accurate encoder (network or browser support issue). Falling back to standard export.', 'error');
-            isExporting = false;
-            offlineExportActive = false;
-            $('exportPreset').disabled = false;
-            $('exportOverlay').classList.add('hidden');
-            return startExportRealtime();
+            throw new Error('Frame-accurate encoder could not load. Check your connection and browser support, then try again.');
         }
         if (exportCancelled || exportAbortController.signal.aborted) throw new DOMException('Export cancelled', 'AbortError');
 
@@ -2937,59 +2901,96 @@ async function startOfflineExport() {
 
         if (media.video) { media.video.pause(); media.video.muted = true; media.video.loop = true; }
 
-        $('exportStatus').textContent = 'Rendering frames…';
-        for (let i = 0; i < totalFrames; i++) {
-            if (exportCancelled || exportAbortController.signal.aborted) throw new DOMException('Export cancelled', 'AbortError');
-            const frameTime = Math.min(duration, i / config.fps);
+        const segmentCount = Math.ceil(totalFrames / framesPerSegment);
+        for (let segmentIndex = 0; segmentIndex < segmentCount; segmentIndex++) {
+            const firstFrame = segmentIndex * framesPerSegment;
+            const segmentFrameCount = Math.min(framesPerSegment, totalFrames - firstFrame);
+            const rawFrameNames = [];
+            $('exportStatus').textContent = `Rendering segment ${segmentIndex + 1} of ${segmentCount}…`;
 
-            if (media.video && Number.isFinite(media.video.duration) && media.video.duration > 0) {
-                await seekVideoForExport(media.video, wrappedVideoTime(frameTime, media.video.duration), exportAbortController.signal);
+            for (let localIndex = 0; localIndex < segmentFrameCount; localIndex++) {
+                if (exportCancelled || exportAbortController.signal.aborted) throw new DOMException('Export cancelled', 'AbortError');
+                const frameIndex = firstFrame + localIndex;
+                const frameTime = frameIndex / config.fps;
+
+                if (media.video && Number.isFinite(media.video.duration) && media.video.duration > 0) {
+                    await seekVideoForExport(media.video, wrappedVideoTime(frameTime, media.video.duration), exportAbortController.signal);
+                }
+
+                exportClockTime = frameTime;
+                state.playback.currentTime = frameTime;
+                render(exportCtx, config.width, config.height, state, media);
+
+                const frameName = 'segframe' + String(localIndex).padStart(5, '0') + '.jpg';
+                const bytes = await canvasFrameToUint8Array(exportCanvas, 'image/jpeg', 0.92);
+                await ffmpeg.writeFile(frameName, bytes);
+                rawFrameNames.push(frameName);
+                exportFiles.add(frameName);
+
+                const renderProgress = (frameIndex + 1) / totalFrames;
+                const overall = renderProgress * 75;
+                $('exportPct').textContent = Math.round(overall) + '%';
+                $('exportProgress').value = overall;
+                if (localIndex % 4 === 0) await new Promise(resolve => setTimeout(resolve, 0));
             }
 
-            exportClockTime = frameTime;
-            state.playback.currentTime = frameTime;
-            render(exportCtx, config.width, config.height, state, media);
+            if (exportCancelled || exportAbortController.signal.aborted) throw new DOMException('Export cancelled', 'AbortError');
+            $('exportStatus').textContent = `Encoding segment ${segmentIndex + 1} of ${segmentCount}…`;
+            const segmentName = 'segment' + String(segmentIndex).padStart(4, '0') + '.mp4';
+            await ffmpeg.exec([
+                '-framerate', String(config.fps),
+                '-start_number', '0',
+                '-i', 'segframe%05d.jpg',
+                '-frames:v', String(segmentFrameCount),
+                '-an',
+                '-c:v', 'libx264',
+                '-pix_fmt', 'yuv420p',
+                '-preset', 'veryfast',
+                '-crf', '20',
+                '-g', String(config.fps * 2),
+                segmentName
+            ]);
+            segmentNames.push(segmentName);
+            exportFiles.add(segmentName);
 
-            const frameName = 'frame' + String(i).padStart(6, '0') + '.jpg';
-            const bytes = await canvasFrameToUint8Array(exportCanvas, 'image/jpeg', 0.92);
-            await ffmpeg.writeFile(frameName, bytes);
-            frameNames.push(frameName);
-
-            const renderProgress = (i + 1) / totalFrames;
-            $('exportPct').textContent = Math.round(renderProgress * 70) + '%';
-            $('exportProgress').value = renderProgress * 70;
-            // Yield to the event loop periodically so the tab stays responsive
-            // and the cancel button remains clickable during long renders.
-            if (i % 4 === 0) await new Promise(r => setTimeout(r, 0));
+            for (const frameName of rawFrameNames) {
+                try { await ffmpeg.deleteFile(frameName); } catch (e) {}
+                exportFiles.delete(frameName);
+            }
         }
 
         if (exportCancelled || exportAbortController.signal.aborted) throw new DOMException('Export cancelled', 'AbortError');
 
-        $('exportStatus').textContent = 'Encoding…';
+        $('exportStatus').textContent = 'Adding audio and finishing MP4…';
         const audioExt = guessAudioExtension(state.audio.file);
         const audioInputName = 'audio_input' + audioExt;
         const audioBytes = new Uint8Array(await state.audio.file.arrayBuffer());
         await ffmpeg.writeFile(audioInputName, audioBytes);
+        exportFiles.add(audioInputName);
+
+        const concatName = 'segments.txt';
+        const concatText = segmentNames.map(name => `file '${name}'`).join('\n') + '\n';
+        await ffmpeg.writeFile(concatName, new TextEncoder().encode(concatText));
+        exportFiles.add(concatName);
 
         const outputName = 'output.mp4';
+        exportFiles.add(outputName);
         const progressHandler = ({ progress }) => {
             if (!Number.isFinite(progress)) return;
-            const overall = 70 + linaClamp(progress) * 30;
+            const overall = 75 + linaClamp(progress) * 25;
             $('exportPct').textContent = Math.round(overall) + '%';
             $('exportProgress').value = overall;
         };
         ffmpeg.on('progress', progressHandler);
         try {
             await ffmpeg.exec([
-                '-framerate', String(config.fps),
-                '-i', 'frame%06d.jpg',
+                '-f', 'concat',
+                '-safe', '0',
+                '-i', concatName,
                 '-i', audioInputName,
                 '-map', '0:v:0',
                 '-map', '1:a:0',
-                '-c:v', 'libx264',
-                '-pix_fmt', 'yuv420p',
-                '-preset', 'veryfast',
-                '-crf', '20',
+                '-c:v', 'copy',
                 '-c:a', 'aac',
                 '-b:a', '192k',
                 '-shortest',
@@ -3014,7 +3015,7 @@ async function startOfflineExport() {
         a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 30000);
 
-        toast('Frame-accurate export complete', 'success');
+        toast('Export complete', 'success');
         $('exportStatus').textContent = 'Done';
 
     } catch (error) {
@@ -3022,15 +3023,14 @@ async function startOfflineExport() {
             toast('Export cancelled');
         } else {
             console.error('Offline export error:', error);
-            toast('Frame-accurate export failed: ' + (error?.message || 'unknown error') + '. You can try standard export instead.', 'error');
+            toast('Export failed: ' + (error?.message || 'unknown error'), 'error');
             $('exportStatus').textContent = 'Failed: ' + (error?.message || 'unknown error');
         }
     } finally {
-        // Clean up this run's frame files and terminate the ffmpeg worker so its
-        // in-memory filesystem is fully released rather than accumulating across
-        // repeated exports; the next offline export reloads a fresh instance.
+        // Delete every temporary asset and terminate the worker so repeated
+        // exports cannot accumulate browser memory.
         if (ffmpeg) {
-            for (const name of frameNames) {
+            for (const name of exportFiles) {
                 try { await ffmpeg.deleteFile(name); } catch (e) {}
             }
             try { await ffmpeg.terminate(); } catch (e) {}
