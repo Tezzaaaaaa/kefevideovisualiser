@@ -2,6 +2,8 @@
 
 A browser-based lyric video visualiser.
 
+**[Open the live demo](https://tezzaaaaaa.github.io/lyricvideovisualiser/)**
+
 Load audio, add synced lyrics and a background, choose an effect, then preview and export the result.
 
 ## Run
