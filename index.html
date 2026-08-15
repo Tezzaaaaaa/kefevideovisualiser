@@ -701,9 +701,9 @@ function getAppleFocalMotion(lines, time) {
 }
 
 function drawAppleMusicHeader(ctx, w, h) {
-    const fallback = state.audio.file ? songFromFilename(state.audio.file.name) : { track: '', artist: '' };
-    const title = String(state.audio.metadata.title || fallback.track || '').trim();
-    const artist = String(state.audio.metadata.artist || fallback.artist || '').trim();
+    const resolved = resolveAudioLabels(state.audio);
+    const title = resolved.title;
+    const artist = resolved.artist;
     if (!title && !artist) return;
     const margin = Math.max(40, w * 0.075);
     const artSize = Math.max(58, Math.min(w, h) * 0.067);
@@ -1285,11 +1285,10 @@ function renderTitleCard(ctx, w, h, time, appState) {
     const isOutro = time >= outroStart && time <= totalDuration + 0.05;
     if (!isIntro && !isOutro) return false;
 
-    const fallbackMeta = appState.audio.file ? songFromFilename(appState.audio.file.name) : { track: '', artist: '' };
-    const explicitMeta = appState.audio?.metadata || {};
-    const title = String(explicitMeta.title || fallbackMeta.track || 'UNTITLED').trim();
-    const artist = String(explicitMeta.artist || fallbackMeta.artist || '').trim();
-    const album = String(explicitMeta.album || '').trim();
+    const resolvedMeta = resolveAudioLabels(appState.audio);
+    const title = resolvedMeta.title || 'UNTITLED';
+    const artist = resolvedMeta.artist;
+    const album = resolvedMeta.album;
     const phaseTime = isOutro ? time - outroStart : time;
     const phaseDuration = isOutro ? outroDuration : introDuration;
     const enter = linaSmoother(linaClamp(phaseTime / 0.55));
@@ -2116,16 +2115,41 @@ function sanitiseExportFilenamePart(value) {
         .trim();
 }
 function buildExportFilename(extension) {
-    const fallback = state.audio.file ? songFromFilename(state.audio.file.name) : { track: '', artist: '' };
-    const enteredTitle = cleanTrackName(state.audio.metadata.title);
-    const enteredArtist = String(state.audio.metadata.artist || '').trim();
-    const title = sanitiseExportFilenamePart(isUsefulExportLabel(enteredTitle) ? enteredTitle : fallback.track) || 'Lyric Video';
-    const artist = sanitiseExportFilenamePart(isUsefulExportLabel(enteredArtist) ? enteredArtist : fallback.artist);
+    const resolved = resolveAudioLabels(state.audio);
+    const title = sanitiseExportFilenamePart(resolved.title) || 'Lyric Video';
+    const artist = sanitiseExportFilenamePart(resolved.artist);
     const parts = [title];
     if (artist && artist.toLocaleLowerCase() !== title.toLocaleLowerCase()) parts.push(artist);
     parts.push('TERE Visualiser');
     const ext = String(extension || 'mp4').replace(/[^a-z0-9]/gi, '').toLowerCase() || 'mp4';
     return parts.join(' - ') + '.' + ext;
+}
+function normalisedMetadataLabel(value) {
+    return cleanTrackName(value).toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+}
+function resolveAudioLabels(audioState = state.audio) {
+    const metadata = audioState?.metadata || {};
+    const fallback = audioState?.file ? songFromFilename(audioState.file.name) : { track: '', artist: '' };
+    const fallbackTitle = cleanTrackName(fallback.track);
+    const fallbackArtist = String(fallback.artist || '').trim();
+    let title = cleanTrackName(metadata.title);
+    let artist = String(metadata.artist || '').trim();
+
+    const titleMatchesFilenameArtist = title && fallbackArtist && normalisedMetadataLabel(title) === normalisedMetadataLabel(fallbackArtist);
+    const artistMatchesFilenameTitle = artist && fallbackTitle && normalisedMetadataLabel(artist) === normalisedMetadataLabel(fallbackTitle);
+    if (titleMatchesFilenameArtist && (!artist || artistMatchesFilenameTitle)) {
+        const correctedTitle = artistMatchesFilenameTitle ? artist : fallbackTitle;
+        artist = title;
+        title = correctedTitle;
+    }
+
+    if (!isUsefulExportLabel(title)) title = fallbackTitle;
+    if (!isUsefulExportLabel(artist)) artist = fallbackArtist;
+    return {
+        title: String(title || '').trim(),
+        artist: String(artist || '').trim(),
+        album: String(metadata.album || '').trim()
+    };
 }
 
 async function requestSyncedLyrics(artist, track, duration, signal) {
@@ -2155,9 +2179,9 @@ async function requestSyncedLyrics(artist, track, duration, signal) {
 $('findLyricsBtn').addEventListener('click', async function() {
     if (isExporting) { toast('Finish or cancel the current export first', 'error'); return; }
     if (!state.audio.file) { toast('Load audio first', 'error'); return; }
-    const fallback = songFromFilename(state.audio.file.name);
-    const artist = state.audio.metadata.artist || fallback.artist;
-    const track = cleanTrackName(state.audio.metadata.title || fallback.track);
+    const resolved = resolveAudioLabels(state.audio);
+    const artist = resolved.artist;
+    const track = resolved.title;
     if (!track) { toast('Enter the song title first', 'error'); return; }
     $('lyricsStatus').textContent = 'Searching...';
     $('lyricsStatus').className = 'status loading';
