@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LINA Visualiser</title>
+    <meta name="description" content="TERE — a browser-based lyric video visualiser.">
+    <title>TERE Visualiser</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -194,7 +195,7 @@
 
 <div class="app">
     <header>
-        <div class="brand"><img src="./lina-logo-light.svg" alt="LINA"></div>
+        <div class="brand"><img src="./tere-logo-light.svg" alt="TERE"></div>
         <div class="header-actions">
             <button id="exportBtn" class="primary">Export</button>
             <button id="stopBtn" title="Stop (Back to start)">Stop</button>
@@ -2837,8 +2838,8 @@ function init() {
         readiness();
         setEffect(prefs?.effect && EFFECT_LABELS[prefs.effect] ? prefs.effect : (state.style.effect || 'apple'));
         redrawCurrentPreviewFrame();
-        toast('LINA Visualiser ready', 'success');
-        console.log('LINA Visualiser ready');
+        toast('TERE Visualiser ready', 'success');
+        console.log('TERE Visualiser ready');
     } catch(err) {
         console.error('Init error:', err);
         toast('Error initializing', 'error');
