@@ -53,6 +53,7 @@
     button.primary:hover { background: var(--accent-press); border-color: var(--accent-press); }
     button:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
     button.active-effect, button.active-aspect { border-color: transparent; color: #fff; background: var(--accent); font-weight: 600; }
+    #resetBtn.confirming { color: #ff6961; background: rgba(255,69,58,0.14); border-color: rgba(255,69,58,0.42); font-weight: 600; }
 
     main { display: flex; flex: 1; overflow: hidden; min-height: 0; }
     .sidebar { width: 380px; padding: 14px; background: #0c0c0d; border-right: 1px solid var(--hairline); overflow-y: auto; flex-shrink: 0; min-height: 0; }
@@ -200,8 +201,9 @@
     <header>
         <a class="brand" href="./" aria-label="TERE home" title="Return home"><img src="./tere-logo-light.svg" alt="TERE"></a>
         <div class="header-actions">
-            <button id="exportBtn" class="primary">Export</button>
+            <button id="resetBtn" type="button">Reset</button>
             <button id="stopBtn" title="Stop (Back to start)">Stop</button>
+            <button id="exportBtn" class="primary">Export</button>
         </div>
     </header>
     <main>
@@ -2032,6 +2034,47 @@ function stopPlayback() {
     redrawCurrentPreviewFrame();
 }
 $('stopBtn').addEventListener('click', stopPlayback);
+
+let resetConfirmTimer = null;
+function disarmReset() {
+    clearTimeout(resetConfirmTimer);
+    resetConfirmTimer = null;
+    const button = $('resetBtn');
+    button.dataset.confirmed = '';
+    button.textContent = 'Reset';
+    button.classList.remove('confirming');
+    button.setAttribute('aria-label', 'Reset project');
+}
+function armReset() {
+    const button = $('resetBtn');
+    button.dataset.confirmed = 'true';
+    button.textContent = 'Are you sure?';
+    button.classList.add('confirming');
+    button.setAttribute('aria-label', 'Confirm project reset');
+    clearTimeout(resetConfirmTimer);
+    resetConfirmTimer = setTimeout(disarmReset, 4500);
+}
+function resetProject() {
+    if (isExporting) {
+        toast('Finish or cancel the current export first', 'error');
+        return;
+    }
+    const button = $('resetBtn');
+    if (button.dataset.confirmed !== 'true') {
+        armReset();
+        return;
+    }
+    clearTimeout(resetConfirmTimer);
+    try { localStorage.removeItem(LINA_PREFS_KEY); } catch (e) { /* storage unavailable */ }
+    window.location.href = new URL('./', window.location.href).href;
+}
+$('resetBtn').addEventListener('click', resetProject);
+document.addEventListener('click', event => {
+    if (event.target !== $('resetBtn') && $('resetBtn').dataset.confirmed === 'true') disarmReset();
+});
+document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && $('resetBtn').dataset.confirmed === 'true') disarmReset();
+});
 
 async function fetchWithRetry(url, options, retries = 2, backoffMs = 600) {
     for (let attempt = 0; ; attempt++) {
