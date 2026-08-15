@@ -1,8 +1,6 @@
-# TERE
+# KEFE
 
 A browser-based lyric video visualiser.
-
-**[Open the live demo](https://tezzaaaaaa.github.io/lyricvideovisualiser/)**
 
 Load audio, add synced lyrics and a background, choose an effect, then preview and export the result.
 
@@ -22,8 +20,8 @@ Then open `http://localhost:8000`.
 lyricvideovisualiser/
 ├── index.html
 ├── HomemadeApple-Regular.woff2
-├── tere-logo.svg
-├── tere-logo-light.svg
+├── kefe-logo.svg
+├── kefe-logo-light.svg
 ├── favicon.svg
 └── README.md
 ```
