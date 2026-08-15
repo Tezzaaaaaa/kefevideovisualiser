@@ -240,7 +240,7 @@
                 <h3>Background</h3>
                 <div class="drop-zone" id="bgDrop">
                     <input type="file" id="backgroundInput" accept="image/*,video/*" aria-label="Choose background image or video">
-                    <div id="backgroundStatus" class="status">No background loaded</div>
+                    <div id="backgroundStatus" class="status">Default black background · upload optional</div>
                 </div>
             </div>
             <div class="section">
@@ -1660,15 +1660,21 @@ function toast(msg, type = '') {
     toast._timer = setTimeout(() => el.classList.remove('show'), 3000);
 }
 function readiness() {
-    const ready = state.audio.file && state.audio.ready && state.lyrics.lines.length > 0 && (media.image || media.video || state.background.type === 'solid');
+    const ready = state.audio.file && state.audio.ready && state.lyrics.lines.length > 0;
     $('exportBtn').disabled = $('exportBottom').disabled = !ready;
+}
+function ensureDefaultBackground() {
+    if (media.image || media.video) return;
+    state.background.type = 'solid';
+    state.background.image = null;
+    state.background.video = null;
+    state.background.solid = state.background.solid || '#0A0A0A';
 }
 function projectValidationIssues() {
     const issues = [];
     if (!state.audio.file) issues.push('audio');
     else if (!state.audio.ready || !Number.isFinite(state.audio.duration) || state.audio.duration <= 0) issues.push('readable audio');
     if (!state.lyrics.lines.length) issues.push('synced lyrics');
-    if (!(media.image || media.video || state.background.type === 'solid')) issues.push('background');
     return issues;
 }
 function songFromFilename(name) {
@@ -2515,6 +2521,7 @@ async function startExport() {
     if (isExporting) return;
     const issues = projectValidationIssues();
     if (issues.length) { toast('Before export, add: ' + issues.join(', '), 'error'); return; }
+    ensureDefaultBackground();
     return startOfflineExport();
 }
 
@@ -3117,6 +3124,7 @@ setupDropZone($('bgDrop'), 'backgroundInput');
 
 function init() {
     try {
+        ensureDefaultBackground();
         const prefs = loadLinaPrefs();
         if (prefs?.metadata && typeof prefs.metadata === 'object') {
             state.audio.metadata.title = prefs.metadata.title || '';
