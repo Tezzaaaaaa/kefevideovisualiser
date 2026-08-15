@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
-  <title id="title">LINA</title>
+  <title id="title">TERE</title>
   <rect width="128" height="128" rx="28" fill="#111111"/>
-  <path fill="#F5F5F7" d="M24 102 52 26h25l28 76H81l-5-17H51l-5 17zm34-38h12l-6-18z"/>
-  <path fill="#0A84FF" d="m64 48 8 16H56z"/>
+  <path fill="#F5F5F7" d="M25 28h78v22H75v54H53V50H25z"/>
+  <circle cx="94" cy="94" r="8" fill="#0A84FF"/>
 </svg>
