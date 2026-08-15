@@ -1,4 +1,4 @@
-# LINA
+# TERE
 
 A browser-based lyric video visualiser.
 
@@ -20,8 +20,8 @@ Then open `http://localhost:8000`.
 lyricvideovisualiser/
 ├── index.html
 ├── HomemadeApple-Regular.woff2
-├── lina-logo.svg
-├── lina-logo-light.svg
+├── tere-logo.svg
+├── tere-logo-light.svg
 ├── favicon.svg
 └── README.md
 ```
