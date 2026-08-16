@@ -955,96 +955,90 @@ function renderTitleCard(ctx, w, h, time, appState) {
     const artwork = appState.audio?.hasArtwork && albumArtworkImage ? albumArtworkImage : null;
     const phaseTime = isOutro ? time - outroStart : time;
     const phaseDuration = isOutro ? outroDuration : introDuration;
-    const enter = linaSmoother(linaClamp(phaseTime / 0.48));
-    const exit = isIntro ? 1 - linaSmoother(linaClamp((phaseTime - (phaseDuration - 0.42)) / 0.42)) : 1;
+    const enter = linaSmoother(linaClamp(phaseTime / 0.5));
+    const exit = isIntro
+        ? 1 - linaSmoother(linaClamp((phaseTime - (phaseDuration - 0.45)) / 0.45))
+        : 1;
     const alpha = linaClamp(enter * exit);
     const unit = Math.min(w, h);
-    const drift = (1 - enter) * unit * 0.025;
-    const scale = 0.97 + enter * 0.03;
-    const padding = Math.max(30, unit * 0.045);
-    const artworkSize = artwork ? linaClamp(unit * 0.19, 132, 250) : 0;
-    const gap = artwork ? Math.max(24, unit * 0.034) : 0;
-    const panelWidth = artwork ? Math.min(w * 0.88, artworkSize + gap + w * 0.58 + padding * 2) : Math.min(w * 0.82, 860);
-    const panelHeight = artwork ? Math.max(artworkSize + padding * 1.35, unit * 0.28) : Math.max(unit * 0.27, 220);
-    const panelRadius = Math.max(22, unit * 0.03);
+    const lift = (1 - enter) * unit * 0.022;
+    const contentY = h * 0.52 + lift;
+    const maxTextWidth = w * 0.78;
 
     ctx.save();
-    const wash = ctx.createLinearGradient(0, 0, w, h);
-    wash.addColorStop(0, 'rgba(0,0,0,0.84)');
-    wash.addColorStop(0.5, 'rgba(0,0,0,0.48)');
-    wash.addColorStop(1, 'rgba(0,0,0,0.80)');
-    ctx.globalAlpha = 0.74 * alpha;
+
+    // A restrained full-frame wash keeps type readable without placing it in a card.
+    const wash = ctx.createLinearGradient(0, 0, 0, h);
+    wash.addColorStop(0, 'rgba(0,0,0,0.10)');
+    wash.addColorStop(0.5, 'rgba(0,0,0,0.28)');
+    wash.addColorStop(1, 'rgba(0,0,0,0.16)');
+    ctx.globalAlpha = alpha;
     ctx.fillStyle = wash;
     ctx.fillRect(0, 0, w, h);
 
-    ctx.translate(w / 2, h * 0.5 + drift);
-    ctx.scale(scale, scale);
+    ctx.translate(w / 2, contentY);
     ctx.globalAlpha = alpha;
-    ctx.fillStyle = 'rgba(18,18,20,0.72)';
-    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-    ctx.lineWidth = Math.max(1, unit * 0.0015);
-    ctx.beginPath();
-    ctx.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, panelRadius);
-    ctx.fill();
-    ctx.stroke();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,0,0,0.42)';
+    ctx.shadowBlur = Math.max(8, unit * 0.014);
+    ctx.shadowOffsetY = Math.max(2, unit * 0.003);
 
-    let textLeft = -panelWidth / 2 + padding;
-    let textWidth = panelWidth - padding * 2;
-    let textAlign = 'center';
+    let textOriginY = 0;
     if (artwork) {
-        const artX = -panelWidth / 2 + padding;
-        const artY = -artworkSize / 2;
+        const artworkSize = linaClamp(unit * 0.18, 126, 220);
+        const artY = -artworkSize - unit * 0.055;
         ctx.save();
         ctx.beginPath();
-        ctx.roundRect(artX, artY, artworkSize, artworkSize, Math.max(14, artworkSize * 0.09));
+        ctx.roundRect(-artworkSize / 2, artY, artworkSize, artworkSize, Math.max(12, artworkSize * 0.07));
         ctx.clip();
         const sw = artwork.naturalWidth || artwork.videoWidth || artwork.width;
         const sh = artwork.naturalHeight || artwork.videoHeight || artwork.height;
         if (sw && sh) {
             const side = Math.min(sw, sh);
-            ctx.drawImage(artwork, (sw - side) / 2, (sh - side) / 2, side, side, artX, artY, artworkSize, artworkSize);
+            ctx.drawImage(artwork, (sw - side) / 2, (sh - side) / 2, side, side,
+                -artworkSize / 2, artY, artworkSize, artworkSize);
         }
         ctx.restore();
-        textLeft = artX + artworkSize + gap;
-        textWidth = panelWidth / 2 - padding - textLeft;
-        textAlign = 'left';
+        textOriginY = unit * 0.025;
     }
 
-    const textX = textAlign === 'left' ? textLeft : 0;
-    ctx.textAlign = textAlign;
-    ctx.textBaseline = 'middle';
-    let titleSize = Math.max(34, Math.round(unit * (artwork ? 0.062 : 0.078)));
+    let titleSize = Math.max(36, Math.round(unit * 0.066));
     ctx.font = `800 ${titleSize}px "Open Sans",Arial,sans-serif`;
-    while (titleSize > 30 && ctx.measureText(title).width > textWidth) {
+    while (titleSize > 30 && ctx.measureText(title).width > maxTextWidth) {
         titleSize -= 2;
         ctx.font = `800 ${titleSize}px "Open Sans",Arial,sans-serif`;
     }
-    const metadataLines = Number(Boolean(artist)) + Number(Boolean(album));
-    const titleY = metadataLines ? -Math.max(34, titleSize * 0.72) : 0;
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillText(title, textX, titleY);
 
-    let cursorY = titleY + Math.max(42, titleSize * 0.9);
+    const metadataLines = Number(Boolean(artist)) + Number(Boolean(album));
+    const titleY = textOriginY - (metadataLines ? titleSize * 0.55 : 0);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText(title, 0, titleY);
+
+    ctx.shadowBlur = Math.max(5, unit * 0.009);
+    let cursorY = titleY + Math.max(42, titleSize * 0.92);
+
     if (artist) {
-        let artistSize = Math.max(18, Math.round(unit * 0.027));
+        let artistSize = Math.max(19, Math.round(unit * 0.026));
         ctx.font = `600 ${artistSize}px "Open Sans",Arial,sans-serif`;
-        while (artistSize > 15 && ctx.measureText(artist).width > textWidth) {
+        while (artistSize > 15 && ctx.measureText(artist).width > maxTextWidth) {
             artistSize -= 1;
             ctx.font = `600 ${artistSize}px "Open Sans",Arial,sans-serif`;
         }
-        ctx.fillStyle = 'rgba(255,255,255,0.78)';
-        ctx.fillText(artist, textX, cursorY);
-        cursorY += Math.max(30, artistSize * 1.4);
+        ctx.fillStyle = 'rgba(255,255,255,0.88)';
+        ctx.fillText(artist, 0, cursorY);
+        cursorY += Math.max(30, artistSize * 1.45);
     }
+
     if (album) {
-        let albumSize = Math.max(15, Math.round(unit * 0.020));
-        ctx.font = `400 ${albumSize}px "Open Sans",Arial,sans-serif`;
-        while (albumSize > 13 && ctx.measureText(album).width > textWidth) {
+        let albumSize = Math.max(15, Math.round(unit * 0.019));
+        ctx.font = `500 ${albumSize}px "Open Sans",Arial,sans-serif`;
+        while (albumSize > 13 && ctx.measureText(album).width > maxTextWidth) {
             albumSize -= 1;
-            ctx.font = `400 ${albumSize}px "Open Sans",Arial,sans-serif`;
+            ctx.font = `500 ${albumSize}px "Open Sans",Arial,sans-serif`;
         }
-        ctx.fillStyle = 'rgba(255,255,255,0.52)';
-        ctx.fillText(album, textX, cursorY);
+        ctx.fillStyle = 'rgba(255,255,255,0.60)';
+        ctx.fillText(album, 0, cursorY);
     }
 
     ctx.restore();
