@@ -9,162 +9,32 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wdth,wght@75..100,300..800&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="./styles.css">
+    <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-
 <div class="app">
     <header>
-        <a class="brand" href="./" aria-label="KEFE Visualiser home" title="Return home">
-            <img src="./kefe-logo.svg" alt="KEFE">
-            <span class="brand-descriptor" aria-hidden="true"><span>V</span><span>I</span><span>S</span><span>U</span><span>A</span><span>L</span><span>I</span><span>S</span><span>E</span><span>R</span></span>
-        </a>
-        <div class="header-actions">
-            <button id="resetBtn" type="button">Reset</button>
-            <button id="stopBtn" title="Stop (Back to start)">Stop</button>
-            <button id="exportBtn" class="primary">Export</button>
-        </div>
+        <a class="brand" href="./" aria-label="KEFE Visualiser home" title="Return home"><img src="./kefe-logo.svg" alt="KEFE"><span class="brand-descriptor" aria-hidden="true"><span>V</span><span>I</span><span>S</span><span>U</span><span>A</span><span>L</span><span>I</span><span>S</span><span>E</span><span>R</span></span></a>
+        <div class="header-actions"><button id="resetBtn" type="button">Reset</button><button id="stopBtn" title="Stop (Back to start)">Stop</button><button id="exportBtn" class="primary">Export</button></div>
     </header>
     <main>
         <aside class="sidebar">
-            <div class="section">
-                <h3>Audio</h3>
-                <div class="drop-zone" id="audioDrop">
-                    <button type="button" id="audioChooseBtn" class="file-button">Choose Audio File</button>
-                    <input type="file" id="audioInput" accept="audio/*,.mp3,.m4a,.aac,.wav,.flac,.ogg,.oga,.opus,.webm">
-                    <div id="audioStatus" class="status">No audio loaded</div>
-                </div>
-                <div class="metadata-grid">
-                    <input id="metaTitle" type="text" placeholder="Song title" autocomplete="off">
-                    <input id="metaArtist" type="text" placeholder="Artist" autocomplete="off">
-                    <input id="metaAlbum" type="text" placeholder="Album (optional)" autocomplete="off">
-                </div>
-            </div>
-            <div class="section">
-                <h3>Lyrics</h3>
-                <div class="lyrics-actions">
-                    <button id="findLyricsBtn">Find Synced Lyrics</button>
-                    <button id="uploadLrcMain" title="Upload an LRC file">Upload LRC</button>
-                    <button id="editLyricsBtn" title="Edit lyrics">Edit Lyrics</button>
-                    <input id="lrcFileInput" type="file" accept=".lrc,.txt,text/plain" hidden>
-                </div>
-                <div id="lyricsStatus" class="status">No lyrics loaded</div>
-            </div>
-            <div class="section">
-                <h3>Background</h3>
-                <div class="drop-zone" id="bgDrop">
-                    <label class="file-button" for="backgroundInput">Choose Background</label>
-                    <input type="file" id="backgroundInput" accept="image/*,video/*" aria-label="Choose background image or video" hidden>
-                    <div id="backgroundStatus" class="status">Default black background · upload optional</div>
-                </div>
-                <div class="control-row">
-                    <label for="backgroundColor">Default colour <span id="backgroundColorValue">#0A0A0A</span></label>
-                    <input id="backgroundColor" type="color" value="#0A0A0A">
-                </div>
-            </div>
-            <div class="section">
-                <h3>Effect</h3>
-                <div class="effect-buttons">
-                    <button data-effect="apple" class="active-effect">Apple</button>
-                    <button data-effect="brat">Brat</button>
-                    <button data-effect="eternal">Eternal</button>
-                    <button data-effect="aurora">Aurora</button>
-                    <button data-effect="pulse">Pulse</button>
-                </div>
-                <div class="effect-label" id="effectLabel">Smooth line transitions + flowing light through words</div>
-                <div id="effectControls"></div>
-            </div>
-            <div class="section">
-                <h3>Aspect Ratio</h3>
-                <div class="aspect-buttons">
-                    <button data-aspect="9:16" class="active-aspect">9:16</button>
-                    <button data-aspect="1:1">1:1</button>
-                    <button data-aspect="16:9">16:9</button>
-                </div>
-                <div class="aspect-info" id="aspectInfo">1080 × 1920 (Vertical)</div>
-            </div>
-            <div class="section">
-                <h3>Export</h3>
-                <select id="exportPreset">
-                    <option value="1080p">1080p (High)</option>
-                    <option value="720p" selected>720p (Medium)</option>
-                    <option value="480p">480p (Low)</option>
-                    <option value="instagram">Instagram Reel</option>
-                    <option value="tiktok">TikTok</option>
-                </select>
-                <div class="aspect-info" id="offlineExportInfo">Fast MP4 export uses the browser's native video encoder for substantially faster rendering.</div>
-                <button id="exportBottom" class="primary full-width">Export Video</button>
-                <div class="compact-actions">
-                    <button id="saveProject" type="button">Save Project</button>
-                    <button id="loadProject" type="button">Open Project</button>
-                    <input id="projectFileInput" type="file" accept=".kefe,application/json" hidden>
-                </div>
-            </div>
+            <div class="section"><h3>Audio</h3><div class="drop-zone" id="audioDrop"><button type="button" id="audioChooseBtn" class="file-button">Choose Audio File</button><input type="file" id="audioInput" accept="audio/*,.mp3,.m4a,.aac,.wav,.flac,.ogg,.oga,.opus,.webm"><div id="audioStatus" class="status">No audio loaded</div></div><div class="metadata-grid"><input id="metaTitle" type="text" placeholder="Song title" autocomplete="off"><input id="metaArtist" type="text" placeholder="Artist" autocomplete="off"><input id="metaAlbum" type="text" placeholder="Album (optional)" autocomplete="off"></div></div>
+            <div class="section"><h3>Lyrics</h3><div class="lyrics-actions"><button id="findLyricsBtn">Find Synced Lyrics</button><button id="uploadLrcMain" title="Upload an LRC file">Upload LRC</button><button id="editLyricsBtn" title="Edit lyrics">Edit Lyrics</button><input id="lrcFileInput" type="file" accept=".lrc,.txt,text/plain" hidden></div><div id="lyricsStatus" class="status">No lyrics loaded</div></div>
+            <div class="section"><h3>Background</h3><div class="drop-zone" id="bgDrop"><label class="file-button" for="backgroundInput">Choose Background</label><input type="file" id="backgroundInput" accept="image/*,video/*" aria-label="Choose background image or video" hidden><div id="backgroundStatus" class="status">Default black background · upload optional</div></div><div class="control-row"><label for="backgroundColor">Default colour <span id="backgroundColorValue">#0A0A0A</span></label><input id="backgroundColor" type="color" value="#0A0A0A"></div></div>
+            <div class="section"><h3>Effect</h3><div class="effect-buttons"><button data-effect="apple" class="active-effect">Apple</button><button data-effect="brat">Brat</button><button data-effect="eternal">Eternal</button><button data-effect="aurora">Aurora</button><button data-effect="pulse">Pulse</button><button data-effect="stroke">Stroke</button><button data-effect="fadeup">Fade Up</button></div><div class="effect-label" id="effectLabel">Smooth line transitions + flowing light through words</div><div id="effectControls"></div></div>
+            <div class="section"><h3>Aspect Ratio</h3><div class="aspect-buttons"><button data-aspect="9:16" class="active-aspect">9:16</button><button data-aspect="1:1">1:1</button><button data-aspect="16:9">16:9</button></div><div class="aspect-info" id="aspectInfo">1080 × 1920 (Vertical)</div></div>
+            <div class="section"><h3>Export</h3><select id="exportPreset"><option value="1080p">1080p (High)</option><option value="720p" selected>720p (Medium)</option><option value="480p">480p (Low)</option><option value="instagram">Instagram Reel</option><option value="tiktok">TikTok</option></select><div class="aspect-info" id="offlineExportInfo">Fast MP4 export uses the browser's native video encoder for substantially faster rendering.</div><button id="exportBottom" class="primary full-width">Export Video</button><div class="compact-actions"><button id="saveProject" type="button">Save Project</button><button id="loadProject" type="button">Open Project</button><input id="projectFileInput" type="file" accept=".kefe,application/json" hidden></div></div>
         </aside>
-        <section class="preview">
-            <div class="canvas-wrapper">
-                <canvas id="stageCanvas" width="1080" height="1920"></canvas>
-            </div>
-            <div class="transport">
-                <button id="playBtn" title="Play/Pause (Space)">Play</button>
-                <input type="range" id="seek" min="0" max="0" value="0" step="0.01">
-                <span id="clock">0:00 / 0:00</span>
-            </div>
-        </section>
+        <section class="preview"><div class="canvas-wrapper"><canvas id="stageCanvas" width="1080" height="1920"></canvas></div><div class="transport"><button id="playBtn" title="Play/Pause (Space)">Play</button><input type="range" id="seek" min="0" max="0" value="0" step="0.01"><span id="clock">0:00 / 0:00</span></div></section>
     </main>
 </div>
-
-<div id="exportOverlay" class="overlay hidden">
-    <div>
-        <strong id="exportPct">0%</strong>
-        <p id="exportStatus">Rendering...</p>
-        <progress id="exportProgress" max="100" value="0"></progress>
-        <button id="cancelExport">Cancel</button>
-    </div>
-</div>
-
-<div id="exportPreflight" class="modal hidden">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Export Check</h3>
-            <button class="close-btn" id="closePreflight" aria-label="Close export check">×</button>
-        </div>
-        <div class="modal-body">
-            <div id="preflightSummary" class="preflight-list"></div>
-            <div id="preflightWarning" class="preflight-warning hidden"></div>
-        </div>
-        <div class="modal-footer">
-            <button id="confirmExport" class="primary">Export MP4</button>
-            <button id="cancelPreflight">Cancel</button>
-        </div>
-    </div>
-</div>
-
-<div id="lyricsEditor" class="modal hidden">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Edit Lyrics</h3>
-            <button class="close-btn" id="closeEditor">×</button>
-        </div>
-        <div class="modal-body">
-            <textarea id="lyricsText" placeholder="Paste your lyrics here...&#10;&#10;Example:&#10;[00:00.00]First line&#10;[00:05.00]Second line"></textarea>
-            <div class="modal-actions">
-                <button id="pasteLyrics">Paste</button>
-                <button id="uploadLrc">Upload .lrc</button>
-            </div>
-            <div id="editorStatus" class="status"></div>
-        </div>
-        <div class="modal-footer">
-            <button id="saveLyrics" class="primary">Save</button>
-            <button id="cancelEditor">Cancel</button>
-        </div>
-    </div>
-</div>
-
+<div id="exportOverlay" class="overlay hidden"><div><strong id="exportPct">0%</strong><p id="exportStatus">Rendering...</p><progress id="exportProgress" max="100" value="0"></progress><button id="cancelExport">Cancel</button></div></div>
+<div id="exportPreflight" class="modal hidden"><div class="modal-content"><div class="modal-header"><h3>Export Check</h3><button class="close-btn" id="closePreflight" aria-label="Close export check">×</button></div><div class="modal-body"><div id="preflightSummary" class="preflight-list"></div><div id="preflightWarning" class="preflight-warning hidden"></div></div><div class="modal-footer"><button id="confirmExport" class="primary">Export MP4</button><button id="cancelPreflight">Cancel</button></div></div></div>
+<div id="lyricsEditor" class="modal hidden"><div class="modal-content"><div class="modal-header"><h3>Edit Lyrics</h3><button class="close-btn" id="closeEditor">×</button></div><div class="modal-body"><textarea id="lyricsText" placeholder="Paste your lyrics here...&#10;&#10;Example:&#10;[00:00.00]First line&#10;[00:05.00]Second line"></textarea><div class="modal-actions"><button id="pasteLyrics">Paste</button><button id="uploadLrc">Upload .lrc</button></div><div id="editorStatus" class="status"></div></div><div class="modal-footer"><button id="saveLyrics" class="primary">Save</button><button id="cancelEditor">Cancel</button></div></div></div>
 <div id="toast" class="toast"></div>
-
 <script src="./app.js"></script>
 <script src="./fast-export.js"></script>
-
+<script src="./effects-overrides.js"></script>
 </body>
 </html>
