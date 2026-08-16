@@ -1,18 +1,17 @@
 /*
  * KEFE Effect Engine
+ * Canonical lyric-effect renderer. Preview and export both reach this renderer
+ * through app.js -> render() -> renderLyricsEffect().
  *
- * This module is loaded after app.js so the renderer can be replaced in one
- * deliberate place. It does not modify the export pipeline: preview and the
- * frame-accurate exporter both call render(), which reaches this renderer.
- *
- * Typography:
- *   Apple Music   -> Inter
- *   Brat          -> Arial + controlled horizontal transform
- *   Eternal       -> Homemade Apple (legacy renderer)
- *   Aurora        -> Permanent Marker
- *   Starfield     -> TikTok Sans
- *   Subject Stroke-> Montserrat
- *   Story Fade    -> DM Sans
+ * Typography
+ *   Website/UI       -> Open Sans (styles.css / app.js)
+ *   Apple Music      -> Inter
+ *   Brat             -> Arial + render-time horizontal compression
+ *   Eternal Sunshine -> Homemade Apple (legacy renderer in app.js, untouched)
+ *   Aurora           -> Permanent Marker
+ *   Starfield        -> TikTok Sans
+ *   Subject Stroke   -> Montserrat
+ *   Story Fade       -> DM Sans
  */
 (() => {
     'use strict';
@@ -56,7 +55,6 @@
                     : (Number(all[i + 1]?.time) || Number(line.endTime) || (Number(line.time) + 3))
             })).filter(word => word.text);
         }
-
         const tokens = String(line?.text || '').trim().split(/\s+/).filter(Boolean);
         if (!tokens.length) return [];
         const start = Number(line.time) || 0;
@@ -72,9 +70,8 @@
         });
     }
 
-    function setFont(ctx, family, size, weight = 700, stretch = 1) {
+    function setFont(ctx, family, size, weight = 700) {
         ctx.font = `${weight} ${Math.max(18, size)}px "${family}", Arial, sans-serif`;
-        return stretch;
     }
 
     function fitText(ctx, family, text, size, maxWidth, weight = 700) {
@@ -87,22 +84,10 @@
         return fitted;
     }
 
-    function drawFittedText(ctx, text, x, y, maxWidth, size, family, weight, horizontalScale = 1) {
-        const fitted = fitText(ctx, family, text, size, maxWidth / horizontalScale, weight);
-        if (horizontalScale === 1) {
-            ctx.fillText(text, x, y);
-            return fitted;
-        }
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.scale(horizontalScale, 1);
-        ctx.fillText(text, 0, 0);
-        ctx.restore();
-        return fitted;
-    }
-
-    /* Apple Music: same restrained stack, but Inter is now the actual family. */
+    /* Apple Music: restrained typography, smooth line hand-off and a soft
+       left-to-right word highlight. No glow is painted over the glyphs. */
     function drawApple(ctx, w, h, style, lines, time) {
+        if (!Array.isArray(lines) || !lines.length) return;
         const a = activeLine(lines, time);
         if (!a) return;
         const words = wordsFor(a.line, a.next);
@@ -115,14 +100,12 @@
         const gap = ctx.measureText(' ').width;
         const rows = [];
         let row = [], rowWidth = 0;
-
         for (const word of words) {
             const width = ctx.measureText(word.text).width;
             const proposed = row.length ? rowWidth + gap + width : width;
             if (row.length && proposed > maxWidth) {
                 rows.push({ words: row, width: rowWidth });
-                row = [];
-                rowWidth = 0;
+                row = []; rowWidth = 0;
             }
             row.push({ ...word, width });
             rowWidth = row.length === 1 ? width : rowWidth + gap + width;
@@ -130,54 +113,70 @@
         if (row.length) rows.push({ words: row, width: rowWidth });
 
         const rowHeight = size * 1.22;
-        let y = h * 0.5 - (rows.length * rowHeight) / 2 + rowHeight / 2;
-
+        const totalHeight = rows.length * rowHeight;
+        const targetY = h * 0.245;
+        const startY = targetY - totalHeight / 2 + rowHeight / 2;
         ctx.save();
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
 
-        for (const current of rows) {
+        rows.forEach((current, rowIndex) => {
             let x = style.align === 'center'
                 ? (w - current.width) / 2
                 : style.align === 'right'
                     ? w - margin - current.width
                     : margin;
+            const y = startY + rowIndex * rowHeight;
 
             for (const word of current.words) {
                 const progress = clamp((time - word.time) / Math.max(0.04, word.endTime - word.time));
-                const enter = smoother(progress / 0.28);
-                const sweep = smoother((progress - 0.04) / 0.52);
+                const enter = smoother(progress / 0.22);
+                const complete = progress >= 1;
+                const inactive = style.appleInactiveOpacity !== undefined ? clamp(style.appleInactiveOpacity, 0.08, 0.6) : 0.25;
 
                 ctx.save();
-                ctx.globalAlpha = 0.22;
+                ctx.globalAlpha = inactive;
                 ctx.fillStyle = style.textColor || '#FFFFFF';
-                ctx.shadowBlur = 0;
                 ctx.fillText(word.text, x, y);
-
-                const chars = Array.from(word.text);
-                let charX = x;
-                for (let i = 0; i < chars.length; i++) {
-                    const charWidth = ctx.measureText(chars[i]).width;
-                    const local = clamp((sweep * (chars.length + 1) - i + 0.35) / 1.8);
-                    if (local > 0.001) {
-                        ctx.globalAlpha = enter * (0.10 + 0.90 * smoother(local));
-                        ctx.fillStyle = style.accentColor || '#FFFFFF';
-                        ctx.shadowColor = style.accentColor || '#FFFFFF';
-                        ctx.shadowBlur = size * 0.012 * local;
-                        ctx.fillText(chars[i], charX, y);
-                    }
-                    charX += charWidth;
-                }
                 ctx.restore();
+
+                if (enter > 0) {
+                    const activeWidth = word.width * smooth(progress);
+                    if (activeWidth > 0) {
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.rect(x - 1, y - size, activeWidth + 2, size * 2);
+                        ctx.clip();
+                        ctx.globalAlpha = 0.96 * enter;
+                        ctx.fillStyle = style.accentColor || '#FFFFFF';
+                        ctx.fillText(word.text, x, y);
+                        ctx.restore();
+                    }
+                    if (!complete && progress > 0 && progress < 1) {
+                        const edge = x + activeWidth;
+                        const edgeWidth = Math.max(8, size * 0.14);
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.rect(edge - edgeWidth, y - size, edgeWidth, size * 2);
+                        ctx.clip();
+                        const edgeGradient = ctx.createLinearGradient(edge - edgeWidth, 0, edge, 0);
+                        edgeGradient.addColorStop(0, 'rgba(255,255,255,0)');
+                        edgeGradient.addColorStop(1, 'rgba(255,255,255,0.88)');
+                        ctx.globalAlpha = enter;
+                        ctx.fillStyle = edgeGradient;
+                        ctx.fillText(word.text, x, y);
+                        ctx.restore();
+                    }
+                }
                 x += word.width + gap;
             }
-            y += rowHeight;
-        }
+        });
         ctx.restore();
     }
 
-    /* Brat: Arial is the source family; the characteristic narrowness is a
-       render-time horizontal transformation rather than a substitute font. */
+    /* Brat: whole-word switching. There is deliberately no character typing.
+       Arial is horizontally compressed at render time to reproduce the narrow
+       cover treatment without distributing a modified font file. */
     function drawBrat(ctx, w, h, style, lines, time) {
         const a = activeLine(lines, time);
         if (!a) return;
@@ -194,12 +193,12 @@
         const patterns = [3, 3, 2, 2, 3];
         const scales = [1.16, 0.91, 1.10, 0.96, 1.20];
 
-        let wordIndex = -1;
+        let currentIndex = -1;
         for (let i = 0; i < words.length; i++) {
-            if (time >= words[i].time) wordIndex = i;
+            if (time >= words[i].time) currentIndex = i;
             else break;
         }
-        if (wordIndex < 0) return;
+        if (currentIndex < 0) return;
 
         const rows = [];
         let cursor = 0;
@@ -216,36 +215,29 @@
             rowNumber++;
         }
 
-        const activeRow = rows.findIndex(row => row.words.some(word => words.indexOf(word) === wordIndex));
+        const activeRow = rows.findIndex(row => row.words.some(word => words.indexOf(word) === currentIndex));
         if (activeRow < 0) return;
         const page = Math.floor(activeRow / 5);
-        const startRow = page * 5;
+        const pageStart = page * 5;
 
         ctx.save();
         ctx.textAlign = 'left';
         ctx.textBaseline = 'alphabetic';
         ctx.fillStyle = style.bratTextColor || style.textColor || '#FFFFFF';
-        ctx.globalAlpha = 1;
 
-        for (let ri = startRow; ri < Math.min(rows.length, startRow + 5); ri++) {
+        for (let ri = pageStart; ri < Math.min(rows.length, pageStart + 5); ri++) {
             const row = rows[ri];
             setFont(ctx, 'Arial', row.size, 400);
-            const baseline = top + rowPitch * (ri - startRow) + rowPitch * 0.70;
+            const baseline = top + rowPitch * (ri - pageStart) + rowPitch * 0.70;
             let x = side;
-
             for (const word of row.words) {
                 const globalIndex = words.indexOf(word);
-                if (globalIndex > wordIndex) break;
+                if (globalIndex > currentIndex) break;
                 const rawWidth = ctx.measureText(word.text).width;
-                const visibleProgress = globalIndex < wordIndex ? 1 : clamp((time - word.time) / Math.max(0.001, word.endTime - word.time));
-                const typing = smoother(visibleProgress / Math.max(0.01, 0.88 / (Number(style.bratTypingSpeed) || 1)));
-                const chars = Array.from(word.text);
-                const count = globalIndex < wordIndex ? chars.length : Math.min(chars.length, Math.ceil(chars.length * typing));
-
                 ctx.save();
                 ctx.translate(x, baseline);
                 ctx.scale(transformX, 1);
-                ctx.fillText(chars.slice(0, count).join(''), 0, 0);
+                ctx.fillText(word.text, 0, 0);
                 ctx.restore();
                 x += rawWidth * transformX + row.gap;
             }
@@ -253,20 +245,20 @@
         ctx.restore();
     }
 
-    /* Aurora keeps its existing animation but changes only its typography. */
+    /* Eternal Sunshine intentionally delegates to the established renderer in
+       app.js. Its Homemade Apple ink treatment is not rewritten here. */
+
     function drawAurora(ctx, w, h, style, lines, time) {
         const a = activeLine(lines, time);
         if (!a) return;
         const text = String(a.line.text || '').trim();
         if (!text) return;
-
         const size = fitText(ctx, 'Permanent Marker', text, Number(style.fontSize) || 76, w * 0.84, 400);
         const speed = Number(style.auroraSpeed) || 1.2;
         const intensity = Number(style.auroraIntensity) || 0.7;
         const saturation = clamp(Number(style.auroraSaturation) || 1, 0.2, 1.8);
         const hueBase = (time * speed * 28 + 180) % 360;
         const y = h * 0.46;
-
         ctx.save();
         setFont(ctx, 'Permanent Marker', size, 400);
         ctx.textAlign = 'center';
@@ -285,18 +277,17 @@
         ctx.restore();
     }
 
-    /* Starfield: compact perspective conveyor/crawl, deliberately below the
-       centre line so the main visual subject remains unobstructed. */
+    /* Starfield: compact perspective conveyor/crawl below centre. The vanishing
+       point stays below the visual midpoint so the primary subject remains clear. */
     function drawStarfield(ctx, w, h, style, lines, time) {
         const a = activeLine(lines, time);
         if (!a) return;
         const words = wordsFor(a.line, a.next);
         if (!words.length) return;
-
         const base = Number(style.fontSize) || 76;
         const colour = style.accentColor || '#FFFFFF';
-        const laneY = h * 0.61;
-        const spacing = Math.max(base * 0.52, Math.min(h * 0.07, base * 0.78));
+        const laneY = h * 0.62;
+        const spacing = Math.max(base * 0.52, Math.min(h * 0.065, base * 0.76));
         const local = clamp((time - a.line.time) / Math.max(0.16, a.line.endTime - a.line.time));
         const visible = Math.min(10, Math.max(6, words.length + 3));
 
@@ -304,27 +295,26 @@
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         for (let n = -2; n < visible; n++) {
-            const position = n + local * 1.75;
+            const position = n + local * 1.85;
             if (position < -0.9 || position > visible - 0.8) continue;
             const depth = clamp(1 - position / (visible - 1));
             const perspective = smoother(depth);
-            const scale = 0.28 + 0.72 * perspective;
-            const y = laneY + (position - (visible - 2)) * spacing * (0.52 + 0.48 * perspective);
+            const scale = 0.24 + 0.76 * perspective;
+            const y = laneY + (position - (visible - 2)) * spacing * (0.50 + 0.50 * perspective);
             const word = words[((n % words.length) + words.length) % words.length];
             const size = fitText(ctx, 'TikTok Sans', word.text, base * scale, w * 0.76, 800);
             const fade = clamp(Math.min((position + 0.55) / 0.8, (visible - 0.35 - position) / 0.8));
-            ctx.globalAlpha = fade * (0.14 + 0.86 * perspective);
+            ctx.globalAlpha = fade * (0.12 + 0.88 * perspective);
             ctx.fillStyle = colour;
             ctx.shadowColor = colour;
-            ctx.shadowBlur = size * 0.018 * perspective;
+            ctx.shadowBlur = size * 0.012 * perspective;
             ctx.fillText(word.text, w / 2, y);
         }
         ctx.restore();
     }
 
-    /* Subject Stroke: the text itself is transparent/fill-light and the outline
-       is crisp enough to survive 1080p export. The effect remains centred below
-       the subject rather than becoming a generic glow. */
+    /* Subject Stroke: a crisp outline layer designed to be placed behind a
+       foreground subject when the source composition supplies that subject. */
     function drawSubjectStroke(ctx, w, h, style, lines, time) {
         const a = activeLine(lines, time);
         if (!a) return;
@@ -333,7 +323,6 @@
         const text = words.map(word => word.text).join(' ');
         const size = fitText(ctx, 'Montserrat', text, Number(style.fontSize) || 76, w * 0.82, 800);
         const progress = smoother(clamp((time - a.line.time) / Math.max(0.16, a.line.endTime - a.line.time) / 0.20));
-
         ctx.save();
         setFont(ctx, 'Montserrat', size, 800);
         ctx.textAlign = 'center';
@@ -344,35 +333,29 @@
         ctx.lineWidth = Math.max(2, Math.round(size * 0.028));
         ctx.strokeStyle = style.accentColor || '#FFFFFF';
         ctx.strokeText(text, w / 2, h * 0.57);
-        ctx.globalAlpha = 0.10 * progress;
-        ctx.fillStyle = style.textColor || '#FFFFFF';
-        ctx.fillText(text, w / 2, h * 0.57);
         ctx.restore();
     }
 
-    /* Story Fade: intentionally word-by-word and fast, with a short upward
-       travel so it reads like a polished story lyric treatment rather than a
-       generic opacity fade. */
+    /* Story Fade: fast Instagram-story-inspired word-by-word rise/fade. */
     function drawStoryFade(ctx, w, h, style, lines, time) {
         const a = activeLine(lines, time);
         if (!a) return;
         const words = wordsFor(a.line, a.next);
         if (!words.length) return;
-
         const base = Number(style.fontSize) || 76;
         const margin = Math.max(44, w * 0.07);
-        const gap = base * 0.20;
-        setFont(ctx, 'DM Sans', base, 700);
+        let size = base;
+        let gap = base * 0.20;
+        setFont(ctx, 'DM Sans', size, 700);
         let widths = words.map(word => ctx.measureText(word.text).width);
         let total = widths.reduce((sum, width) => sum + width, 0) + gap * (words.length - 1);
-        let size = base;
         if (total > w - margin * 2) {
             size = base * (w - margin * 2) / total;
+            gap = size * 0.20;
             setFont(ctx, 'DM Sans', size, 700);
             widths = words.map(word => ctx.measureText(word.text).width);
             total = widths.reduce((sum, width) => sum + width, 0) + gap * (words.length - 1);
         }
-
         let x = (w - total) / 2;
         const y = h * 0.46;
         ctx.save();
@@ -394,32 +377,24 @@
 
     window.renderLyricsEffect = function(ctx, w, h, style, lines, time) {
         switch (style.effect) {
-            case 'apple':
-                return drawApple(ctx, w, h, style, lines, time);
-            case 'brat':
-                return drawBrat(ctx, w, h, style, lines, time);
-            case 'eternal':
-                return originalRenderLyricsEffect(ctx, w, h, style, lines, time);
-            case 'aurora':
-                return drawAurora(ctx, w, h, style, lines, time);
+            case 'apple': return drawApple(ctx, w, h, style, lines, time);
+            case 'brat': return drawBrat(ctx, w, h, style, lines, time);
+            case 'eternal': return originalRenderLyricsEffect(ctx, w, h, style, lines, time);
+            case 'aurora': return drawAurora(ctx, w, h, style, lines, time);
             case 'pulse':
-            case 'starfield':
-                return drawStarfield(ctx, w, h, style, lines, time);
+            case 'starfield': return drawStarfield(ctx, w, h, style, lines, time);
             case 'stroke':
-            case 'subjectstroke':
-                return drawSubjectStroke(ctx, w, h, style, lines, time);
+            case 'subjectstroke': return drawSubjectStroke(ctx, w, h, style, lines, time);
             case 'fadeup':
-            case 'storyfade':
-                return drawStoryFade(ctx, w, h, style, lines, time);
-            default:
-                return originalRenderLyricsEffect(ctx, w, h, style, lines, time);
+            case 'storyfade': return drawStoryFade(ctx, w, h, style, lines, time);
+            default: return originalRenderLyricsEffect(ctx, w, h, style, lines, time);
         }
     };
 
     const labels = {
-        apple: 'Apple Music-style focus line with smooth word highlighting',
-        brat: 'Brat-style compressed Arial with abrupt word-by-word typing',
-        eternal: 'Three-line handwritten cycle with fast, smooth ink writing',
+        apple: 'Apple Music-style focus line with smooth, clean word highlighting',
+        brat: 'Brat-style compressed Arial with abrupt word-by-word switching',
+        eternal: 'Three-line handwritten cycle with Homemade Apple ink writing',
         aurora: 'Flowing colour-gradient marker lyrics with a soft aurora glow',
         pulse: 'Starfield — compact perspective lyric conveyor below centre',
         stroke: 'Subject Stroke — crisp outlined typography designed to sit behind the subject',
