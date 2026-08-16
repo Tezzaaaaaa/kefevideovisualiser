@@ -7,7 +7,7 @@
         for (let n=0;n<(lines||[]).length;n++) { if (Number.isFinite(Number(lines[n]?.time)) && time >= Number(lines[n].time)) i=n; else break; }
         if (i<0) return null;
         const line=lines[i]||{}, next=lines[i+1]||null;
-        return { index:i, line:{...line,time:Number(line.time)||0,endTime:Number.isFinite(Number(line.endTime))?Number(line.endTime):(Number(next.time)||((Number(line.time)||0)+3))}, next };
+        return { index:i, line:{...line,time:Number(line.time)||0,endTime:Number.isFinite(Number(line.endTime))?Number(line.endTime):(Number(next?.time)||((Number(line.time)||0)+3))}, next };
     };
     const wordsFor = (line,next) => {
         if (Array.isArray(line?.words) && line.words.length) return line.words.map((w,i,a)=>({text:String(w.text||''),time:Number(w.time)||line.time,endTime:Number.isFinite(Number(w.endTime))?Number(w.endTime):(Number(a[i+1]?.time)||line.endTime)}));
@@ -23,15 +23,11 @@
         ctx.save();ctx.textBaseline='middle';ctx.textAlign='left';font(ctx,size,650);const gap=ctx.measureText(' ').width;let rows=[],row=[],rw=0;
         ws.forEach(word=>{const ww=ctx.measureText(word.text).width,p=row.length?rw+gap+ww:ww;if(row.length&&p>max){rows.push({row,w:rw});row=[];rw=0;}row.push({...word,w:ww});rw=row.length===1?ww:rw+gap+ww;});if(row.length)rows.push({row,w:rw});
         const rh=size*1.22,total=rows.length*rh;let y=h*.5-total/2+rh/2;
-        rows.forEach(r=>{let x=style.align==='center'?(w-r.w)/2:style.align==='right'?w-margin-r.w:margin;r.row.forEach(word=>{const p=clamp((time-word.time)/Math.max(.04,word.endTime-word.time));const enter=smoother(p/.30),sweep=smoother((p-.04)/.52);ctx.save();ctx.globalAlpha=.22;ctx.fillStyle=style.textColor||'#fff';ctx.shadowBlur=0;ctx.fillText(word.text,x,y);let cx=x;for(const ch of Array.from(word.text)){const cw=ctx.measureText(ch).width;const cp=clamp((sweep*(Array.from(word.text).length+1)-Array.from(word.text).indexOf(ch)+.35)/1.8);ctx.globalAlpha=enter*(.10+.90*cp);ctx.fillStyle=style.accentColor||'#fff';ctx.shadowColor=style.accentColor||'#fff';ctx.shadowBlur=size*.018*cp;ctx.fillText(ch,cx,y);cx+=cw;}ctx.restore();x+=word.w+gap;});y+=rh;});ctx.restore();
+        rows.forEach(r=>{let x=style.align==='center'?(w-r.w)/2:style.align==='right'?w-margin-r.w:margin;r.row.forEach(word=>{const p=clamp((time-word.time)/Math.max(.04,word.endTime-word.time));const enter=smoother(p/.30),sweep=smoother((p-.04)/.52);const chars=Array.from(word.text);ctx.save();ctx.globalAlpha=.22;ctx.fillStyle=style.textColor||'#fff';ctx.shadowBlur=0;ctx.fillText(word.text,x,y);let cx=x;chars.forEach((ch,ci)=>{const cw=ctx.measureText(ch).width;const cp=clamp((sweep*(chars.length+1)-ci+.35)/1.8);ctx.globalAlpha=enter*(.10+.90*cp);ctx.fillStyle=style.accentColor||'#fff';ctx.shadowColor=style.accentColor||'#fff';ctx.shadowBlur=size*.018*cp;ctx.fillText(ch,cx,y);cx+=cw;});ctx.restore();x+=word.w+gap;});y+=rh;});ctx.restore();
     }
 
     function drawBrat(ctx,w,h,style,lines,time){
         const a=active(lines,time);if(!a)return;const ws=wordsFor(a.line,a.next);if(!ws.length)return;const text=ws.map(x=>x.text).join(' ');const size=fit(ctx,text,Number(style.fontSize)||76,w*.90,900);font(ctx,size,900);ctx.save();ctx.textAlign='left';ctx.textBaseline='middle';const widths=ws.map(x=>ctx.measureText(x.text).width),gap=ctx.measureText(' ').width,total=widths.reduce((s,x)=>s+x,0)+gap*(ws.length-1);let x=(w-total)/2;const y=h*.46;ws.forEach((word,i)=>{if(time>=word.time){ctx.globalAlpha=1;ctx.fillStyle=style.bratTextColor||style.textColor||'#fff';ctx.fillText(word.text,x,y);}x+=widths[i]+gap;});ctx.restore();
-    }
-
-    function drawEternal(ctx,w,h,style,lines,time){
-        const a=active(lines,time);if(!a)return;const ws=wordsFor(a.line,a.next);if(!ws.length)return;const text=ws.map(x=>x.text).join(' '),size=fit(ctx,text,Number(style.fontSize)||76,w*.86,500);font(ctx,size,500);ctx.save();ctx.textAlign='left';ctx.textBaseline='middle';const total=ctx.measureText(text).width;let x=(w-total)/2;const chars=Array.from(text);const weights=chars.map(c=>/\s/.test(c)?.35:1),sum=weights.reduce((s,v)=>s+v,0);let acc=0;const progress=clamp((time-a.line.time)/Math.max(.16,(a.line.endTime-a.line.time)*Math.max(.16,Number(style.eternalWriteSpan)||.55)));for(let i=0;i<chars.length;i++){const start=acc/sum;acc+=weights[i];const end=acc/sum;const p=smoother(clamp((progress-start)/Math.max(.012,end-start)));ctx.globalAlpha=p;ctx.fillStyle=style.eternalInkColor||style.textColor||'#fff';ctx.shadowColor=style.eternalInkColor||style.textColor||'#fff';ctx.shadowBlur=(Number(style.eternalGlow)||3)*(.25+p);ctx.fillText(chars[i],x,h*.50);x+=ctx.measureText(chars[i]).width;}ctx.restore();
     }
 
     function drawPulse(ctx,w,h,style,lines,time){
@@ -44,11 +40,27 @@
     }
 
     function drawFadeUp(ctx,w,h,style,lines,time){
-        const a=active(lines,time);if(!a)return;const ws=wordsFor(a.line,a.next);if(!ws.length)return;const base=Number(style.fontSize)||76,margin=Math.max(44,w*.07),gap=base*.20;ctx.save();ctx.textAlign='left';ctx.textBaseline='middle';font(ctx,base,700);let widths=ws.map(x=>ctx.measureText(x.text).width),total=widths.reduce((s,x)=>s+x,0)+gap*(ws.length-1);let fs=base;if(total>w-margin*2){fs=base*(w-margin*2)/total;font(ctx,fs,700);widths=ws.map(x=>ctx.measureText(x.text).width);total=widths.reduce((s,x)=>s+x,0)+gap*(ws.length-1);}let x=(w-total)/2;const y=h*.46;ws.forEach((word,i)=>{const p=clamp((time-word.time)/Math.max(.10,word.endTime-word.time)),e=smoother(p/.24);ctx.save();ctx.globalAlpha=e;ctx.fillStyle=style.textColor||'#fff';ctx.fillText(word.text,x,y+(1-e)*fs*.42);ctx.restore();x+=widths[i]+gap;});ctx.restore();
+        const a=active(lines,time);if(!a)return;const ws=wordsFor(a.line,a.next);if(!ws.length)return;const base=Number(style.fontSize)||76,margin=Math.max(44,w*.07),gap=base*.20;ctx.save();ctx.textAlign='left';ctx.textBaseline='middle';font(ctx,base,700);let widths=ws.map(x=>ctx.measureText(x.text).width),total=widths.reduce((s,x)=>s+x,0)+gap*(ws.length-1);let fs=base;if(total>w-margin*2){fs=base*(w-margin*2)/total;font(ctx,fs,700);widths=ws.map(x=>ctx.measureText(x.text).width);total=widths.reduce((s,x)=>s+x,0)+gap*(ws.length-1);}let x=(w-total)/2;const y=h*.46;ws.forEach(word=>{const p=clamp((time-word.time)/Math.max(.10,word.endTime-word.time)),e=smoother(p/.24);ctx.save();ctx.globalAlpha=e;ctx.fillStyle=style.textColor||'#fff';ctx.fillText(word.text,x,y+(1-e)*fs*.42);ctx.restore();x+=ctx.measureText(word.text).width+gap;});ctx.restore();
     }
 
     const original=window.renderLyricsEffect;
     window.renderLyricsEffect=function(ctx,w,h,style,lines,time){
-        switch(style.effect){case 'apple':return drawApple(ctx,w,h,style,lines,time);case 'brat':return drawBrat(ctx,w,h,style,lines,time);case 'eternal':return drawEternal(ctx,w,h,style,lines,time);case 'pulse':return drawPulse(ctx,w,h,style,lines,time);case 'stroke':return drawStroke(ctx,w,h,style,lines,time);case 'fadeup':return drawFadeUp(ctx,w,h,style,lines,time);case 'aurora':return original?original(ctx,w,h,style,lines,time):undefined;default:return original?original(ctx,w,h,style,lines,time):undefined;}
+        switch(style.effect){
+            case 'apple': return drawApple(ctx,w,h,style,lines,time);
+            case 'brat': return drawBrat(ctx,w,h,style,lines,time);
+            case 'eternal': return original ? original(ctx,w,h,{...style,eternalWriteSpan:Math.min(Number(style.eternalWriteSpan)||.9,.55)} ,lines,time) : undefined;
+            case 'pulse': return drawPulse(ctx,w,h,style,lines,time);
+            case 'stroke': return drawStroke(ctx,w,h,style,lines,time);
+            case 'fadeup': return drawFadeUp(ctx,w,h,style,lines,time);
+            case 'aurora': return original ? original(ctx,w,h,style,lines,time) : undefined;
+            default: return original ? original(ctx,w,h,style,lines,time) : undefined;
+        }
     };
+
+    const labels={
+        stroke:'Clean outlined typography designed to sit behind the subject',
+        fadeup:'Instagram-style word-by-word rise and fade lyric animation',
+        pulse:'Compact cinematic perspective crawl with a controlled vanishing point'
+    };
+    if (typeof qsa==='function') qsa('[data-effect]').forEach(button=>button.addEventListener('click',()=>{const label=document.getElementById('effectLabel');if(label&&labels[button.dataset.effect])label.textContent=labels[button.dataset.effect];}));
 })();
