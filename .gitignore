@@ -20,7 +20,7 @@
 *.temp
 *.bak
 
-# Generated media and exports
+# Generated media, exports and project files
 *.mp4
 *.webm
 *.mov
@@ -32,10 +32,13 @@
 *.flac
 *.ogg
 *.opus
+*.kefe
 
-# Build and dependency folders
+# Local build and dependency folders
 node_modules/
 dist/
 build/
+_site/
+vendor/
 .cache/
 .tmp/
