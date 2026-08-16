@@ -1,5 +1,5 @@
 <p align="center">
-  <picture>\n    <source media="(prefers-color-scheme: dark)" srcset="./kefe-logo-light.svg">\n    <source media="(prefers-color-scheme: light)" srcset="./kefe-logo.svg">\n    <img src="./kefe-logo.svg" width="320" alt="KEFE Visualiser">\n  </picture>
+  <img src="./kefe-logo.svg" width="320" alt="KEFE Visualiser">
 </p>
 
 <p align="center">
@@ -60,7 +60,6 @@ kefevideovisualiser/
 ├── index.html
 ├── HomemadeApple-Regular.woff2
 ├── kefe-logo.svg
-├── kefe-logo-light.svg
 ├── favicon.svg
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
