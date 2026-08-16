@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./kefe-logo.svg" width="320" alt="KEFE Visualiser">
+  <picture>\n    <source media="(prefers-color-scheme: dark)" srcset="./kefe-logo-light.svg">\n    <source media="(prefers-color-scheme: light)" srcset="./kefe-logo.svg">\n    <img src="./kefe-logo.svg" width="320" alt="KEFE Visualiser">\n  </picture>
 </p>
 
 <p align="center">
