@@ -1,4 +1,4 @@
-/* KEFE polished typography effects. Loaded after app.js. */
+/* KEFE polished typography effects. Loaded after app.js. New-effect fonts are intentionally isolated from legacy effects. */
 (() => {
     const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, Number(v) || 0));
     const smoother = v => { const t = clamp(v); return t*t*t*(t*(t*6-15)+10); };
@@ -18,6 +18,10 @@
     const font=(ctx,size,weight=700)=>{ctx.font=`${weight} ${Math.max(18,size)}px "Open Sans",Arial,sans-serif`;};
     const fit=(ctx,text,size,max,weight=700)=>{let s=size;font(ctx,s,weight);while(s>24&&ctx.measureText(text).width>max){s-=1;font(ctx,s,weight);}return s;};
 
+    // New effects use dedicated, licence-cleared families. Legacy effects above remain unchanged.
+    const newFont=(ctx,family,size,weight=700)=>{ctx.font=`${weight} ${Math.max(18,size)}px "${family}",Arial,sans-serif`;};
+    const fitNew=(ctx,family,text,size,max,weight=700)=>{let s=size;newFont(ctx,family,s,weight);while(s>24&&ctx.measureText(text).width>max){s-=1;newFont(ctx,family,s,weight);}return s;};
+
     function drawApple(ctx,w,h,style,lines,time){
         const a=active(lines,time);if(!a)return;const ws=wordsFor(a.line,a.next);if(!ws.length)return;const size=Number(style.fontSize)||76,margin=Math.max(46,w*.07),max=w-margin*2;
         ctx.save();ctx.textBaseline='middle';ctx.textAlign='left';font(ctx,size,650);const gap=ctx.measureText(' ').width;let rows=[],row=[],rw=0;
@@ -30,17 +34,20 @@
         const a=active(lines,time);if(!a)return;const ws=wordsFor(a.line,a.next);if(!ws.length)return;const text=ws.map(x=>x.text).join(' ');const size=fit(ctx,text,Number(style.fontSize)||76,w*.90,900);font(ctx,size,900);ctx.save();ctx.textAlign='left';ctx.textBaseline='middle';const widths=ws.map(x=>ctx.measureText(x.text).width),gap=ctx.measureText(' ').width,total=widths.reduce((s,x)=>s+x,0)+gap*(ws.length-1);let x=(w-total)/2;const y=h*.46;ws.forEach((word,i)=>{if(time>=word.time){ctx.globalAlpha=1;ctx.fillStyle=style.bratTextColor||style.textColor||'#fff';ctx.fillText(word.text,x,y);}x+=widths[i]+gap;});ctx.restore();
     }
 
+    // PULSE — TikTok Sans is officially open-source under SIL OFL 1.1.
     function drawPulse(ctx,w,h,style,lines,time){
         const a=active(lines,time);if(!a)return;const ws=wordsFor(a.line,a.next);if(!ws.length)return;const base=Number(style.fontSize)||76,colour=style.accentColor||'#fff',laneY=h*.60,spacing=Math.max(base*.52,Math.min(h*.070,base*.78)),local=clamp((time-a.line.time)/Math.max(.16,a.line.endTime-a.line.time));ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';const visible=Math.min(10,Math.max(6,ws.length+3));
-        for(let n=-2;n<visible;n++){const p=n+local*1.75;if(p<-.9||p>visible-.8)continue;const depth=clamp(1-p/(visible-1)),pers=smoother(depth),scale=.28+.72*pers,y=laneY+(p-(visible-2))*spacing*(.52+.48*pers),word=ws[((n%ws.length)+ws.length)%ws.length],fs=fit(ctx,word.text,base*scale,w*.76,800),fade=clamp(Math.min((p+.55)/.8,(visible-.35-p)/.8));ctx.globalAlpha=fade*(.14+.86*pers);ctx.fillStyle=colour;ctx.shadowColor=colour;ctx.shadowBlur=fs*.018*pers;ctx.fillText(word.text,w/2,y);}ctx.restore();
+        for(let n=-2;n<visible;n++){const p=n+local*1.75;if(p<-.9||p>visible-.8)continue;const depth=clamp(1-p/(visible-1)),pers=smoother(depth),scale=.28+.72*pers,y=laneY+(p-(visible-2))*spacing*(.52+.48*pers),word=ws[((n%ws.length)+ws.length)%ws.length],fs=fitNew(ctx,'TikTok Sans',word.text,base*scale,w*.76,800),fade=clamp(Math.min((p+.55)/.8,(visible-.35-p)/.8));ctx.globalAlpha=fade*(.14+.86*pers);ctx.fillStyle=colour;ctx.shadowColor=colour;ctx.shadowBlur=fs*.018*pers;ctx.fillText(word.text,w/2,y);}ctx.restore();
     }
 
+    // STROKE — Montserrat is distributed under SIL OFL 1.1 and is a strong thick-grotesk match for the CapCut reference.
     function drawStroke(ctx,w,h,style,lines,time){
-        const a=active(lines,time);if(!a)return;const ws=wordsFor(a.line,a.next);if(!ws.length)return;const text=ws.map(x=>x.text).join(' '),size=fit(ctx,text,Number(style.fontSize)||76,w*.82,800),p=clamp((time-a.line.time)/Math.max(.16,a.line.endTime-a.line.time));ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';font(ctx,size,800);ctx.globalAlpha=smoother(p/.20);ctx.lineJoin='round';ctx.lineWidth=Math.max(2,Math.round(size*.028));ctx.strokeStyle=style.accentColor||'#fff';ctx.strokeText(text,w/2,h*.57);ctx.globalAlpha=.10*smoother(p/.20);ctx.fillStyle=style.textColor||'#fff';ctx.fillText(text,w/2,h*.57);ctx.restore();
+        const a=active(lines,time);if(!a)return;const ws=wordsFor(a.line,a.next);if(!ws.length)return;const text=ws.map(x=>x.text).join(' '),size=fitNew(ctx,'Montserrat',text,Number(style.fontSize)||76,w*.82,800),p=clamp((time-a.line.time)/Math.max(.16,a.line.endTime-a.line.time));ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';newFont(ctx,'Montserrat',size,800);ctx.globalAlpha=smoother(p/.20);ctx.lineJoin='round';ctx.lineWidth=Math.max(2,Math.round(size*.028));ctx.strokeStyle=style.accentColor||'#fff';ctx.strokeText(text,w/2,h*.57);ctx.globalAlpha=.10*smoother(p/.20);ctx.fillStyle=style.textColor||'#fff';ctx.fillText(text,w/2,h*.57);ctx.restore();
     }
 
+    // FADE UP — DM Sans is OFL-licensed and gives a clean, neutral Instagram-adjacent sans without using Instagram's proprietary font.
     function drawFadeUp(ctx,w,h,style,lines,time){
-        const a=active(lines,time);if(!a)return;const ws=wordsFor(a.line,a.next);if(!ws.length)return;const base=Number(style.fontSize)||76,margin=Math.max(44,w*.07),gap=base*.20;ctx.save();ctx.textAlign='left';ctx.textBaseline='middle';font(ctx,base,700);let widths=ws.map(x=>ctx.measureText(x.text).width),total=widths.reduce((s,x)=>s+x,0)+gap*(ws.length-1);let fs=base;if(total>w-margin*2){fs=base*(w-margin*2)/total;font(ctx,fs,700);widths=ws.map(x=>ctx.measureText(x.text).width);total=widths.reduce((s,x)=>s+x,0)+gap*(ws.length-1);}let x=(w-total)/2;const y=h*.46;ws.forEach(word=>{const p=clamp((time-word.time)/Math.max(.10,word.endTime-word.time)),e=smoother(p/.24);ctx.save();ctx.globalAlpha=e;ctx.fillStyle=style.textColor||'#fff';ctx.fillText(word.text,x,y+(1-e)*fs*.42);ctx.restore();x+=ctx.measureText(word.text).width+gap;});ctx.restore();
+        const a=active(lines,time);if(!a)return;const ws=wordsFor(a.line,a.next);if(!ws.length)return;const base=Number(style.fontSize)||76,margin=Math.max(44,w*.07),gap=base*.20;ctx.save();ctx.textAlign='left';ctx.textBaseline='middle';newFont(ctx,'DM Sans',base,700);let widths=ws.map(x=>ctx.measureText(x.text).width),total=widths.reduce((s,x)=>s+x,0)+gap*(ws.length-1);let fs=base;if(total>w-margin*2){fs=base*(w-margin*2)/total;newFont(ctx,'DM Sans',fs,700);widths=ws.map(x=>ctx.measureText(x.text).width);total=widths.reduce((s,x)=>s+x,0)+gap*(ws.length-1);}let x=(w-total)/2;const y=h*.46;ws.forEach(word=>{const p=clamp((time-word.time)/Math.max(.10,word.endTime-word.time)),e=smoother(p/.24);ctx.save();ctx.globalAlpha=e;ctx.fillStyle=style.textColor||'#fff';ctx.fillText(word.text,x,y+(1-e)*fs*.42);ctx.restore();x+=widths[ws.indexOf(word)]+gap;});ctx.restore();
     }
 
     const original=window.renderLyricsEffect;
@@ -57,10 +64,6 @@
         }
     };
 
-    const labels={
-        stroke:'Clean outlined typography designed to sit behind the subject',
-        fadeup:'Instagram-style word-by-word rise and fade lyric animation',
-        pulse:'Compact cinematic perspective crawl with a controlled vanishing point'
-    };
+    const labels={stroke:'Clean outlined typography designed to sit behind the subject',fadeup:'Instagram-style word-by-word rise and fade lyric animation',pulse:'Compact cinematic perspective crawl with a controlled vanishing point'};
     if (typeof qsa==='function') qsa('[data-effect]').forEach(button=>button.addEventListener('click',()=>{const label=document.getElementById('effectLabel');if(label&&labels[button.dataset.effect])label.textContent=labels[button.dataset.effect];}));
 })();
