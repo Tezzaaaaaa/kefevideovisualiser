@@ -42,10 +42,10 @@
             </div>
             <div class="section">
                 <h3>Lyrics</h3>
-                <div style="display:flex;gap:4px;">
-                    <button id="findLyricsBtn" style="flex:1;">Find Synced Lyrics</button>
-                    <button id="uploadLrcMain" title="Upload an LRC file">Upload .lrc</button>
-                    <button id="editLyricsBtn" title="Edit lyrics">Edit</button>
+                <div class="lyrics-actions">
+                    <button id="findLyricsBtn">Find Synced Lyrics</button>
+                    <button id="uploadLrcMain" title="Upload an LRC file">Upload LRC</button>
+                    <button id="editLyricsBtn" title="Edit lyrics">Edit Lyrics</button>
                     <input id="lrcFileInput" type="file" accept=".lrc,.txt,text/plain" hidden>
                 </div>
                 <div id="lyricsStatus" class="status">No lyrics loaded</div>
@@ -53,7 +53,8 @@
             <div class="section">
                 <h3>Background</h3>
                 <div class="drop-zone" id="bgDrop">
-                    <input type="file" id="backgroundInput" accept="image/*,video/*" aria-label="Choose background image or video">
+                    <label class="file-button" for="backgroundInput">Choose Background</label>
+                    <input type="file" id="backgroundInput" accept="image/*,video/*" aria-label="Choose background image or video" hidden>
                     <div id="backgroundStatus" class="status">Default black background · upload optional</div>
                 </div>
                 <div class="control-row">
