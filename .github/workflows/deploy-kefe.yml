@@ -7,7 +7,6 @@ on:
       - index.html
       - styles.css
       - app.js
-      - fast-export.js
       - effects/**
       - HomemadeApple-Regular.woff2
       - kefe-logo.svg
@@ -43,7 +42,6 @@ jobs:
           test -f index.html
           test -f styles.css
           test -f app.js
-          test -f fast-export.js
           test -d effects
           test -f effects/core.js
           test -f effects/registry.js
@@ -56,10 +54,12 @@ jobs:
           grep -q 'HomemadeApple-Regular.woff2' styles.css
           grep -q 'startOfflineExport' app.js
           ! grep -q 'MediaRecorder' app.js
+          ! test -f fast-export.js
+          ! test -d archive
       - name: Prepare site
         run: |
           mkdir _site
-          cp index.html styles.css app.js fast-export.js HomemadeApple-Regular.woff2 kefe-logo.svg favicon.svg _site/
+          cp index.html styles.css app.js HomemadeApple-Regular.woff2 kefe-logo.svg favicon.svg _site/
           cp -R effects _site/effects
           mkdir -p _site/vendor/ffmpeg _site/vendor/util _site/vendor/core /tmp/kefe-vendor
           curl -fsSL "https://registry.npmjs.org/@ffmpeg/ffmpeg/-/ffmpeg-${FFMPEG_VERSION}.tgz" | tar -xz -C /tmp/kefe-vendor
