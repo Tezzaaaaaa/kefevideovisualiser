@@ -1,0 +1,75 @@
+:root {
+  /* KEFE type scale — 1.25 modular ratio */
+  --type-ratio: 1.25;
+  --type-micro: clamp(10px, 0.60vw, 11px);
+  --type-caption: clamp(11px, 0.66vw, 12px);
+  --type-label: clamp(12px, 0.72vw, 13px);
+  --type-body: clamp(13px, 0.78vw, 15px);
+  --type-body-lg: clamp(15px, 0.90vw, 17px);
+  --type-title: clamp(18px, 1.35vw, 24px);
+  --type-display: clamp(28px, 2.6vw, 44px);
+  --type-display-xl: clamp(40px, 4.2vw, 72px);
+
+  --leading-display: 1.10;
+  --leading-heading: 1.20;
+  --leading-body: 1.50;
+  --leading-label: 1.25;
+
+  --tracking-display: -0.025em;
+  --tracking-heading: -0.015em;
+  --tracking-body: 0;
+  --tracking-label: 0.01em;
+  --tracking-caps: 0.04em;
+
+  --kefe-min-ui-size: 11px;
+}
+
+/* Semantic UI typography. These names describe purpose, not pixels. */
+.type-display { font-size: var(--type-display); line-height: var(--leading-display); letter-spacing: var(--tracking-display); font-weight: 700; }
+.type-title { font-size: var(--type-title); line-height: var(--leading-heading); letter-spacing: var(--tracking-heading); font-weight: 700; }
+.type-body { font-size: var(--type-body); line-height: var(--leading-body); letter-spacing: var(--tracking-body); font-weight: 400; }
+.type-body-lg { font-size: var(--type-body-lg); line-height: var(--leading-body); letter-spacing: var(--tracking-body); font-weight: 400; }
+.type-label { font-size: var(--type-label); line-height: var(--leading-label); letter-spacing: var(--tracking-label); font-weight: 600; }
+.type-caption { font-size: var(--type-caption); line-height: var(--leading-label); letter-spacing: var(--tracking-body); font-weight: 400; }
+.type-micro { font-size: var(--type-micro); line-height: var(--leading-label); letter-spacing: var(--tracking-caps); font-weight: 600; }
+
+/* Existing KEFE UI mapped onto the semantic system. */
+body { font-size: var(--type-body); line-height: var(--leading-body); }
+button { font-size: var(--type-label); line-height: var(--leading-label); }
+.section h3 { font-size: var(--type-micro); line-height: var(--leading-label); letter-spacing: var(--tracking-caps); }
+.status { font-size: var(--type-caption); line-height: var(--leading-body); }
+.metadata-grid input { font-size: var(--type-label); line-height: var(--leading-label); }
+.lyrics-actions button, .effect-buttons button, .aspect-buttons button { font-size: var(--type-caption); line-height: var(--leading-label); }
+.control-row label, #effectControls .control-row label { font-size: var(--type-caption); line-height: var(--leading-label); }
+select { font-size: var(--type-label); line-height: var(--leading-label); }
+.transport span { font-size: var(--type-caption); line-height: 1.2; }
+
+/* Never let responsive UI typography collapse below the readability floor. */
+button, input, select, textarea, .status, .section h3, .transport span { min-font-size: var(--kefe-min-ui-size); }
+
+/* High zoom: allow the page to grow instead of clipping enlarged text. */
+@media (min-resolution: 192dpi), (min-resolution: 2dppx) {
+  .sidebar { width: min(400px, 38vw); }
+  .section { padding: 16px; }
+}
+
+@media (max-width: 760px) {
+  :root {
+    --type-body: 14px;
+    --type-body-lg: 16px;
+    --type-title: 20px;
+    --type-display: 30px;
+  }
+  .sidebar { width: min(360px, 88vw); }
+  .preview { padding-inline: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; }
+}
+
+/* Colour never carries state by itself. */
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
