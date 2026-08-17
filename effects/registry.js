@@ -19,14 +19,8 @@ window.renderLyricsEffect=function(ctx,w,h,style,lines,time){
     return originalRenderLyricsEffect(ctx,w,h,style,lines,time);
   }finally{ctx.restore();}
 };
-const labels={
-  apple:'Apple Music — smooth focus line with continuous lyric movement',
-  brat:'Brat — abrupt word-by-word switching',
-  eternal:'Eternal Sunshine — fast per-letter handwritten ink reveal',
-  aurora:'Aurora — atmospheric curtains, colour flow and luminous depth',
-  typewriter:'Typewriter — precise character-by-character reveal with a restrained cursor',
-  stroke:'Stroke — sharp double-edge outline with a moving highlight',
-  fadeup:'Fade Up — kinetic word-by-word rise, pop and settle'
-};
+const labels={apple:'Apple Music — smooth focus line with continuous lyric movement',brat:'Brat — abrupt word-by-word switching',eternal:'Eternal Sunshine — fast per-letter handwritten ink reveal',aurora:'Aurora — atmospheric curtains, colour flow and luminous depth',typewriter:'Typewriter — precise character-by-character reveal with a restrained cursor',stroke:'Stroke — sharp double-edge outline with a moving highlight',fadeup:'Fade Up — kinetic word-by-word rise, pop and settle'};
 if(typeof qsa==='function')qsa('[data-effect]').forEach(button=>button.addEventListener('click',()=>{const label=document.getElementById('effectLabel');if(label&&labels[button.dataset.effect])label.textContent=labels[button.dataset.effect];}));
+const legacy=document.querySelector('[data-effect="starwars"]');
+if(legacy){const replacement=legacy.cloneNode(true);replacement.dataset.effect='typewriter';replacement.textContent='Typewriter';replacement.classList.remove('active-effect');legacy.replaceWith(replacement);replacement.addEventListener('click',()=>{const label=document.getElementById('effectLabel');if(label)label.textContent=labels.typewriter;});}
 })();
