@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=Inter:wght@400;500;600;650;700;800&family=Montserrat:wght@600;700;800;900&family=Open+Sans:wdth,wght@75..100,300..800&family=Permanent+Marker&family=TikTok+Sans:opsz,wght@12..72,400;12..72,500;12..72,600;12..72,700;12..72,800;12..72,900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./styles.css">
+    <link rel="stylesheet" href="./typography.css">
 </head>
 <body>
 <div class="app">
@@ -24,7 +25,7 @@
             <div class="section"><h3>Background</h3><div class="drop-zone" id="bgDrop"><label class="file-button" for="backgroundInput">Choose Background</label><input type="file" id="backgroundInput" accept="image/*,video/*" aria-label="Choose background image or video" hidden><div id="backgroundStatus" class="status">Default black background · upload optional</div></div><div class="control-row"><label for="backgroundColor">Default colour <span id="backgroundColorValue">#0A0A0A</span></label><input id="backgroundColor" type="color" value="#0A0A0A"></div></div>
             <div class="section"><h3>Effect</h3><div class="effect-buttons"><button data-effect="apple" class="active-effect">Apple</button><button data-effect="brat">Brat</button><button data-effect="eternal">Eternal</button><button data-effect="aurora">Aurora</button><button data-effect="pulse">Pulse</button><button data-effect="stroke">Stroke</button><button data-effect="fadeup">Fade Up</button></div><div class="effect-label" id="effectLabel">Smooth line transitions + flowing light through words</div><div id="effectControls"></div></div>
             <div class="section"><h3>Aspect Ratio</h3><div class="aspect-buttons"><button data-aspect="9:16" class="active-aspect">9:16</button><button data-aspect="1:1">1:1</button><button data-aspect="16:9">16:9</button></div><div class="aspect-info" id="aspectInfo">1080 × 1920 (Vertical)</div></div>
-            <div class="section"><h3>Export</h3><select id="exportPreset"><option value="1080p">1080p (High)</option><option value="720p" selected>720p (Medium)</option><option value="480p">480p (Low)</option><option value="instagram">Instagram Reel</option><option value="tiktok">TikTok</option></select><div class="aspect-info" id="offlineExportInfo">Frame-accurate MP4 export runs locally in your browser.</div><button id="exportBottom" class="primary full-width">Export Video</button><div class="compact-actions"><button id="saveProject" type="button">Save Project</button><button id="loadProject" type="button">Open Project</button><input id="projectFileInput" type="file" accept=".kefe,application/json" hidden></div></div>
+            <div class="section"><h3>Export</h3><select id="exportPreset"><option value="1080p">1080p (High)</option><option value="720p" selected>720p (Medium)</option><option value="480p" selected>480p (Low)</option><option value="instagram">Instagram Reel</option><option value="tiktok">TikTok</option></select><div class="aspect-info" id="offlineExportInfo">Frame-accurate MP4 export runs locally in your browser.</div><button id="exportBottom" class="primary full-width">Export Video</button><div class="compact-actions"><button id="saveProject" type="button">Save Project</button><button id="loadProject" type="button">Open Project</button><input id="projectFileInput" type="file" accept=".kefe,application/json" hidden></div></div>
         </aside>
         <section class="preview"><div class="canvas-wrapper"><canvas id="stageCanvas" width="1080" height="1920"></canvas></div><div class="transport"><button id="playBtn" title="Play/Pause (Space)">Play</button><input type="range" id="seek" min="0" max="0" value="0" step="0.01"><span id="clock">0:00 / 0:00</span></div></section>
     </main>
@@ -34,6 +35,7 @@
 <div id="lyricsEditor" class="modal hidden"><div class="modal-content"><div class="modal-header"><h3>Edit Lyrics</h3><button class="close-btn" id="closeEditor">×</button></div><div class="modal-body"><textarea id="lyricsText" placeholder="Paste your lyrics here...&#10;&#10;Example:&#10;[00:00.00]First line&#10;[00:05.00]Second line"></textarea><div class="modal-actions"><button id="pasteLyrics">Paste</button><button id="uploadLrc">Upload .lrc</button></div><div id="editorStatus" class="status"></div></div><div class="modal-footer"><button id="saveLyrics" class="primary">Save</button><button id="cancelEditor">Cancel</button></div></div></div>
 <div id="toast" class="toast"></div>
 <script src="./app.js"></script>
+<script src="./typography.js"></script>
 <script src="./effects/core.js"></script>
 <script src="./effects/starfield.js"></script>
 <script src="./effects/pulse.js"></script>
