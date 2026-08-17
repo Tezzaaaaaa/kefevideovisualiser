@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://tezzaaaaaa.github.io/kefevideovisualiser/">Open the live demo</a>
+  <a href="https://tezzaaaaaa.github.io/kefevideovisualiser/">Open the live site</a>
 </p>
 
 ## Overview
@@ -18,7 +18,7 @@ KEFE Visualiser combines audio, synced lyrics and an optional background into an
 
 - LRC and enhanced LRC lyric timing
 - Automatic synced-lyrics lookup
-- Apple, Brat, Eternal, Aurora and Pulse effects
+- Apple, Brat, Eternal, Aurora, Pulse, Stroke and Fade Up effects
 - Song title, artist and album title cards
 - Embedded album-artwork extraction when available
 - Image, video or solid-colour backgrounds
@@ -29,10 +29,45 @@ KEFE Visualiser combines audio, synced lyrics and an optional background into an
 - Portable `.kefe` project settings
 - Open Sans interface with Homemade Apple reserved for the Eternal effect
 
+## Project structure
+
+```text
+kefevideovisualiser/
+├── .github/workflows/deploy-kefe.yml
+├── archive/
+│   └── deepseek/
+│       ├── modules/
+│       └── segments/          # exactly 25 preserved DeepSeek segments
+├── effects/
+│   ├── core.js                # shared effect helpers
+│   ├── registry.js            # production effect dispatcher
+│   ├── apple.js
+│   ├── brat.js
+│   ├── eternal-sunshine.js
+│   ├── aurora.js
+│   ├── pulse.js
+│   ├── starfield.js
+│   ├── stroke.js
+│   └── story-fade.js
+├── app.js                     # application state, media, UI and export orchestration
+├── fast-export.js             # fast/native export support
+├── index.html                 # application shell and script loading order
+├── styles.css                 # interface and responsive layout
+├── HomemadeApple-Regular.woff2
+├── kefe-logo.svg
+├── favicon.svg
+├── CHANGELOG.md
+├── CONTRIBUTING.md
+├── EFFECT_TYPOGRAPHY.md
+└── README.md
+```
+
+Production effects are independent modules. The DeepSeek material is archival and is not loaded by the live application. Shared effect helpers live in `effects/core.js`, while `effects/registry.js` provides the single production dispatch point.
+
 ## Use
 
 1. Add an audio file.
-2. find synced lyrics, upload an LRC file or enter timed lyrics manually.
+2. Find synced lyrics, upload an LRC file or enter timed lyrics manually.
 3. Add an optional image or video background, or keep the default solid background.
 4. Choose an effect and output layout.
 5. Preview the result.
@@ -50,21 +85,9 @@ Then open `http://localhost:8000`.
 
 Opening `index.html` directly is not recommended because browsers restrict some module and media operations on `file://` pages.
 
-## Project structure
+## Deployment
 
-```text
-kefevideovisualiser/
-├── .github/workflows/deploy-kefe.yml
-├── app.js
-├── styles.css
-├── index.html
-├── HomemadeApple-Regular.woff2
-├── kefe-logo.svg
-├── favicon.svg
-├── CHANGELOG.md
-├── CONTRIBUTING.md
-└── README.md
-```
+The repository currently deploys through the GitHub Pages workflow at `.github/workflows/deploy-kefe.yml`. The workflow validates the production files, packages the `effects/` directory and browser FFmpeg assets, and publishes the resulting site.
 
 ## Export
 
@@ -82,11 +105,6 @@ Audio, backgrounds and project files remain in the browser during editing and ex
 
 ## Development
 
-The production site is intentionally small:
-
-- `index.html` contains the page structure.
-- `styles.css` contains the interface and responsive layout.
-- `app.js` contains media handling, lyric rendering, project state and export.
-- GitHub Pages deployment validates required files and packages the browser encoder.
+The production site is intentionally small. Keep production logic in the root application files and `effects/`; keep historical DeepSeek material under `archive/deepseek/` rather than the repository root.
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for the basic change and testing process.
