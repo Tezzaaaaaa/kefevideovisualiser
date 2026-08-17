@@ -45,17 +45,37 @@ jobs:
           test -d effects
           test -f effects/core.js
           test -f effects/registry.js
+          test -f effects/starfield.js
+          test -f effects/pulse.js
+          test -f effects/stroke.js
+          test -f effects/story-fade.js
           test -f HomemadeApple-Regular.woff2
           test -f kefe-logo.svg
           test -f favicon.svg
+          grep -q 'data-effect="apple"' index.html
+          grep -q 'data-effect="brat"' index.html
+          grep -q 'data-effect="eternal"' index.html
           grep -q 'data-effect="aurora"' index.html
           grep -q 'data-effect="pulse"' index.html
+          grep -q 'data-effect="stroke"' index.html
+          grep -q 'data-effect="fadeup"' index.html
+          grep -q 'effects/core.js' index.html
+          grep -q 'effects/starfield.js' index.html
+          grep -q 'effects/pulse.js' index.html
+          grep -q 'effects/stroke.js' index.html
+          grep -q 'effects/story-fade.js' index.html
           grep -q 'effects/registry.js' index.html
           grep -q 'HomemadeApple-Regular.woff2' styles.css
           grep -q 'startOfflineExport' app.js
           ! grep -q 'MediaRecorder' app.js
+          ! grep -q 'fast-export.js' index.html
+          ! grep -q 'archive/' index.html
           ! test -f fast-export.js
           ! test -d archive
+          ! test -f effects/apple.js
+          ! test -f effects/brat.js
+          ! test -f effects/aurora.js
+          ! test -f effects/eternal-sunshine.js
       - name: Prepare site
         run: |
           mkdir _site
@@ -70,6 +90,10 @@ jobs:
           rm -rf /tmp/kefe-vendor/*
           curl -fsSL "https://registry.npmjs.org/@ffmpeg/core/-/core-${FFMPEG_CORE_VERSION}.tgz" | tar -xz -C /tmp/kefe-vendor
           cp /tmp/kefe-vendor/package/dist/esm/ffmpeg-core.js /tmp/kefe-vendor/package/dist/esm/ffmpeg-core.wasm _site/vendor/core/
+          test -s _site/vendor/ffmpeg/index.js
+          test -s _site/vendor/util/index.js
+          test -s _site/vendor/core/ffmpeg-core.js
+          test -s _site/vendor/core/ffmpeg-core.wasm
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
