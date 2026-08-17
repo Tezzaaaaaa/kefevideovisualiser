@@ -2,6 +2,7 @@
 (() => {
   'use strict';
   window.kefeEffects = window.kefeEffects || {};
+  const type = () => window.KEFE_TYPE?.effects || {};
   window.kefeEffectUtils = {
     clamp(v,min=0,max=1){ return Math.max(min,Math.min(max,Number(v)||0)); },
     smooth(v){ const t=this.clamp(v); return t*t*(3-2*t); },
@@ -48,8 +49,23 @@
       const p=this.clamp((time-start)/(end-start));
       return {raw:p,enter:this.smoother(p/.22),active:this.smoother((p-.08)/.35),exit:this.smoother((p-.72)/.28)};
     },
+    contract(name,fallback={}){ return {...fallback,...(type()[name]||{})}; },
     setFont(ctx,family,size,weight=700){ctx.font=`${weight} ${Math.max(18,size)}px "${family}", Arial, sans-serif`;},
+    setContractFont(ctx,name,size){const c=this.contract(name);this.setFont(ctx,c.family,Math.max(c.min,Math.min(c.max,Number(size)||c.max)),c.weight);return c;},
     fitText(ctx,family,text,size,maxWidth,weight=700){let fitted=Math.max(18,Number(size)||76);this.setFont(ctx,family,fitted,weight);while(fitted>24&&ctx.measureText(text).width>maxWidth){fitted-=1;this.setFont(ctx,family,fitted,weight);}return fitted;},
+    fitContractText(ctx,name,text,size,maxWidth){const c=this.contract(name);let fitted=Math.max(c.min,Math.min(c.max,Number(size)||c.max));this.setFont(ctx,c.family,fitted,c.weight);while(fitted>c.min&&ctx.measureText(text).width>maxWidth){fitted-=1;this.setFont(ctx,c.family,fitted,c.weight);}return fitted;},
+    fillTrackedText(ctx,text,x,y,trackingPx){
+      if(!trackingPx){ctx.fillText(text,x,y);return;}
+      const chars=Array.from(String(text));
+      const widths=chars.map(char=>ctx.measureText(char).width);
+      const total=widths.reduce((sum,width)=>sum+width,0)+trackingPx*Math.max(0,chars.length-1);
+      let cursor=x;
+      if(ctx.textAlign==='center') cursor=x-total/2;
+      else if(ctx.textAlign==='right') cursor=x-total;
+      const previous=ctx.textAlign;ctx.textAlign='left';
+      for(let i=0;i<chars.length;i++){ctx.fillText(chars[i],cursor,y);cursor+=widths[i]+trackingPx;}
+      ctx.textAlign=previous;
+    },
     fitTextBinary(ctx,family,text,size,maxWidth,weight=700,minSize=24){
       let lo=minSize,hi=Math.max(minSize,Number(size)||76);
       for(let i=0;i<8;i++){const mid=(lo+hi)/2;this.setFont(ctx,family,mid,weight);if(ctx.measureText(text).width<=maxWidth)lo=mid;else hi=mid;}
