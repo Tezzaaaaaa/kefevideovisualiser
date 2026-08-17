@@ -13,17 +13,47 @@
       }
       if(index<0)return null;
       const line=lines[index]||{},next=lines[index+1]||null;
-      return {index,line:{...line,time:Number(line.time)||0,endTime:Number.isFinite(Number(line.endTime))?Number(line.endTime):(Number(next?.time)||((Number(line.time)||0)+3))},next};
+      const start=Number(line.time)||0;
+      const nextTime=Number(next?.time);
+      const explicitEnd=Number(line.endTime);
+      const end=Number.isFinite(explicitEnd)&&explicitEnd>start ? explicitEnd : (Number.isFinite(nextTime)&&nextTime>start ? nextTime : start+3);
+      return {index,line:{...line,time:start,endTime:end},next};
+    },
+    lineProgress(line,time,lead=.12,tail=.18){
+      const start=Number(line?.time)||0,end=Math.max(start+.05,Number(line?.endTime)||start+3);
+      const duration=end-start;
+      const enter=this.smoother((time-start)/Math.min(.22,duration*.18+lead));
+      const exit=this.smoother((end-time)/Math.min(.28,duration*.16+tail));
+      return {enter,exit,hold:this.clamp((time-start)/duration),opacity:enter*exit};
     },
     wordsFor(line,next){
-      if(Array.isArray(line?.words)&&line.words.length)return line.words.map((word,i,all)=>({text:String(word.text||''),time:Number(word.time)||Number(line.time)||0,endTime:Number.isFinite(Number(word.endTime))?Number(word.endTime):(Number(all[i+1]?.time)||Number(line.endTime)||(Number(line.time)+3))})).filter(word=>word.text);
+      if(Array.isArray(line?.words)&&line.words.length){
+        const base=Number(line.time)||0;
+        return line.words.map((word,i,all)=>{
+          const start=Number.isFinite(Number(word?.time))?Number(word.time):base;
+          const nextWord=Number(all[i+1]?.time);
+          const lineEnd=Number(line.endTime);
+          const end=Number.isFinite(Number(word?.endTime))&&Number(word.endTime)>start ? Number(word.endTime) : (Number.isFinite(nextWord)&&nextWord>start ? nextWord : (Number.isFinite(lineEnd)&&lineEnd>start ? lineEnd : start+.12));
+          return {text:String(word.text||'').trim(),time:start,endTime:Math.max(start+.06,end)};
+        }).filter(word=>word.text);
+      }
       const tokens=String(line?.text||'').trim().split(/\s+/).filter(Boolean); if(!tokens.length)return [];
       const start=Number(line.time)||0,end=Math.max(start+.25,Number(next?.time)||Number(line.endTime)||start+3);
       const weights=tokens.map(token=>Math.max(1,Array.from(token.replace(/[^\p{L}\p{N}]/gu,'')).length**.72));
       const total=weights.reduce((a,b)=>a+b,0)||tokens.length; let cursor=0;
-      return tokens.map((text,i)=>{const time=start+(end-start)*cursor/total;cursor+=weights[i];const endTime=start+(end-start)*cursor/total;return{text,time,endTime:Math.max(time+.05,endTime)};});
+      return tokens.map((text,i)=>{const time=start+(end-start)*cursor/total;cursor+=weights[i];const endTime=start+(end-start)*cursor/total;return{text,time,endTime:Math.max(time+.06,endTime)};});
+    },
+    wordProgress(word,time){
+      const start=Number(word?.time)||0,end=Math.max(start+.06,Number(word?.endTime)||start+.12);
+      const p=this.clamp((time-start)/(end-start));
+      return {raw:p,enter:this.smoother(p/.22),active:this.smoother((p-.08)/.35),exit:this.smoother((p-.72)/.28)};
     },
     setFont(ctx,family,size,weight=700){ctx.font=`${weight} ${Math.max(18,size)}px "${family}", Arial, sans-serif`;},
-    fitText(ctx,family,text,size,maxWidth,weight=700){let fitted=Math.max(18,Number(size)||76);this.setFont(ctx,family,fitted,weight);while(fitted>24&&ctx.measureText(text).width>maxWidth){fitted-=1;this.setFont(ctx,family,fitted,weight);}return fitted;}
+    fitText(ctx,family,text,size,maxWidth,weight=700){let fitted=Math.max(18,Number(size)||76);this.setFont(ctx,family,fitted,weight);while(fitted>24&&ctx.measureText(text).width>maxWidth){fitted-=1;this.setFont(ctx,family,fitted,weight);}return fitted;},
+    fitTextBinary(ctx,family,text,size,maxWidth,weight=700,minSize=24){
+      let lo=minSize,hi=Math.max(minSize,Number(size)||76);
+      for(let i=0;i<8;i++){const mid=(lo+hi)/2;this.setFont(ctx,family,mid,weight);if(ctx.measureText(text).width<=maxWidth)lo=mid;else hi=mid;}
+      this.setFont(ctx,family,lo,weight);return lo;
+    }
   };
 })();
