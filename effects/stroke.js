@@ -17,7 +17,7 @@ window.kefeEffects.stroke=function(ctx,w,h,style,lines,time){
  ctx.lineJoin='round';ctx.lineCap='round';
  ctx.lineWidth=Math.max(2,Math.round(size*.026));
  ctx.strokeStyle=style.accentColor||'#FFFFFF';
- u.fillTrackedText(ctx,text,w/2,h*.57,size*(contract.tracking||0));
+ u.drawTrackedText(ctx,text,w/2,h*.57,size*(contract.tracking||0),'strokeText');
  ctx.restore();
 };
 })();
