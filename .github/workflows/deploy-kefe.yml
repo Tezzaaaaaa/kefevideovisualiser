@@ -56,6 +56,7 @@ jobs:
           test -f effects/star-wars.js
           test -f effects/stroke.js
           test -f effects/story-fade.js
+          test -f effects/mixed-media.js
           test -f effects/effect-app-fx.js
           test -f HomemadeApple-Regular.woff2
           test -f kefe-logo.svg
@@ -67,12 +68,14 @@ jobs:
           grep -q 'data-effect="starwars"' index.html
           grep -q 'data-effect="stroke"' index.html
           grep -q 'data-effect="fadeup"' index.html
+          grep -q 'data-effect="mixedmedia"' index.html
           grep -q 'effects/core.js' index.html
           grep -q 'effects/aurora.js' index.html
           grep -q 'effects/eternal-sunshine.js' index.html
           grep -q 'effects/star-wars.js' index.html
           grep -q 'effects/stroke.js' index.html
           grep -q 'effects/story-fade.js' index.html
+          grep -q 'effects/mixed-media.js' index.html
           grep -q 'effects/registry.js' index.html
           grep -q 'effects/effect-app-fx.js' index.html
           grep -q 'HomemadeApple-Regular.woff2' styles.css
