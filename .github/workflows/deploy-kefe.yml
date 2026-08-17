@@ -51,10 +51,12 @@ jobs:
           test -d effects
           test -f effects/core.js
           test -f effects/registry.js
-          test -f effects/starfield.js
-          test -f effects/pulse.js
+          test -f effects/aurora.js
+          test -f effects/eternal-sunshine.js
+          test -f effects/star-wars.js
           test -f effects/stroke.js
           test -f effects/story-fade.js
+          test -f effects/effect-app-fx.js
           test -f HomemadeApple-Regular.woff2
           test -f kefe-logo.svg
           test -f favicon.svg
@@ -62,17 +64,17 @@ jobs:
           grep -q 'data-effect="brat"' index.html
           grep -q 'data-effect="eternal"' index.html
           grep -q 'data-effect="aurora"' index.html
-          grep -q 'data-effect="pulse"' index.html
+          grep -q 'data-effect="starwars"' index.html
           grep -q 'data-effect="stroke"' index.html
           grep -q 'data-effect="fadeup"' index.html
-          grep -q 'typography.css' index.html
-          grep -q 'typography.js' index.html
           grep -q 'effects/core.js' index.html
-          grep -q 'effects/starfield.js' index.html
-          grep -q 'effects/pulse.js' index.html
+          grep -q 'effects/aurora.js' index.html
+          grep -q 'effects/eternal-sunshine.js' index.html
+          grep -q 'effects/star-wars.js' index.html
           grep -q 'effects/stroke.js' index.html
           grep -q 'effects/story-fade.js' index.html
           grep -q 'effects/registry.js' index.html
+          grep -q 'effects/effect-app-fx.js' index.html
           grep -q 'HomemadeApple-Regular.woff2' styles.css
           grep -q 'startOfflineExport' app.js
           ! grep -q 'MediaRecorder' app.js
@@ -82,8 +84,10 @@ jobs:
           ! test -d archive
           ! test -f effects/apple.js
           ! test -f effects/brat.js
-          ! test -f effects/aurora.js
-          ! test -f effects/eternal-sunshine.js
+          ! test -f effects/starfield.js
+          ! test -f effects/pulse.js
+          ! test -f effects/aurora-old.js
+          ! test -f effects/eternal.js
       - name: Prepare site
         run: |
           mkdir _site
