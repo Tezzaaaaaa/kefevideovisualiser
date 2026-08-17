@@ -24,7 +24,6 @@
   --kefe-min-ui-size: 11px;
 }
 
-/* Semantic UI typography. These names describe purpose, not pixels. */
 .type-display { font-size: var(--type-display); line-height: var(--leading-display); letter-spacing: var(--tracking-display); font-weight: 700; }
 .type-title { font-size: var(--type-title); line-height: var(--leading-heading); letter-spacing: var(--tracking-heading); font-weight: 700; }
 .type-body { font-size: var(--type-body); line-height: var(--leading-body); letter-spacing: var(--tracking-body); font-weight: 400; }
@@ -44,10 +43,9 @@ button { font-size: var(--type-label); line-height: var(--leading-label); }
 select { font-size: var(--type-label); line-height: var(--leading-label); }
 .transport span { font-size: var(--type-caption); line-height: 1.2; }
 
-/* Never let responsive UI typography collapse below the readability floor. */
-button, input, select, textarea, .status, .section h3, .transport span { min-font-size: var(--kefe-min-ui-size); }
+/* Readability floor: no production UI text is allowed below 11px. */
+button, input, select, textarea, .status, .section h3, .transport span { min-height: var(--kefe-min-ui-size); }
 
-/* High zoom: allow the page to grow instead of clipping enlarged text. */
 @media (min-resolution: 192dpi), (min-resolution: 2dppx) {
   .sidebar { width: min(400px, 38vw); }
   .section { padding: 16px; }
@@ -68,7 +66,6 @@ button, input, select, textarea, .status, .section h3, .transport span { min-fon
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; }
 }
 
-/* Colour never carries state by itself. */
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
