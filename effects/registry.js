@@ -4,13 +4,13 @@
 const originalRenderLyricsEffect=window.renderLyricsEffect;
 if(typeof originalRenderLyricsEffect!=='function')throw new Error('KEFE effect registry loaded before the base lyric renderer.');
 window.kefeEffects=window.kefeEffects||{};
-const required=['starwars','stroke','fadeup','aurora','eternal'];
+const required=['brat','starwars','stroke','fadeup','aurora','eternal'];
 window.kefeEffectStatus=Object.freeze(Object.fromEntries(required.map(name=>[name,typeof window.kefeEffects[name]==='function'])));
 window.renderLyricsEffect=function(ctx,w,h,style,lines,time){
   ctx.save();ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';ctx.filter='none';ctx.shadowBlur=0;
   try{
     const effect=style?.effect;
-    const modular={starwars:window.kefeEffects.starwars,stroke:window.kefeEffects.stroke,fadeup:window.kefeEffects.fadeup,aurora:window.kefeEffects.aurora,eternal:window.kefeEffects.eternal};
+    const modular={brat:window.kefeEffects.brat,starwars:window.kefeEffects.starwars,stroke:window.kefeEffects.stroke,fadeup:window.kefeEffects.fadeup,aurora:window.kefeEffects.aurora,eternal:window.kefeEffects.eternal};
     if(Object.prototype.hasOwnProperty.call(modular,effect)){
       const renderer=modular[effect];
       if(typeof renderer!=='function')throw new Error(`KEFE effect renderer unavailable: ${effect}`);
