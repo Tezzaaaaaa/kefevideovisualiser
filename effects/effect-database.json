@@ -1,109 +1,78 @@
 {
   "schemaVersion": 1,
   "name": "KEFE Effect Database",
-  "description": "Canonical metadata for KEFE's deduplicated visual-effect system. This file is data-only and is not loaded by the renderer yet.",
+  "description": "Canonical metadata for KEFE's deduplicated visual-effect system. 52 retained effects across 8 categories. Simple/duplicate operations are represented as modes, parameters, or presets rather than standalone effects.",
   "categories": [
-    {
-      "id": "motion",
-      "label": "Motion",
-      "effects": [
-        {"id":"camera-shake","name":"Camera Shake","controls":["intensity","speed","frequency","x","y","rotation","decay","seed"]},
-        {"id":"motion-blur","name":"Motion Blur","controls":["amount","direction","angle","threshold"]},
-        {"id":"motion-trails","name":"Motion Trails","controls":["trailLength","fade","intensity","drift","shake","sourceDim","blendMode"]},
-        {"id":"depth-of-field","name":"Depth of Field","controls":["focusPosition","blur","aperture","bladeCount","bladeShape","rotation","falloff","anamorphic"]},
-        {"id":"radial-blur","name":"Radial Blur","controls":["amount","center","direction","falloff"]},
-        {"id":"zoom-blur","name":"Zoom Blur","controls":["amount","center","direction","falloff"]}
-      ]
-    },
-    {
-      "id": "light",
-      "label": "Light",
-      "effects": [
-        {"id":"bloom","name":"Bloom","controls":["threshold","intensity","radius","diffusion","tint"]},
-        {"id":"halation","name":"Halation","controls":["threshold","spread","intensity","hue","saturation","highlightBias"]},
-        {"id":"star-glow","name":"Star Glow","controls":["threshold","length","falloff","angle","count","density","tint"]},
-        {"id":"vignette","name":"Vignette","controls":["shape","size","softness","position","rotation","color","opacity","blendMode"]}
-      ]
-    },
-    {
-      "id": "distortion",
-      "label": "Distortion",
-      "effects": [
-        {"id":"glitch","name":"Glitch","controls":["intensity","frequency","blockSize","rgbSeparation","scanlines","noise","displacement","seed"]},
-        {"id":"rgb-shift","name":"RGB Shift","controls":["amount","angle","redOffset","greenOffset","blueOffset","falloff"]},
-        {"id":"ripple","name":"Ripple","controls":["amount","frequency","speed","center","falloff"]},
-        {"id":"swirl","name":"Swirl","controls":["amount","radius","center","falloff"]},
-        {"id":"pinch","name":"Pinch","controls":["amount","radius","center","falloff"]},
-        {"id":"perspective","name":"Perspective","controls":["x","y","corners","depth","fov"]},
-        {"id":"elastic-grid","name":"Elastic Grid","controls":["gridSize","amount","noise","frequency","speed"]},
-        {"id":"displacement","name":"Displacement","controls":["texture","amount","scale","blur","curve","fitMode"]},
-        {"id":"reeded-glass","name":"Reeded Glass","controls":["pattern","scale","refraction","dispersion","reflection","imperfections"]},
-        {"id":"polar-distortion","name":"Polar Distortion","controls":["mode","amount","radius","center","rotation","stretch"]}
-      ]
-    },
-    {
-      "id": "color",
-      "label": "Color",
-      "effects": [
-        {"id":"color-grading","name":"Color Grading","controls":["shadows","midtones","highlights","contrast","saturation","temperature","tint","fade"]},
-        {"id":"curves","name":"Curves","controls":["rgb","red","green","blue","hue","saturation","luma"]},
-        {"id":"hue-saturation","name":"Hue/Saturation","controls":["hue","saturation","lightness","selectiveColor"]},
-        {"id":"color-balance","name":"Color Balance","controls":["shadows","midtones","highlights","cyanRed","magentaGreen","yellowBlue"]},
-        {"id":"gradient-map","name":"Gradient Map","controls":["gradientStops","position","repeat","blend","interpolation"]},
-        {"id":"duotone","name":"Duotone","controls":["shadowColor","highlightColor","balance","contrast"]},
-        {"id":"thermal","name":"Thermal","controls":["temperature","contrast","palette","threshold"]},
-        {"id":"exposure","name":"Exposure","controls":["exposure","gamma","offset","highlightRecovery"]},
-        {"id":"levels","name":"Levels","controls":["black","white","gamma","outputBlack","outputWhite"]},
-        {"id":"black-white","name":"Black & White","controls":["red","orange","yellow","green","cyan","blue","purple","contrast","grain"]}
-      ]
-    },
-    {
-      "id": "texture",
-      "label": "Texture",
-      "effects": [
-        {"id":"film-grain","name":"Film Grain","controls":["stock","amount","size","chroma","shadows","midtones","highlights","movement","frameInterval"]},
-        {"id":"noise","name":"Noise","controls":["amount","size","chroma","shadows","midtones","highlights","speed"]},
-        {"id":"ink-bleed","name":"Ink Bleed","controls":["amount","spread","direction","edge","color"]},
-        {"id":"paper-scan","name":"Paper Scan","controls":["texture","scale","opacity","brightness","contrast","distortion"]},
-        {"id":"grunge","name":"Grunge","controls":["amount","scale","contrast","roughness","blend"]},
-        {"id":"halftone","name":"Halftone","controls":["pattern","size","angle","density","shape","color"]},
-        {"id":"dither","name":"Dither","controls":["algorithm","pattern","pixelSize","palette","threshold","colorMode"]},
-        {"id":"emboss","name":"Emboss","controls":["depth","direction","light","softness","contrast"]}
-      ]
-    },
-    {
-      "id": "retro",
-      "label": "Retro",
-      "effects": [
-        {"id":"vhs","name":"VHS","controls":["tracking","noise","chromaticAberration","scanlines","distortion","colorBleed","jitter","timestamp"]},
-        {"id":"crt","name":"CRT","controls":["curvature","scanlines","phosphor","bloom","rgbMask","flicker","vignette"]},
-        {"id":"ntsc","name":"NTSC","controls":["chroma","bleed","noise","phase","scanlines","distortion"]},
-        {"id":"led-screen","name":"LED Screen","controls":["pixelSize","brightness","spacing","shape","glow"]},
-        {"id":"ascii","name":"ASCII","controls":["characterSet","font","size","density","contrast","color"]},
-        {"id":"nokia-3310","name":"Nokia 3310","controls":["pixelSize","palette","contrast","dither"]},
-        {"id":"risograph","name":"Risograph","controls":["inkColors","registration","grain","threshold","paper","opacity"]},
-        {"id":"xerox","name":"Xerox","controls":["contrast","noise","threshold","edge","paper"]}
-      ]
-    },
-    {
-      "id": "style",
-      "label": "Style",
-      "effects": [
-        {"id":"vintage-poster","name":"Vintage Poster","controls":["palette","texture","halftone","contrast","paper","grain"]},
-        {"id":"cyanotype","name":"Cyanotype","controls":["exposure","contrast","blueTone","paper","grain"]},
-        {"id":"paper-cutout","name":"Paper Cutout","controls":["depth","edge","shadow","texture","paperColor"]},
-        {"id":"cubify","name":"Cubify","controls":["blockSize","depth","rotation","lighting","color"]}
-      ]
-    },
-    {
-      "id": "film",
-      "label": "Film",
-      "effects": [
-        {"id":"classic-film","name":"Classic Film","controls":["stock","exposure","contrast","saturation","temperature","fade","grainAmount"]},
-        {"id":"vintage-film","name":"Vintage Film","controls":["look","fade","contrast","colorShift","grain","dust","flicker","halation"]}
-      ]
-    }
+    {"id":"motion","label":"Motion","effects":[
+      {"id":"camera-shake","name":"Camera Shake","controls":["intensity","speed","frequency","x","y","rotation","decay","seed"]},
+      {"id":"motion-blur","name":"Motion Blur","controls":["amount","direction","angle","threshold"]},
+      {"id":"motion-trails","name":"Motion Trails","controls":["trailLength","fade","intensity","drift","shake","sourceDim","blendMode"]},
+      {"id":"depth-of-field","name":"Depth of Field","controls":["focusPosition","blur","aperture","bladeCount","bladeShape","rotation","falloff","anamorphic"]},
+      {"id":"radial-blur","name":"Radial Blur","controls":["amount","center","direction","falloff"]},
+      {"id":"zoom-blur","name":"Zoom Blur","controls":["amount","center","direction","falloff"]}
+    ]},
+    {"id":"light","label":"Light","effects":[
+      {"id":"bloom","name":"Bloom","controls":["threshold","intensity","radius","diffusion","tint"]},
+      {"id":"halation","name":"Halation","controls":["threshold","spread","intensity","hue","saturation","highlightBias"]},
+      {"id":"star-glow","name":"Star Glow","controls":["threshold","length","falloff","angle","count","density","tint"]},
+      {"id":"vignette","name":"Vignette","controls":["shape","size","softness","position","rotation","color","opacity","blendMode"]}
+    ]},
+    {"id":"distortion","label":"Distortion","effects":[
+      {"id":"glitch","name":"Glitch","controls":["intensity","frequency","blockSize","rgbSeparation","scanlines","noise","displacement","seed"]},
+      {"id":"rgb-shift","name":"RGB Shift","controls":["amount","angle","redOffset","greenOffset","blueOffset","falloff"]},
+      {"id":"ripple","name":"Ripple","controls":["amount","frequency","speed","center","falloff"]},
+      {"id":"swirl","name":"Swirl","controls":["amount","radius","center","falloff"]},
+      {"id":"pinch","name":"Pinch","controls":["amount","radius","center","falloff"]},
+      {"id":"perspective","name":"Perspective","controls":["x","y","corners","depth","fov"]},
+      {"id":"elastic-grid","name":"Elastic Grid","controls":["gridSize","amount","noise","frequency","speed"]},
+      {"id":"displacement","name":"Displacement","controls":["texture","amount","scale","blur","curve","fitMode"]},
+      {"id":"reeded-glass","name":"Reeded Glass","controls":["pattern","scale","refraction","dispersion","reflection","imperfections"]},
+      {"id":"polar-distortion","name":"Polar Distortion","controls":["mode","amount","radius","center","rotation","stretch"]}
+    ]},
+    {"id":"color","label":"Color","effects":[
+      {"id":"color-grading","name":"Color Grading","controls":["shadows","midtones","highlights","contrast","saturation","temperature","tint","fade"]},
+      {"id":"curves","name":"Curves","controls":["rgb","red","green","blue","hue","saturation","luma"]},
+      {"id":"hue-saturation","name":"Hue/Saturation","controls":["hue","saturation","lightness","selectiveColor"]},
+      {"id":"color-balance","name":"Color Balance","controls":["shadows","midtones","highlights","cyanRed","magentaGreen","yellowBlue"]},
+      {"id":"gradient-map","name":"Gradient Map","controls":["gradientStops","position","repeat","blend","interpolation"]},
+      {"id":"duotone","name":"Duotone","controls":["shadowColor","highlightColor","balance","contrast"]},
+      {"id":"thermal","name":"Thermal","controls":["temperature","contrast","palette","threshold"]},
+      {"id":"exposure","name":"Exposure","controls":["exposure","gamma","offset","highlightRecovery"]},
+      {"id":"levels","name":"Levels","controls":["black","white","gamma","outputBlack","outputWhite"]},
+      {"id":"black-white","name":"Black & White","controls":["red","orange","yellow","green","cyan","blue","purple","contrast","grain"]}
+    ]},
+    {"id":"texture","label":"Texture","effects":[
+      {"id":"film-grain","name":"Film Grain","controls":["stock","amount","size","chroma","shadows","midtones","highlights","movement","frameInterval"]},
+      {"id":"noise","name":"Noise","controls":["amount","size","chroma","shadows","midtones","highlights","speed"]},
+      {"id":"ink-bleed","name":"Ink Bleed","controls":["amount","spread","direction","edge","color"]},
+      {"id":"paper-scan","name":"Paper Scan","controls":["texture","scale","opacity","brightness","contrast","distortion"]},
+      {"id":"grunge","name":"Grunge","controls":["amount","scale","contrast","roughness","blend"]},
+      {"id":"halftone","name":"Halftone","controls":["pattern","size","angle","density","shape","color"]},
+      {"id":"dither","name":"Dither","controls":["algorithm","pattern","pixelSize","palette","threshold","colorMode"]},
+      {"id":"emboss","name":"Emboss","controls":["depth","direction","light","softness","contrast"]}
+    ]},
+    {"id":"retro","label":"Retro","effects":[
+      {"id":"vhs","name":"VHS","controls":["tracking","noise","chromaticAberration","scanlines","distortion","colorBleed","jitter","timestamp"]},
+      {"id":"crt","name":"CRT","controls":["curvature","scanlines","phosphor","bloom","rgbMask","flicker","vignette"]},
+      {"id":"ntsc","name":"NTSC","controls":["chroma","bleed","noise","phase","scanlines","distortion"]},
+      {"id":"led-screen","name":"LED Screen","controls":["pixelSize","brightness","spacing","shape","glow"]},
+      {"id":"ascii","name":"ASCII","controls":["characterSet","font","size","density","contrast","color"]},
+      {"id":"nokia-3310","name":"Nokia 3310","controls":["pixelSize","palette","contrast","dither"]},
+      {"id":"risograph","name":"Risograph","controls":["inkColors","registration","grain","threshold","paper","opacity"]},
+      {"id":"xerox","name":"Xerox","controls":["contrast","noise","threshold","edge","paper"]}
+    ]},
+    {"id":"style","label":"Style","effects":[
+      {"id":"vintage-poster","name":"Vintage Poster","controls":["palette","texture","halftone","contrast","paper","grain"]},
+      {"id":"cyanotype","name":"Cyanotype","controls":["exposure","contrast","blueTone","paper","grain"]},
+      {"id":"paper-cutout","name":"Paper Cutout","controls":["depth","edge","shadow","texture","paperColor"]},
+      {"id":"cubify","name":"Cubify","controls":["blockSize","depth","rotation","lighting","color"]}
+    ]},
+    {"id":"film","label":"Film","effects":[
+      {"id":"classic-film","name":"Classic Film","controls":["stock","exposure","contrast","saturation","temperature","fade","grainAmount"]},
+      {"id":"vintage-film","name":"Vintage Film","controls":["look","fade","contrast","colorShift","grain","dust","flicker","halation"]}
+    ]}
   ],
-  "universal": ["enabled","intensity","animate","reset","randomize","savePreset","info"],
-  "animationModes": ["manual","beat","bar","phrase","lyric","auto"]
+  "mergedModes":{"blur":"Gaussian Blur, Blur/Sharp and Circular Blur are represented through the blur/mode model rather than separate top-level effects","polar":"Polar to Rectangular and Rectangular to Polar are represented by Polar Distortion mode","color":"Monochrome, Contrast, RGB Gain and Color Matrix are represented by Black & White, Color Grading and Color Balance controls","transform":"Transform is a core transform operation rather than a standalone visual effect"},
+  "universal":["enabled","intensity","animate","reset","randomize","savePreset","info"],
+  "animationModes":["manual","beat","bar","phrase","lyric","auto"]
 }
