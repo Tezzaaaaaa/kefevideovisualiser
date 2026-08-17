@@ -6,6 +6,8 @@ on:
     paths:
       - index.html
       - styles.css
+      - typography.css
+      - typography.js
       - app.js
       - effects/**
       - HomemadeApple-Regular.woff2
@@ -41,6 +43,8 @@ jobs:
           set -euo pipefail
           test -f index.html
           test -f styles.css
+          test -f typography.css
+          test -f typography.js
           test -f app.js
           test -d effects
           test -f effects/core.js
@@ -59,6 +63,8 @@ jobs:
           grep -q 'data-effect="pulse"' index.html
           grep -q 'data-effect="stroke"' index.html
           grep -q 'data-effect="fadeup"' index.html
+          grep -q 'typography.css' index.html
+          grep -q 'typography.js' index.html
           grep -q 'effects/core.js' index.html
           grep -q 'effects/starfield.js' index.html
           grep -q 'effects/pulse.js' index.html
@@ -79,7 +85,7 @@ jobs:
       - name: Prepare site
         run: |
           mkdir _site
-          cp index.html styles.css app.js HomemadeApple-Regular.woff2 kefe-logo.svg favicon.svg _site/
+          cp index.html styles.css typography.css typography.js app.js HomemadeApple-Regular.woff2 kefe-logo.svg favicon.svg _site/
           cp -R effects _site/effects
           mkdir -p _site/vendor/ffmpeg _site/vendor/util _site/vendor/core /tmp/kefe-vendor
           curl -fsSL "https://registry.npmjs.org/@ffmpeg/ffmpeg/-/ffmpeg-${FFMPEG_VERSION}.tgz" | tar -xz -C /tmp/kefe-vendor
@@ -94,6 +100,8 @@ jobs:
           test -s _site/vendor/util/index.js
           test -s _site/vendor/core/ffmpeg-core.js
           test -s _site/vendor/core/ffmpeg-core.wasm
+          test -s _site/typography.css
+          test -s _site/typography.js
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
