@@ -10,7 +10,8 @@
   if (!U) throw new Error('KEFE Brat effect requires effects/core.js.');
 
   function setBratFont(ctx, size) {
-    ctx.font = `700 ${Math.max(30, size)}px "Archivo Narrow", sans-serif`;
+    const c=U.contract('brat');
+    ctx.font = `${c.weight} ${Math.max(c.min, size)}px "${c.family}", sans-serif`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
   }
@@ -34,7 +35,7 @@
     const top = h * (Number(style.bratTopMargin) || 4.5) / 100;
     const bottom = h * 0.05;
     const slotHeight = (h - top - bottom) / 5;
-    const sizePattern = [1.16, 0.91, 1.10, 0.96, 1.20];
+    const sizePattern = [1.18, 0.92, 1.12, 0.96, 1.22];
     const wordPattern = [3, 3, 2, 2, 3];
     const rows = [];
     let cursor = 0;
@@ -45,21 +46,19 @@
       const count = wordPattern[slot];
       const rowWords = words.slice(cursor, cursor + count);
       if (!rowWords.length) break;
-
-      let size = Math.max(34, Math.min(slotHeight * 0.72, base * 1.75 * sizePattern[slot]));
+      let size = Math.max(34, Math.min(slotHeight * 0.74, base * 1.78 * sizePattern[slot]));
       const usableWidth = w - side * 2;
       while (size > 32) {
         setBratFont(ctx, size);
         const total = rowWords.reduce((sum, word) => sum + ctx.measureText(word.text).width, 0);
-        const minimumGap = size * 0.14 * Math.max(0, rowWords.length - 1);
+        const minimumGap = size * 0.08 * Math.max(0, rowWords.length - 1);
         if (total + minimumGap <= usableWidth) break;
         size -= 2;
       }
-
       setBratFont(ctx, size);
       const widths = rowWords.map(word => ctx.measureText(word.text).width);
       const totalWidth = widths.reduce((sum, value) => sum + value, 0);
-      const gap = rowWords.length > 1 ? Math.max(size * 0.04, (usableWidth - totalWidth) / (rowWords.length - 1)) : 0;
+      const gap = rowWords.length > 1 ? Math.max(size * 0.025, (usableWidth - totalWidth) / (rowWords.length - 1)) : 0;
       rows.push({ words: rowWords, widths, size, gap, side, page: Math.floor(rowNumber / 5) });
       cursor += rowWords.length;
       rowNumber++;
