@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KEFE Effect Carousel · Visualiser</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0a0c10;
+      color: #e8edf2;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 1.5rem;
+    }
+
+    .app-container {
+      max-width: 1200px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* ---------- HEADER ---------- */
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 0.5rem;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+    }
+
+    .app-header .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .app-header .brand i {
+      font-size: 1.6rem;
+      color: #8aa3ff;
+      filter: drop-shadow(0 0 12px rgba(138, 163, 255, 0.2));
+    }
+
+    .app-header .brand h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #f0f4ff, #8aa3ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .app-header .brand span {
+      font-size: 0.7rem;
+      font-weight: 400;
+      -webkit-text-fill-color: #6b7a93;
+      color: #6b7a93;
+      background: none;
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 0.6rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .header-controls .search-box {
+      position: relative;
+    }
+
+    .header-controls .search-box input {
+      padding: 0.5rem 1rem 0.5rem 2.2rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 100px;
+      color: #e8edf2;
+      font-size: 0.8rem;
+      font-family: inherit;
+      outline: none;
+      width: 180px;
+      transition: all 0.2s;
+    }
+
+    .header-controls .search-box input:focus {
+      border-color: rgba(138, 163, 255, 0.3);
+      background: rgba(255, 255, 255, 0.07);
+      width: 220px;
+    }
+
+    .header-controls .search-box input::placeholder {
+      color: #6b7a93;
+    }
+
+    .header-controls .search-box i {
+      position: absolute;
+      left: 0.8rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #6b7a93;
+      font-size: 0.75rem;
+    }
+
+    .header-controls select {
+      padding: 0.5rem 2rem 0.5rem 1rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 100px;
+      color: #e8edf2;
+      font-size: 0.8rem;
+      font-family: inherit;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 12 12"><path fill="%236b7a93" d="M6 8L1 3h10z"/></svg>');
+      background-repeat: no-repeat;
+      background-position: right 0.8rem center;
+      background-size: 10px;
+    }
+
+    .header-controls select:focus {
+      border-color: rgba(138, 163, 255, 0.3);
+    }
+
+    .header-controls select option {
+      background: #161a22;
+    }
+
+    .header-controls .count-badge {
+      font-size: 0.7rem;
+      color: #6b7a93;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 0.2rem 0.8rem;
+      border-radius: 100px;
+      white-space: nowrap;
+    }
+
+    /* ---------- PREVIEW SCREEN ---------- */
+    .preview-section {
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 24px;
+      padding: 0.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .preview-container {
+      position: relative;
+      border-radius: 20px;
+      overflow: hidden;
+      aspect-ratio: 16 / 9;
+      background: #0a0c10;
+      min-height: 320px;
+    }
+
+    .preview-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: opacity 0.4s ease;
+    }
+
+    .preview-container .overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 1.5rem 1.8rem 1.2rem;
+      background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+    }
+
+    .preview-container .overlay .effect-name {
+      font-weight: 700;
+      font-size: 1.5rem;
+      text-shadow: 0 2px 16px rgba(0, 0, 0, 0.7);
+      color: #fff;
+    }
+
+    .preview-container .overlay .effect-category {
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: #9aa4b8;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+      background: rgba(0, 0, 0, 0.4);
+      padding: 0.15rem 0.8rem;
+      border-radius: 100px;
+      display: inline-block;
+      margin-top: 0.2rem;
+      backdrop-filter: blur(4px);
+    }
+
+    .preview-container .overlay .effect-meta {
+      font-size: 0.7rem;
+      color: #9aa4b8;
+      margin-top: 0.3rem;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .preview-container .overlay .effect-meta i {
+      margin-right: 0.2rem;
+    }
+
+    .preview-container .overlay .effect-meta .param-status {
+      color: #6b7a93;
+    }
+
+    .preview-container .overlay .effect-meta .param-status.public {
+      color: #8fcb9b;
+    }
+
+    /* ---------- CAROUSEL ---------- */
+    .carousel-section {
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 20px;
+      padding: 1.2rem 0.5rem 1.2rem 1.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .carousel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-right: 1.5rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .carousel-header h3 {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #6b7a93;
+    }
+
+    .carousel-header .carousel-nav {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .carousel-header .carousel-nav button {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      color: #6b7a93;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+    }
+
+    .carousel-header .carousel-nav button:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #e8edf2;
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .carousel-track-wrapper {
+      overflow: hidden;
+      position: relative;
+      padding: 0.3rem 0;
+    }
+
+    .carousel-track-wrapper::before,
+    .carousel-track-wrapper::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 50px;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .carousel-track-wrapper::before {
+      left: 0;
+      background: linear-gradient(to right, #0a0c10, transparent);
+    }
+
+    .carousel-track-wrapper::after {
+      right: 0;
+      background: linear-gradient(to left, #0a0c10, transparent);
+    }
+
+    .carousel-track {
+      display: flex;
+      gap: 0.8rem;
+      transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      will-change: transform;
+    }
+
+    .carousel-item {
+      flex: 0 0 180px;
+      border-radius: 14px;
+      overflow: hidden;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.25s ease;
+      background: rgba(255, 255, 255, 0.02);
+      position: relative;
+    }
+
+    .carousel-item:hover {
+      transform: scale(1.05);
+      border-color: rgba(138, 163, 255, 0.4);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+      z-index: 3;
+    }
+
+    .carousel-item.active {
+      border-color: #8aa3ff;
+      box-shadow: 0 0 30px rgba(138, 163, 255, 0.2);
+    }
+
+    .carousel-item .thumb {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      background: #0a0c10;
+      position: relative;
+    }
+
+    .carousel-item .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.4s ease;
+    }
+
+    .carousel-item:hover .thumb img {
+      transform: scale(1.08);
+    }
+
+    .carousel-item .item-name {
+      padding: 0.4rem 0.6rem 0.5rem;
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: #e8edf2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: center;
+    }
+
+    .carousel-item .item-category {
+      position: absolute;
+      top: 0.4rem;
+      left: 0.4rem;
+      font-size: 0.45rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 0.05rem 0.5rem;
+      border-radius: 100px;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      color: #9aa4b8;
+    }
+
+    .carousel-item .param-dot {
+      position: absolute;
+      bottom: 2.2rem;
+      right: 0.4rem;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #4a5568;
+    }
+
+    .carousel-item .param-dot.public {
+      background: #8fcb9b;
+      box-shadow: 0 0 8px rgba(143, 203, 155, 0.3);
+    }
+
+    /* ---------- HOVER PREVIEW ---------- */
+    .hover-preview {
+      position: fixed;
+      pointer-events: none;
+      z-index: 100;
+      width: 240px;
+      border-radius: 14px;
+      overflow: hidden;
+      background: rgba(10, 12, 16, 0.95);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      display: none;
+    }
+
+    .hover-preview.visible {
+      opacity: 1;
+      display: block;
+    }
+
+    .hover-preview img {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      display: block;
+    }
+
+    .hover-preview .hover-info {
+      padding: 0.6rem 0.8rem;
+    }
+
+    .hover-preview .hover-info .h-name {
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: #fff;
+    }
+
+    .hover-preview .hover-info .h-category {
+      font-size: 0.6rem;
+      color: #9aa4b8;
+      margin-top: 0.1rem;
+    }
+
+    .hover-preview .hover-info .h-meta {
+      font-size: 0.6rem;
+      color: #6b7a93;
+      margin-top: 0.2rem;
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .hover-preview .hover-info .h-controls {
+      font-size: 0.6rem;
+      color: #6b7a93;
+    }
+
+    /* ---------- RESPONSIVE ---------- */
+    @media (max-width: 768px) {
+      .app-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .header-controls {
+        flex-wrap: wrap;
+      }
+      .header-controls .search-box input {
+        width: 100%;
+      }
+      .header-controls .search-box input:focus {
+        width: 100%;
+      }
+      .carousel-item {
+        flex: 0 0 140px;
+      }
+      .preview-container {
+        min-height: 200px;
+      }
+      .preview-container .overlay .effect-name {
+        font-size: 1.1rem;
+      }
+      .preview-container .overlay {
+        padding: 1rem 1.2rem 0.8rem;
+      }
+      .hover-preview {
+        width: 180px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 0.8rem;
+      }
+      .carousel-item {
+        flex: 0 0 120px;
+      }
+      .carousel-track-wrapper::before,
+      .carousel-track-wrapper::after {
+        width: 30px;
+      }
+      .app-header .brand h1 {
+        font-size: 1.1rem;
+      }
+      .preview-container {
+        min-height: 160px;
+      }
+      .preview-container .overlay .effect-name {
+        font-size: 0.95rem;
+      }
+      .preview-container .overlay .effect-meta {
+        font-size: 0.6rem;
+        gap: 0.6rem;
+      }
+    }
+
+    ::-webkit-scrollbar {
+      width: 3px;
+      height: 3px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #2a3040;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="brand">
+      <i class="fas fa-cubes"></i>
+      <h1>KEFE<span>Carousel</span></h1>
+    </div>
+    <div class="header-controls">
+      <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input type="text" id="searchInput" placeholder="Search effects..." />
+      </div>
+      <select id="categorySelect">
+        <option value="all">All Categories</option>
+      </select>
+      <span class="count-badge" id="countBadge">52 effects</span>
+    </div>
+  </header>
+
+  <!-- PREVIEW SCREEN -->
+  <section class="preview-section">
+    <div class="preview-container" id="previewContainer">
+      <img id="previewImage" src="https://picsum.photos/seed/default/1200/675" alt="Preview" />
+      <div class="overlay" id="previewOverlay">
+        <div class="effect-name" id="previewName">Select an effect</div>
+        <div class="effect-category" id="previewCategory">—</div>
+        <div class="effect-meta">
+          <span id="previewControls"><i class="fas fa-sliders-h"></i> 0 controls</span>
+          <span class="param-status" id="previewParams"><i class="fas fa-eye-slash"></i> not exposed</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CAROUSEL -->
+  <section class="carousel-section">
+    <div class="carousel-header">
+      <h3><i class="fas fa-film" style="margin-right:0.4rem;"></i>Effects carousel</h3>
+      <div class="carousel-nav">
+        <button id="prevBtn" title="Previous"><i class="fas fa-chevron-left"></i></button>
+        <button id="nextBtn" title="Next"><i class="fas fa-chevron-right"></i></button>
+      </div>
+    </div>
+    <div class="carousel-track-wrapper">
+      <div class="carousel-track" id="carouselTrack">
+        <!-- populated by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- HOVER PREVIEW TOOLTIP -->
+  <div class="hover-preview" id="hoverPreview">
+    <img id="hoverImage" src="" alt="Effect preview" />
+    <div class="hover-info">
+      <div class="h-name" id="hoverName">Effect name</div>
+      <div class="h-category" id="hoverCategory">Category</div>
+      <div class="h-meta">
+        <span id="hoverControls"><i class="fas fa-sliders-h"></i> 0 controls</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  // KEFE EFFECT DATABASE (canonical, deduplicated)
+  // ============================================================
+  const KEFE_DB = {
+    schemaVersion: 1,
+    name: "KEFE Effect Database",
+    description: "Canonical metadata for KEFE's deduplicated visual-effect system. 52 retained effects across 8 categories.",
+    categories: [
+      {id:"motion", label:"Motion", effects:[
+        {id:"camera-shake", name:"Camera Shake", controls:["intensity","speed","frequency","x","y","rotation","decay","seed"]},
+        {id:"motion-blur", name:"Motion Blur", controls:["amount","direction","angle","threshold"]},
+        {id:"motion-trails", name:"Motion Trails", controls:["trailLength","fade","intensity","drift","shake","sourceDim","blendMode"]},
+        {id:"depth-of-field", name:"Depth of Field", controls:["focusPosition","blur","aperture","bladeCount","bladeShape","rotation","falloff","anamorphic"]},
+        {id:"radial-blur", name:"Radial Blur", controls:["amount","center","direction","falloff"]},
+        {id:"zoom-blur", name:"Zoom Blur", controls:["amount","center","direction","falloff"]}
+      ]},
+      {id:"light", label:"Light", effects:[
+        {id:"bloom", name:"Bloom", controls:["threshold","intensity","radius","diffusion","tint"]},
+        {id:"halation", name:"Halation", controls:["threshold","spread","intensity","hue","saturation","highlightBias"]},
+        {id:"star-glow", name:"Star Glow", controls:["threshold","length","falloff","angle","count","density","tint"]},
+        {id:"vignette", name:"Vignette", controls:["shape","size","softness","position","rotation","color","opacity","blendMode"]}
+      ]},
+      {id:"distortion", label:"Distortion", effects:[
+        {id:"glitch", name:"Glitch", controls:["intensity","frequency","blockSize","rgbSeparation","scanlines","noise","displacement","seed"]},
+        {id:"rgb-shift", name:"RGB Shift", controls:["amount","angle","redOffset","greenOffset","blueOffset","falloff"]},
+        {id:"ripple", name:"Ripple", controls:["amount","frequency","speed","center","falloff"]},
+        {id:"swirl", name:"Swirl", controls:["amount","radius","center","falloff"]},
+        {id:"pinch", name:"Pinch", controls:["amount","radius","center","falloff"]},
+        {id:"perspective", name:"Perspective", controls:["x","y","corners","depth","fov"]},
+        {id:"elastic-grid", name:"Elastic Grid", controls:["gridSize","amount","noise","frequency","speed"]},
+        {id:"displacement", name:"Displacement", controls:["texture","amount","scale","blur","curve","fitMode"]},
+        {id:"reeded-glass", name:"Reeded Glass", controls:["pattern","scale","refraction","dispersion","reflection","imperfections"]},
+        {id:"polar-distortion", name:"Polar Distortion", controls:["mode","amount","radius","center","rotation","stretch"]}
+      ]},
+      {id:"color", label:"Color", effects:[
+        {id:"color-grading", name:"Color Grading", controls:["shadows","midtones","highlights","contrast","saturation","temperature","tint","fade"]},
+        {id:"curves", name:"Curves", controls:["rgb","red","green","blue","hue","saturation","luma"]},
+        {id:"hue-saturation", name:"Hue/Saturation", controls:["hue","saturation","lightness","selectiveColor"]},
+        {id:"color-balance", name:"Color Balance", controls:["shadows","midtones","highlights","cyanRed","magentaGreen","yellowBlue"]},
+        {id:"gradient-map", name:"Gradient Map", controls:["gradientStops","position","repeat","blend","interpolation"]},
+        {id:"duotone", name:"Duotone", controls:["shadowColor","highlightColor","balance","contrast"]},
+        {id:"thermal", name:"Thermal", controls:["temperature","contrast","palette","threshold"]},
+        {id:"exposure", name:"Exposure", controls:["exposure","gamma","offset","highlightRecovery"]},
+        {id:"levels", name:"Levels", controls:["black","white","gamma","outputBlack","outputWhite"]},
+        {id:"black-white", name:"Black & White", controls:["red","orange","yellow","green","cyan","blue","purple","contrast","grain"]}
+      ]},
+      {id:"texture", label:"Texture", effects:[
+        {id:"film-grain", name:"Film Grain", controls:["stock","amount","size","chroma","shadows","midtones","highlights","movement","frameInterval"]},
+        {id:"noise", name:"Noise", controls:["amount","size","chroma","shadows","midtones","highlights","speed"]},
+        {id:"ink-bleed", name:"Ink Bleed", controls:["amount","spread","direction","edge","color"]},
+        {id:"paper-scan", name:"Paper Scan", controls:["texture","scale","opacity","brightness","contrast","distortion"]},
+        {id:"grunge", name:"Grunge", controls:["amount","scale","contrast","roughness","blend"]},
+        {id:"halftone", name:"Halftone", controls:["pattern","size","angle","density","shape","color"]},
+        {id:"dither", name:"Dither", controls:["algorithm","pattern","pixelSize","palette","threshold","colorMode"]},
+        {id:"emboss", name:"Emboss", controls:["depth","direction","light","softness","contrast"]}
+      ]},
+      {id:"retro", label:"Retro", effects:[
+        {id:"vhs", name:"VHS", controls:["tracking","noise","chromaticAberration","scanlines","distortion","colorBleed","jitter","timestamp"]},
+        {id:"crt", name:"CRT", controls:["curvature","scanlines","phosphor","bloom","rgbMask","flicker","vignette"]},
+        {id:"ntsc", name:"NTSC", controls:["chroma","bleed","noise","phase","scanlines","distortion"]},
+        {id:"led-screen", name:"LED Screen", controls:["pixelSize","brightness","spacing","shape","glow"]},
+        {id:"ascii", name:"ASCII", controls:["characterSet","font","size","density","contrast","color"]},
+        {id:"nokia-3310", name:"Nokia 3310", controls:["pixelSize","palette","contrast","dither"]},
+        {id:"risograph", name:"Risograph", controls:["inkColors","registration","grain","threshold","paper","opacity"]},
+        {id:"xerox", name:"Xerox", controls:["contrast","noise","threshold","edge","paper"]}
+      ]},
+      {id:"style", label:"Style", effects:[
+        {id:"vintage-poster", name:"Vintage Poster", controls:["palette","texture","halftone","contrast","paper","grain"]},
+        {id:"cyanotype", name:"Cyanotype", controls:["exposure","contrast","blueTone","paper","grain"]},
+        {id:"paper-cutout", name:"Paper Cutout", controls:["depth","edge","shadow","texture","paperColor"]},
+        {id:"cubify", name:"Cubify", controls:["blockSize","depth","rotation","lighting","color"]}
+      ]},
+      {id:"film", label:"Film", effects:[
+        {id:"classic-film", name:"Classic Film", controls:["stock","exposure","contrast","saturation","temperature","fade","grainAmount"]},
+        {id:"vintage-film", name:"Vintage Film", controls:["look","fade","contrast","colorShift","grain","dust","flicker","halation"]}
+      ]}
+    ],
+    mergedModes: {
+      "blur": "Gaussian Blur, Blur/Sharp and Circular Blur are represented through the blur/mode model rather than separate top-level effects",
+      "polar": "Polar to Rectangular and Rectangular to Polar are represented by Polar Distortion mode",
+      "color": "Monochrome, Contrast, RGB Gain and Color Matrix are represented by Black & White, Color Grading and Color Balance controls",
+      "transform": "Transform is a core transform operation rather than a standalone visual effect"
+    },
+    universal: ["enabled","intensity","animate","reset","randomize","savePreset","info"],
+    animationModes: ["manual","beat","bar","phrase","lyric","auto"]
+  };
+
+  // ============================================================
+  // Flatten effects from KEFE_DB into a single array
+  // ============================================================
+  function flattenEffects(db) {
+    const result = [];
+    db.categories.forEach(cat => {
+      cat.effects.forEach(eff => {
+        result.push({
+          id: eff.id,
+          name: eff.name,
+          category: cat.id,
+          categoryLabel: cat.label,
+          controls: eff.controls || [],
+          controlCount: eff.controls ? eff.controls.length : 0,
+          // For preview image, use the effect id as seed
+          imageSeed: eff.id
+        });
+      });
+    });
+    return result;
+  }
+
+  const effectsData = flattenEffects(KEFE_DB);
+
+  // ============================================================
+  // Helpers
+  // ============================================================
+  function getEffectImage(seed) {
+    return `https://picsum.photos/seed/${seed}/400/225`;
+  }
+
+  function getCategoryCounts() {
+    const map = {};
+    effectsData.forEach(e => {
+      map[e.categoryLabel] = (map[e.categoryLabel] || 0) + 1;
+    });
+    return map;
+  }
+
+  // ============================================================
+  // Populate dropdown
+  // ============================================================
+  const categorySelect = document.getElementById('categorySelect');
+  const counts = getCategoryCounts();
+  const categories = Object.keys(counts).sort();
+  categories.forEach(cat => {
+    const opt = document.createElement('option');
+    opt.value = cat;
+    opt.textContent = `${cat} (${counts[cat]})`;
+    categorySelect.appendChild(opt);
+  });
+
+  // ============================================================
+  // DOM refs
+  // ============================================================
+  const track = document.getElementById('carouselTrack');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const searchInput = document.getElementById('searchInput');
+  const countBadge = document.getElementById('countBadge');
+
+  const previewImage = document.getElementById('previewImage');
+  const previewName = document.getElementById('previewName');
+  const previewCategory = document.getElementById('previewCategory');
+  const previewControls = document.getElementById('previewControls');
+  const previewParams = document.getElementById('previewParams');
+
+  const hoverPreview = document.getElementById('hoverPreview');
+  const hoverImage = document.getElementById('hoverImage');
+  const hoverName = document.getElementById('hoverName');
+  const hoverCategory = document.getElementById('hoverCategory');
+  const hoverControls = document.getElementById('hoverControls');
+
+  // ============================================================
+  // State
+  // ============================================================
+  let currentCategory = 'all';
+  let searchQuery = '';
+  let currentIndex = 0;
+  let filteredEffects = [...effectsData];
+  let itemWidth = 180 + 12;
+
+  // ============================================================
+  // Calculate visible items
+  // ============================================================
+  function getVisibleItems() {
+    const wrapper = document.querySelector('.carousel-track-wrapper');
+    if (!wrapper) return 5;
+    const width = wrapper.offsetWidth;
+    if (width < 500) return 2;
+    if (width < 700) return 3;
+    if (width < 900) return 4;
+    return 5;
+  }
+
+  // ============================================================
+  // CONNECT TO MAIN TOOL - This is where the magic happens
+  // ============================================================
+  function applyEffectToMain(effect) {
+    // 🔗 CONNECT TO YOUR MAIN VISUALISER HERE
+    // This function is called when an effect is selected.
+    // It passes the full effect object with all controls.
+
+    console.log('🎬 Applying effect to main visualiser:', {
+      id: effect.id,
+      name: effect.name,
+      category: effect.category,
+      controls: effect.controls,
+      controlCount: effect.controlCount
+    });
+
+    // Example: Send to parent window (if embedded in an iframe)
+    // window.parent.postMessage({
+    //   type: 'KEFE_APPLY_EFFECT',
+    //   payload: {
+    //     effectId: effect.id,
+    //     effectName: effect.name,
+    //     category: effect.category,
+    //     controls: effect.controls,
+    //     universalParams: KEFE_DB.universal,
+    //     animationModes: KEFE_DB.animationModes
+    //   }
+    // }, '*');
+
+    // Example: Call a global function on your main page
+    // if (typeof window.KEFE_Main !== 'undefined' && window.KEFE_Main.applyEffect) {
+    //   window.KEFE_Main.applyEffect(effect);
+    // }
+
+    // Example: Store the selected effect for your main tool to read
+    window.__KEFE_SELECTED_EFFECT = {
+      id: effect.id,
+      name: effect.name,
+      category: effect.category,
+      categoryLabel: effect.categoryLabel,
+      controls: effect.controls,
+      universalParams: KEFE_DB.universal,
+      animationModes: KEFE_DB.animationModes
+    };
+
+    // 🔔 Dispatch a custom event that your main tool can listen for
+    const event = new CustomEvent('kefe-effect-selected', {
+      detail: {
+        effect: window.__KEFE_SELECTED_EFFECT,
+        timestamp: Date.now()
+      }
+    });
+    document.dispatchEvent(event);
+  }
+
+  // ============================================================
+  // Render carousel
+  // ============================================================
+  function renderCarousel() {
+    const q = searchQuery.toLowerCase().trim();
+    let filtered = effectsData;
+
+    if (currentCategory !== 'all') {
+      filtered = filtered.filter(e => e.categoryLabel === currentCategory);
+    }
+
+    if (q) {
+      filtered = filtered.filter(e =>
+        e.name.toLowerCase().includes(q) ||
+        e.categoryLabel.toLowerCase().includes(q)
+      );
+    }
+
+    filteredEffects = filtered;
+    countBadge.textContent = `${filtered.length} effect${filtered.length !== 1 ? 's' : ''}`;
+
+    if (filtered.length === 0) {
+      track.innerHTML = `<div style="padding:1rem;color:#6b7a93;text-align:center;width:100%;">No effects match your filter</div>`;
+      previewName.textContent = 'No effects found';
+      previewCategory.textContent = '—';
+      previewControls.textContent = '—';
+      previewParams.innerHTML = '<i class="fas fa-eye-slash"></i> —';
+      previewParams.className = 'param-status';
+      return;
+    }
+
+    if (currentIndex >= filtered.length) currentIndex = filtered.length - 1;
+    if (currentIndex < 0) currentIndex = 0;
+
+    track.innerHTML = filtered.map((e, idx) => {
+      const isActive = idx === currentIndex;
+      const imgUrl = getEffectImage(e.imageSeed || e.id);
+      const controlDisplay = e.controlCount > 0 ? `${e.controlCount} controls` : 'no controls';
+      return `
+        <div class="carousel-item ${isActive ? 'active' : ''}" data-index="${idx}">
+          <div class="thumb">
+            <img src="${imgUrl}" alt="${e.name}" loading="lazy" />
+          </div>
+          <div class="item-name">${e.name}</div>
+          <span class="item-category">${e.categoryLabel}</span>
+          <span class="param-dot"></span>
+        </div>
+      `;
+    }).join('');
+
+    // Attach click and hover events to items
+    track.querySelectorAll('.carousel-item').forEach(item => {
+      const idx = parseInt(item.dataset.index);
+
+      item.addEventListener('click', function() {
+        if (idx !== currentIndex) {
+          currentIndex = idx;
+          renderCarousel();
+          updatePreview();
+          scrollToIndex();
+          // 🔗 Apply effect to main tool when clicked
+          applyEffectToMain(filteredEffects[currentIndex]);
+        }
+      });
+
+      // Hover preview
+      item.addEventListener('mouseenter', function(e) {
+        const eff = filteredEffects[idx];
+        if (!eff) return;
+        const imgUrl = getEffectImage(eff.imageSeed || eff.id);
+        hoverImage.src = imgUrl;
+        hoverName.textContent = eff.name;
+        hoverCategory.textContent = eff.categoryLabel;
+        hoverControls.textContent = `${eff.controlCount} control${eff.controlCount !== 1 ? 's' : ''}`;
+        hoverPreview.classList.add('visible');
+        positionHoverPreview(e);
+      });
+
+      item.addEventListener('mousemove', function(e) {
+        positionHoverPreview(e);
+      });
+
+      item.addEventListener('mouseleave', function() {
+        hoverPreview.classList.remove('visible');
+      });
+    });
+
+    updatePreview();
+    scrollToIndex();
+  }
+
+  // ============================================================
+  // Position hover tooltip
+  // ============================================================
+  function positionHoverPreview(e) {
+    const x = e.clientX + 20;
+    const y = e.clientY - 40;
+    const maxX = window.innerWidth - 260;
+    const maxY = window.innerHeight - 200;
+    hoverPreview.style.left = Math.min(x, maxX) + 'px';
+    hoverPreview.style.top = Math.min(y, maxY) + 'px';
+  }
+
+  // ============================================================
+  // Scroll to current index
+  // ============================================================
+  function scrollToIndex() {
+    if (filteredEffects.length === 0) return;
+    const items = track.querySelectorAll('.carousel-item');
+    if (items.length === 0) return;
+    const totalItems = items.length;
+    const visible = getVisibleItems();
+    let offset = Math.max(0, currentIndex - Math.floor(visible / 2));
+    offset = Math.min(offset, Math.max(0, totalItems - visible));
+    const translateX = -offset * itemWidth;
+    track.style.transform = `translateX(${translateX}px)`;
+  }
+
+  // ============================================================
+  // Update preview
+  // ============================================================
+  function updatePreview() {
+    if (filteredEffects.length === 0 || currentIndex >= filteredEffects.length) return;
+    const e = filteredEffects[currentIndex];
+    previewImage.src = getEffectImage(e.imageSeed || e.id);
+    previewName.textContent = e.name;
+    previewCategory.textContent = e.categoryLabel;
+    previewControls.textContent = `${e.controlCount} control${e.controlCount !== 1 ? 's' : ''}`;
+    previewParams.innerHTML = `<i class="fas fa-info-circle"></i> ${e.controls.length > 0 ? e.controls.join(', ') : 'no parameters'}`;
+    previewParams.className = 'param-status';
+  }
+
+  // ============================================================
+  // Navigation
+  // ============================================================
+  function goToPrev() {
+    if (filteredEffects.length === 0) return;
+    currentIndex = (currentIndex - 1 + filteredEffects.length) % filteredEffects.length;
+    renderCarousel();
+    applyEffectToMain(filteredEffects[currentIndex]);
+  }
+
+  function goToNext() {
+    if (filteredEffects.length === 0) return;
+    currentIndex = (currentIndex + 1) % filteredEffects.length;
+    renderCarousel();
+    applyEffectToMain(filteredEffects[currentIndex]);
+  }
+
+  prevBtn.addEventListener('click', goToPrev);
+  nextBtn.addEventListener('click', goToNext);
+
+  // Keyboard
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') goToPrev();
+    if (e.key === 'ArrowRight') goToNext();
+  });
+
+  // Resize
+  let resizeTimeout;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+      itemWidth = 180 + 12;
+      scrollToIndex();
+    }, 200);
+  });
+
+  // ============================================================
+  // Filters
+  // ============================================================
+  function setCategory(cat) {
+    currentCategory = cat;
+    categorySelect.value = cat;
+    currentIndex = 0;
+    renderCarousel();
+    if (filteredEffects.length > 0) {
+      applyEffectToMain(filteredEffects[0]);
+    }
+  }
+
+  categorySelect.addEventListener('change', function() {
+    setCategory(this.value);
+  });
+
+  searchInput.addEventListener('input', function() {
+    searchQuery = this.value;
+    currentIndex = 0;
+    renderCarousel();
+    if (filteredEffects.length > 0) {
+      applyEffectToMain(filteredEffects[0]);
+    }
+  });
+
+  // ============================================================
+  // Initial render
+  // ============================================================
+  renderCarousel();
+  // Auto-select first effect on load
+  if (filteredEffects.length > 0) {
+    applyEffectToMain(filteredEffects[0]);
+  }
+
+  // ============================================================
+  // Expose for main tool integration
+  // ============================================================
+  window.KEFE = {
+    // The full database
+    db: KEFE_DB,
+    // All flattened effects
+    effects: effectsData,
+    // Currently selected effect
+    getSelected: () => filteredEffects[currentIndex] || null,
+    // Apply any effect by name or id
+    selectEffect: function(nameOrId) {
+      const idx = filteredEffects.findIndex(e =>
+        e.name === nameOrId || e.id === nameOrId
+      );
+      if (idx !== -1) {
+        currentIndex = idx;
+        renderCarousel();
+        applyEffectToMain(filteredEffects[currentIndex]);
+        return true;
+      }
+      return false;
+    },
+    // Get effect by id
+    getEffect: function(id) {
+      return effectsData.find(e => e.id === id) || null;
+    },
+    // Get effects by category
+    getEffectsByCategory: function(categoryId) {
+      return effectsData.filter(e => e.category === categoryId);
+    },
+    // Universal controls
+    universalControls: KEFE_DB.universal,
+    // Animation modes
+    animationModes: KEFE_DB.animationModes
+  };
+
+  // Dispatch initial selection event
+  if (filteredEffects.length > 0) {
+    const event = new CustomEvent('kefe-effect-selected', {
+      detail: {
+        effect: window.__KEFE_SELECTED_EFFECT,
+        timestamp: Date.now(),
+        isInitial: true
+      }
+    });
+    document.dispatchEvent(event);
+  }
+
+  console.log('🔗 KEFE Carousel ready. Connect your main tool via:');
+  console.log('  - window.KEFE.selectEffect(name)');
+  console.log('  - window.__KEFE_SELECTED_EFFECT');
+  console.log('  - document.addEventListener("kefe-effect-selected", ...)');
+  console.log('  - window.parent.postMessage({ type: "KEFE_APPLY_EFFECT", payload: ... })');
+</script>
+
+</body>
+</html>

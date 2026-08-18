@@ -46,7 +46,7 @@ kefevideovisualiser/
 │   ├── story-fade.js
 │   ├── EFFECT-APP-IMPLEMENTATION.md
 │   └── README.md
-├── visual-fx/
+├── effects/
 │   ├── effect-app-fx.js
 │   ├── catalog.json
 │   └── presets.json
