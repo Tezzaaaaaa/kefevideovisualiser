@@ -1,0 +1,30 @@
+{
+  "name": "KEFE Visual FX Catalog",
+  "version": "2026.08.18",
+  "source": "Effect.app public catalog",
+  "scope": "Reference catalogue for visual effects KEFE may implement natively.",
+  "note": "This is a reference/data source, not proprietary Effect.app renderer code or private defaults.",
+  "categories": {
+    "Blur": ["Camera shake","Depth of field","Circular blur","Motion blur","Radial blur","Zoom blur","Blur/sharp","Gaussian blur"],
+    "Color": ["Color grading","Hue curves","Gradient map","Curves","Thermal","Dither","Exposure","Monochrome","Hue/saturation","Color balance","Color matrix","Levels","RGB Gain","Duotone","Color temperature","Contrast"],
+    "Distort": ["Reeded glass","Elastic grid","Cubify","Glitch","Ripple","Transform","Polar to rectangular","Pinch","Perspective","Swirl","Rectangular to polar"],
+    "Effects": ["Frame drop","Risograph","Motion trails","Star glow","VHS","ASCII","Halftone screen","Modulation","Threshold","Bloom","CRT screen","NTSC","RGB Shift","LED screen","Stripe","Vignette","Emboss"],
+    "Generate": ["Text","Blob Tracker","Ink bleed","Paper scan","Noise"],
+    "Custom": ["Displacement","Texture Blur","Layer Mix"],
+    "Film": ["Classic Film","Halation","Film Grain","Black & White","Vintage Film"]
+  },
+  "documented_controls": {
+    "Risograph": ["paper color","grain scale","grain opacity","grain softness","grain contrast","ink colors","ink enable switches","per-channel black/white mixers","per-channel registration shifts"],
+    "Motion trails": ["fade","direction","shake","intensity","blend mode"],
+    "Modulation": ["frequency","amplitude","phase"],
+    "Threshold": ["threshold level","edge mode","blend mode"],
+    "Texture Displacement": ["texture input","fit mode","texture scale","map curve","map blur","displacement amount"],
+    "Ink bleed": ["spread","decay","intensity","direction","noise size","grain","grain size","custom mask","mask contrast/curve","mask strength","show mask","ink reset"],
+    "Duotone": ["shadow color","highlight color"],
+    "Transform": ["scale","rotation","mirror"],
+    "Text": ["text content","position","rotation","font","size","alignment","fill","stroke","opacity","blend mode","letter spacing","line height"]
+  },
+  "fit_modes": ["Fill","Stretch","Tile"],
+  "keyframe_interpolation": ["linear","sine","ease in-out","cubic","elastic bounce"],
+  "export": ["MP4","WebM","PNG sequence","24 FPS","30 FPS","60 FPS","up to 4K on paid plans"]
+}
