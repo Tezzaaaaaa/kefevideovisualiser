@@ -35,38 +35,27 @@ KEFE Visualiser combines audio, synced lyrics and an optional background into an
 ```text
 kefevideovisualiser/
 ├── .github/workflows/deploy-kefe.yml
-├── effects/
-│   ├── core.js
-│   ├── registry.js
-│   ├── brat.js
-│   ├── eternal-sunshine.js
-│   ├── aurora.js
-│   ├── typewriter.js
-│   ├── instagram-lyrics.js
-│   ├── story-fade.js
-│   ├── effect-app-fx.js
-│   ├── effect-database.json
-│   ├── effect-app-public-catalog.json
-│   ├── presets.json
-│   ├── EFFECT-APP-IMPLEMENTATION.md
-│   └── README.md
-├── app.js
-├── index.html
-├── styles.css
-├── typography.css
-├── typography.js
-├── HomemadeApple-Regular.woff2
-├── kefe-logo.svg
-├── favicon.svg
-├── preview/brat.html
-├── CHANGELOG.md
-├── CONTRIBUTING.md
-├── DESIGN-SYSTEM-CHECKLIST.md
-├── EFFECT_TYPOGRAPHY.md
-└── README.md
+├── effects/                         # Production lyric renderers and effect data
+├── fonts/                           # Bundled production fonts and licences
+├── preview/                         # Standalone effect preview material
+├── app.js                            # Application orchestration
+├── index.html                        # Application entry point
+├── styles.css                        # UI styles
+├── typography.css                    # Typography declarations
+├── typography.js                     # Typography contracts/loading
+├── kefe-logo.svg                     # Product branding
+├── favicon.svg                       # Browser icon
+├── CHANGELOG.md                      # Release history
+├── CONTRIBUTING.md                   # Contribution guidance
+├── DESIGN-SYSTEM-CHECKLIST.md        # Product QA baseline
+├── EFFECT_TYPOGRAPHY.md              # Effect typography specification
+├── THIRD-PARTY-LICENSES.md            # Third-party licensing record
+└── README.md                          # Project overview
 ```
 
 Production lyric effects are independent modules where appropriate. The production effect registry is the single dispatch point for modular renderers, while shared timing, typography and drawing helpers live in `effects/core.js` and `typography.js`. The effect database, public catalog and preset library remain data-driven rather than being duplicated inside the application UI.
+
+Bundled production fonts live under `fonts/` and are loaded locally; they are not part of the application root.
 
 ## Effects
 
@@ -117,10 +106,10 @@ Use a current version of Chrome, Edge, Firefox or Safari with WebAssembly and ca
 
 ## Privacy
 
-Audio, backgrounds and project files remain in the browser during editing and export. Automatic lyric lookup sends song metadata to the configured lyrics service. External font or encoder files may be loaded from their configured hosts when local deployment assets are unavailable.
+Audio, backgrounds and project files remain in the browser during editing and export. Automatic lyric lookup sends song metadata to the configured lyrics service. Bundled fonts are loaded locally from the repository.
 
 ## Development
 
-Keep production logic in the root application files and `effects/`. Keep historical or experimental material separate from the production runtime and document it accurately.
+Keep production application logic in the root entry files and `effects/`. Keep bundled fonts in `fonts/`, preview material in `preview/`, and historical or experimental material outside the production runtime. Keep documentation limited to project-level guidance and specifications that are still actively maintained.
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for the basic change and testing process.

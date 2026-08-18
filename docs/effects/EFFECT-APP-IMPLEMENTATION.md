@@ -6,10 +6,10 @@ This document defines how the public Effect.app catalog is represented inside KE
 
 ## Data architecture
 
-- `effect-app-public-catalog.json` is the source-of-truth catalog for the publicly listed effect/preset names.
-- `effect-database.json` remains the existing KEFE carousel/application data and must not be used as a substitute for the public catalog.
-- `effect-app-fx.js` contains KEFE-native Canvas implementations of selected visual treatments.
-- `registry.js` contains the lyric-effect renderer registry.
+- `effects/effect-app-public-catalog.json` is the source-of-truth catalog for publicly listed effect/preset names.
+- `effects/effect-database.json` remains the existing KEFE carousel/application data and is not a substitute for the public catalog.
+- `effects/effect-app-fx.js` contains KEFE-native Canvas implementations of selected visual treatments.
+- `effects/registry.js` contains the lyric-effect renderer registry.
 
 ## Effect record
 
@@ -60,7 +60,7 @@ Animatable values should use per-parameter keyframe tracks. Supported public int
 
 ## Current KEFE-native FX
 
-`effect-app-fx.js` currently provides independent Canvas implementations for VHS, CRT, RGB Shift, Bloom, Motion Blur, Camera Shake, Glitch, Halftone, Vignette and Mixed Media. These are KEFE implementations inspired by the visual category, not copied Effect.app source.
+`effects/effect-app-fx.js` currently provides independent Canvas implementations for VHS, CRT, RGB Shift, Bloom, Motion Blur, Camera Shake, Glitch, Halftone, Vignette and Mixed Media. These are KEFE implementations inspired by the visual category, not copied Effect.app source.
 
 ## Integration rule
 
