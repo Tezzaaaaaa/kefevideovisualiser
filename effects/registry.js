@@ -125,12 +125,12 @@
     addRange(wrap, 'instagramFontSize', 'Base size', 56, 130, 1, 'px');
     addRange(wrap, 'instagramActiveScale', 'Active scale', 1.05, 1.45, 0.01, '×');
     addRange(wrap, 'instagramInactiveScale', 'Inactive scale', 0.58, 0.94, 0.01, '×');
-    addRange(wrap, 'instagramInactiveOpacity', 'Inactive opacity', 10, 65, 1, '%', 0.01);
+    addRange(wrap, 'instagramInactiveOpacity', 'Inactive opacity', 0.10, 0.65, 0.01, '%', 100);
     addRange(wrap, 'instagramLineSpacing', 'Line spacing', 0.60, 1.08, 0.01, '×');
-    addRange(wrap, 'instagramY', 'Vertical position', 30, 70, 1, '%', 0.01);
+    addRange(wrap, 'instagramY', 'Vertical position', 0.30, 0.70, 0.01, '%', 100);
     addRange(wrap, 'instagramTransition', 'Transition', 0.08, 0.42, 0.01, 's');
     addRange(wrap, 'instagramTracking', 'Letter spacing', -0.06, 0.02, 0.001, 'em');
-    addRange(wrap, 'instagramMaxWidth', 'Maximum width', 62, 94, 1, '%', 0.01);
+    addRange(wrap, 'instagramMaxWidth', 'Maximum width', 0.62, 0.94, 0.01, '%', 100);
 
     const colourRow = document.createElement('div');
     colourRow.className = 'control-row';
