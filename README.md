@@ -101,3 +101,39 @@ The canonical database currently represents the full public catalogue as **64 ef
 4. Choose an effect and output layout.
 5. Preview the result.
 6. Review the export check and export the MP4.
+
+## Run locally
+
+Keep the repository files together and serve the directory with a static web server:
+
+```bash
+python3 -m http.server 8000
+```
+
+Then open `http://localhost:8000`.
+
+Opening `index.html` directly is not recommended because browsers restrict some module and media operations on `file://` pages.
+
+## Deployment
+
+The repository deploys through the GitHub Pages workflow at `.github/workflows/deploy-kefe.yml`.
+
+## Export
+
+Export uses fixed timeline timestamps and short encoded segments. Rendering speed can affect how long an export takes, but it does not change the intended playback speed of the finished video.
+
+Long 1080p exports remain demanding on mobile devices. For faster processing, use the 720p or 480p preset.
+
+## Browser support
+
+Use a current version of Chrome, Edge, Firefox or Safari with WebAssembly and canvas image encoding enabled.
+
+## Privacy
+
+Audio, backgrounds and project files remain in the browser during editing and export. Automatic lyric lookup sends song metadata to the configured lyrics service. External font or encoder files may be loaded from their configured hosts when local deployment assets are unavailable.
+
+## Development
+
+Keep production logic in the root application files and `effects/`. Keep historical or experimental material separate from the production runtime and document it accurately.
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for the basic change and testing process.
