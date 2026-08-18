@@ -70,7 +70,7 @@
     }
   }
 
-  function addRange(container, key, label, min, max, step, suffix = '') {
+  function addRange(container, key, label, min, max, step, suffix = '', displayScale = 1) {
     const row = document.createElement('div');
     row.className = 'control-row';
     const labelEl = document.createElement('label');
@@ -88,8 +88,9 @@
     input.value = String(window.state.style[key]);
 
     const update = () => {
-      const value = Number(input.value);
-      valueEl.textContent = `${value}${suffix}`;
+      const value = Number(input.value) * displayScale;
+      const rounded = Math.abs(value) >= 10 ? Math.round(value) : Math.round(value * 100) / 100;
+      valueEl.textContent = `${rounded}${suffix}`;
     };
     input.addEventListener('input', () => {
       if (window.isExporting) return;
@@ -116,9 +117,6 @@
     const existing = document.getElementById('instagramLyricControls');
     if (existing) existing.remove();
 
-    // app.js supplies a generic Size row for all effects. Instagram Lyrics
-    // owns its sizing model, so remove that duplicate before adding its
-    // effect-specific controls. Title-card controls remain untouched.
     removeGenericEffectSizeControl(container);
 
     const wrap = document.createElement('div');
@@ -127,12 +125,12 @@
     addRange(wrap, 'instagramFontSize', 'Base size', 56, 130, 1, 'px');
     addRange(wrap, 'instagramActiveScale', 'Active scale', 1.05, 1.45, 0.01, '×');
     addRange(wrap, 'instagramInactiveScale', 'Inactive scale', 0.58, 0.94, 0.01, '×');
-    addRange(wrap, 'instagramInactiveOpacity', 'Inactive opacity', 0.10, 0.65, 0.01, '');
+    addRange(wrap, 'instagramInactiveOpacity', 'Inactive opacity', 10, 65, 1, '%', 0.01);
     addRange(wrap, 'instagramLineSpacing', 'Line spacing', 0.60, 1.08, 0.01, '×');
-    addRange(wrap, 'instagramY', 'Vertical position', 0.30, 0.70, 0.01, '');
+    addRange(wrap, 'instagramY', 'Vertical position', 30, 70, 1, '%', 0.01);
     addRange(wrap, 'instagramTransition', 'Transition', 0.08, 0.42, 0.01, 's');
     addRange(wrap, 'instagramTracking', 'Letter spacing', -0.06, 0.02, 0.001, 'em');
-    addRange(wrap, 'instagramMaxWidth', 'Maximum width', 0.62, 0.94, 0.01, '');
+    addRange(wrap, 'instagramMaxWidth', 'Maximum width', 62, 94, 1, '%', 0.01);
 
     const colourRow = document.createElement('div');
     colourRow.className = 'control-row';
