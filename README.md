@@ -18,7 +18,7 @@ KEFE Visualiser combines audio, synced lyrics and an optional background into an
 
 - LRC and enhanced LRC lyric timing
 - Automatic synced-lyrics lookup
-- Apple, Brat, Eternal, Aurora, Pulse, Stroke and Fade Up effects
+- Apple, Brat, Eternal, Aurora, Typewriter, Stroke and Fade Up effects
 - Song title, artist and album title cards
 - Embedded album-artwork extraction when available
 - Image, video or solid-colour backgrounds
@@ -34,35 +34,41 @@ KEFE Visualiser combines audio, synced lyrics and an optional background into an
 ```text
 kefevideovisualiser/
 ├── .github/workflows/deploy-kefe.yml
-├── archive/
-│   └── deepseek/
-│       ├── modules/
-│       └── segments/          # exactly 25 preserved DeepSeek segments
 ├── effects/
-│   ├── core.js                # shared effect helpers
-│   ├── registry.js            # production effect dispatcher
+│   ├── core.js
+│   ├── registry.js
 │   ├── apple.js
 │   ├── brat.js
 │   ├── eternal-sunshine.js
 │   ├── aurora.js
-│   ├── pulse.js
-│   ├── starfield.js
+│   ├── typewriter.js
 │   ├── stroke.js
-│   └── story-fade.js
-├── app.js                     # application state, media, UI and export orchestration
-├── fast-export.js             # fast/native export support
-├── index.html                 # application shell and script loading order
-├── styles.css                 # interface and responsive layout
+│   ├── story-fade.js
+│   ├── effect-app-fx.js
+│   ├── effect-database.json
+│   ├── effect-app-public-catalog.json
+│   ├── presets.json
+│   ├── EFFECT-APP-IMPLEMENTATION.md
+│   └── README.md
+├── app.js
+├── index.html
+├── styles.css
+├── typography.css
+├── typography.js
 ├── HomemadeApple-Regular.woff2
 ├── kefe-logo.svg
 ├── favicon.svg
+├── preview/brat.html
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
+├── DESIGN-SYSTEM-CHECKLIST.md
 ├── EFFECT_TYPOGRAPHY.md
 └── README.md
 ```
 
-Production effects are independent modules. The DeepSeek material is archival and is not loaded by the live application. Shared effect helpers live in `effects/core.js`, while `effects/registry.js` provides the single production dispatch point.
+Production effects are independent modules. The production effect registry is the single dispatch point for modular renderers, while shared helpers live in `effects/core.js`. The effect database, public catalog and presets remain data-driven rather than being duplicated inside the application UI.
+
+The repository does not currently contain the previously described `archive/deepseek/` 25-segment directory. The README therefore does not claim that those segments are present. If the 25 DeepSeek segments are to be preserved, they should be added explicitly under a separate archive directory rather than implied by documentation.
 
 ## Use
 
@@ -87,7 +93,7 @@ Opening `index.html` directly is not recommended because browsers restrict some 
 
 ## Deployment
 
-The repository currently deploys through the GitHub Pages workflow at `.github/workflows/deploy-kefe.yml`. The workflow validates the production files, packages the `effects/` directory and browser FFmpeg assets, and publishes the resulting site.
+The repository deploys through the GitHub Pages workflow at `.github/workflows/deploy-kefe.yml`.
 
 ## Export
 
@@ -105,6 +111,6 @@ Audio, backgrounds and project files remain in the browser during editing and ex
 
 ## Development
 
-The production site is intentionally small. Keep production logic in the root application files and `effects/`; keep historical DeepSeek material under `archive/deepseek/` rather than the repository root.
+Keep production logic in the root application files and `effects/`. Keep historical or experimental material separate from the production runtime and document it accurately.
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for the basic change and testing process.
