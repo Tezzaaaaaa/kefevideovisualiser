@@ -44,17 +44,18 @@ kefevideovisualiser/
 │   ├── typewriter.js
 │   ├── instagram-lyrics.js
 │   ├── story-fade.js
-│   ├── visual-fx/effect-app-fx.js
-│   ├── visual-fx/catalog.json
-│   ├── visual-fx/visual-fx/presets.json
 │   ├── EFFECT-APP-IMPLEMENTATION.md
 │   └── README.md
+├── visual-fx/
+│   ├── effect-app-fx.js
+│   ├── catalog.json
+│   └── presets.json
 ├── app.js
 ├── index.html
 ├── styles.css
 ├── typography.css
 ├── typography.js
-├── HomemadeApple-Regular.woff2
+├── fonts/homemade-apple/HomemadeApple-Regular.woff2
 ├── kefe-logo.svg
 ├── favicon.svg
 ├── preview/brat.html
