@@ -54,7 +54,8 @@
     "paper-cutout":["Flat","Layered","Handmade","Collage","Shadow","Editorial","Children's Book"],
     "cubify":["Pixel","3D Blocks","Low Poly","Mosaic","Crystal","Digital","Game"],
     "classic-film":["Kodak Gold 200","Kodak Portra","Kodak Ektar","Fuji","Warm Film","Cool Film","Natural","Cinematic","Soft Film","Editorial"],
-    "vintage-film":["70s","80s","Faded","Polaroid","Super 8","16mm","8mm","Old Print","Sepia","Vintage Print","Classic Home Movie"]
+    "vintage-film":["70s","80s","Faded","Polaroid","Super 8","16mm","8mm","Old Print","Sepia","Vintage Print","Classic Home Movie"],
+    "instagram":["Story Billboard","Story Bold","Story Compact","Story Soft"]
   },
   "masterPresets":[
     "Wet Paper","Grunge Dither","Mixed Media","Teleshopping","Fallen Angels","Thin Paper Print","Motion Freeze","1D","Light Streaks","Sepia","Icy Tones","Broken Glass","Red Lights","Luma Pulse","Motion Blur Shake","Riso Print","Ghosts","Grainy Riso","Nokia 3310","Kodak Gold 200","Tonal Compression","Thermal Camera","Angelic","Radiant","Broken Halftone","Screen DOF","Face Spin","Bronze Vessel","Interlacing","Strobe","Pinkish Off-White","Crumpled Paper","Folded Paper","Tracing Paper","TV","Marathon","CUTE FUNGUS","OLD PAINTING","High-tech Low-Life","Modulation Dither","Cyanotype","Vintage Poster","Type Distress I","Type Distress II","Vintage Print","Y2K Blue","Soft Editorial","Soft Bleed Cracks","MSX ASCII","Print Stamp","Xerox","Emboss Dirt","RGB Hatch","Digital Gobelen","ORB","Grunge","Static Grain"
