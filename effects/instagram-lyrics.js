@@ -67,9 +67,8 @@
     const nextReady = next && time >= next.time - transition;
     const handoff = nextReady ? smooth((time - (next.time - transition)) / transition) : 0;
 
-    // The reference uses a compact four-line stack with one dominant line.
+    // Four-line stack with one dominant active line, matching the reference hierarchy.
     const slots = [activeIndex - 2, activeIndex - 1, activeIndex, activeIndex + 1];
-    const unit = Math.min(w, h);
     const lineHeight = baseSize * spacing;
     const centreY = h * yPosition;
 
@@ -102,22 +101,9 @@
       if (isActive) scale = 1 + .012 * transitionIn;
       if (isNext && nextReady) scale = inactiveScale + (activeScale - inactiveScale) * handoff;
 
-      // Keep the stack moving as the active line hands off to the next lyric.
       const shift = nextReady ? handoff * lineHeight : 0;
-      const y = targetY - shift;
-
-      drawLine(ctx, text, w / 2, y, size, alpha, scale, colour, family, weight, tracking);
+      drawLine(ctx, text, w / 2, targetY - shift, size, alpha, scale, colour, family, weight, tracking);
     });
-
-    // Soft edge fade prevents distant lines from competing with the active lyric.
-    const fade = ctx.createLinearGradient(0, centreY - lineHeight * 2.3, 0, centreY + lineHeight * 2.3);
-    fade.addColorStop(0, 'rgba(0,0,0,.30)');
-    fade.addColorStop(.16, 'rgba(0,0,0,0)');
-    fade.addColorStop(.84, 'rgba(0,0,0,0)');
-    fade.addColorStop(1, 'rgba(0,0,0,.30)');
-    ctx.globalCompositeOperation = 'destination-in';
-    ctx.fillStyle = fade;
-    ctx.fillRect(0, centreY - lineHeight * 2.6, w, lineHeight * 5.2);
 
     ctx.restore();
   };
