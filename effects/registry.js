@@ -22,10 +22,10 @@ window.renderLyricsEffect=function(ctx,w,h,style,lines,time){
 const labels={apple:'Apple Music — smooth focus line with continuous lyric movement',brat:'Brat — abrupt word-by-word switching',eternal:'Eternal Sunshine — fast per-letter handwritten ink reveal',aurora:'Aurora — atmospheric curtains, colour flow and luminous depth',typewriter:'Typewriter — precise character-by-character reveal with a restrained cursor',instagram:'Instagram Lyrics — bold stacked Story lyrics with an oversized active line',fadeup:'Fade Up — kinetic word-by-word rise, pop and settle'};
 if(typeof qsa==='function')qsa('[data-effect]').forEach(button=>button.addEventListener('click',()=>{const label=document.getElementById('effectLabel');if(label&&labels[button.dataset.effect])label.textContent=labels[button.dataset.effect];}));
 
-function instagramControl(key,label,min,max,step,unit,transform=(v)=>v){
+function instagramControl(key,label,min,max,step,unit){
   const row=document.createElement('div');row.className='control-row';
   const l=document.createElement('label');l.textContent=label;const value=document.createElement('span');value.style.marginLeft='6px';l.appendChild(value);row.appendChild(l);
-  const input=document.createElement('input');input.type='range';input.min=min;input.max=max;input.step=step;input.value=transform(window.state.style[key]);
+  const input=document.createElement('input');input.type='range';input.min=min;input.max=max;input.step=step;input.value=window.state.style[key];
   const display=()=>{const v=Number(input.value);value.textContent=`${v}${unit||''}`;};display();
   input.addEventListener('input',()=>{if(window.isExporting)return;window.state.style[key]=Number(input.value);display();window.redrawCurrentPreviewFrame?.();});
   row.appendChild(input);return row;
@@ -46,7 +46,7 @@ function renderInstagramControls(){
   container.appendChild(wrap);
 }
 
-const instagramButton=document.querySelector('[data-effect="stroke"]');
+const instagramButton=document.querySelector('[data-effect="instagram"]')||document.querySelector('[data-effect="stroke"]');
 if(instagramButton){
   instagramButton.dataset.effect='instagram';
   instagramButton.textContent='Instagram Lyrics';
