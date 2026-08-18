@@ -29,6 +29,8 @@ KEFE Visualiser combines audio, synced lyrics and an optional background into an
 - Lyric timing validation before export
 - Portable `.kefe` project settings
 - Open Sans interface with effect-specific typography contracts
+- Effect.app-inspired public effect catalogue and preset library
+- Canonical effect database loaded at runtime for future native renderer integration
 
 ## Project structure
 
@@ -37,6 +39,11 @@ kefevideovisualiser/
 ├── .github/workflows/deploy-kefe.yml
 ├── effects/
 │   ├── core.js
+│   ├── database.js
+│   ├── effect-database.json
+│   ├── effect-app-public-catalog.json
+│   ├── presets.json
+│   ├── effect-app-fx.js
 │   ├── registry.js
 │   ├── brat.js
 │   ├── eternal-sunshine.js
@@ -46,10 +53,6 @@ kefevideovisualiser/
 │   ├── story-fade.js
 │   ├── EFFECT-APP-IMPLEMENTATION.md
 │   └── README.md
-├── effects/
-│   ├── effect-app-fx.js
-│   ├── catalog.json
-│   └── presets.json
 ├── app.js
 ├── index.html
 ├── styles.css
@@ -66,7 +69,13 @@ kefevideovisualiser/
 └── README.md
 ```
 
-Production lyric effects are independent modules where appropriate. The production effect registry is the single dispatch point for modular renderers, while shared timing, typography and drawing helpers live in `effects/core.js` and `typography.js`. The effect database, public catalog and preset library remain data-driven rather than being duplicated inside the application UI.
+The effect system has three distinct layers:
+
+1. **Catalogue data** — `effect-app-public-catalog.json` records the public Effect.app-inspired names without copying proprietary renderer code.
+2. **Canonical database** — `effect-database.json` gives every catalogue effect a stable ID, category, implementation status and preset family. `database.js` validates and exposes it at runtime.
+3. **Renderers** — KEFE-native implementations live separately from the catalogue. Implemented effects are marked `implemented`; catalogue-only effects remain explicitly `catalogued` until their native renderer exists.
+
+The production lyric-effect registry remains the dispatch point for modular lyric renderers, while `effect-app-fx.js` handles the existing whole-frame Visual FX pipeline.
 
 ## Effects
 
@@ -79,6 +88,10 @@ Production lyric effects are independent modules where appropriate. The producti
 - **Fade Up** — kinetic word-by-word rise and settle.
 
 The old Stroke effect and its production file are removed. Star Wars is also no longer part of the production effect set.
+
+## Effect catalogue
+
+The canonical database currently represents the full public catalogue as **64 effect records** across Blur, Color, Distort, Effects, Generate, Custom and Film. Existing KEFE-native whole-frame implementations are identified separately from catalogue-only effects; no proprietary Effect.app defaults or renderer code are claimed.
 
 ## Use
 

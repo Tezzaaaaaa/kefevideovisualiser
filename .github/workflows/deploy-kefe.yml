@@ -50,6 +50,11 @@ jobs:
           test -f DESIGN-SYSTEM-CHECKLIST.md
           test -d effects
           test -f effects/core.js
+          test -f effects/database.js
+          test -f effects/effect-database.json
+          test -f effects/effect-app-public-catalog.json
+          test -f effects/presets.json
+          test -f effects/validate-database.mjs
           test -f effects/registry.js
           test -f effects/aurora.js
           test -f effects/eternal-sunshine.js
@@ -61,6 +66,7 @@ jobs:
           test -f fonts/homemade-apple/HomemadeApple-Regular.woff2
           test -f kefe-logo.svg
           test -f favicon.svg
+          node effects/validate-database.mjs
           grep -q 'data-effect="apple"' index.html
           grep -q 'data-effect="brat"' index.html
           grep -q 'data-effect="eternal"' index.html
@@ -73,6 +79,7 @@ jobs:
           ! grep -q 'data-effect="stroke"' index.html
           grep -q "'mixedmedia'" effects/effect-app-fx.js
           grep -q 'effects/core.js' index.html
+          grep -q 'effects/database.js' index.html
           grep -q 'effects/aurora.js' index.html
           grep -q 'effects/eternal-sunshine.js' index.html
           grep -q 'effects/typewriter.js' index.html
