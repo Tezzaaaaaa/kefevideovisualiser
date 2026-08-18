@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 1,
+  "name": "KEFE Visual FX Preset Library",
+  "description": "Preset metadata for the canonical KEFE visual-effects library. Effect-specific presets are reusable parameter recipes; master presets are multi-effect stacks."
+}
