@@ -11,7 +11,7 @@ window.kefeEffects.fadeup=function(ctx,w,h,style,lines,time){
  const base=Number(style.fontSize)||78;
  let size=u.fitContractText(ctx,'fadeup',words.map(x=>x.text).join(' '),base,w-margin*2);
  u.setContractFont(ctx,'fadeup',size);
- const gap=size*.12;
+ const gap=size*.09;
  const widths=words.map(word=>ctx.measureText(word.text).width);
  const total=widths.reduce((s,n)=>s+n,0)+gap*(words.length-1);
  const x0=(w-total)/2;
@@ -21,20 +21,20 @@ window.kefeEffects.fadeup=function(ctx,w,h,style,lines,time){
  for(let i=0;i<words.length;i++){
    const word=words[i], wp=u.wordProgress(word,time);
    const p=wp.raw;
-   const enter=u.smoother(p/.16);
-   const active=u.smoother((p-.10)/.22);
-   const exit=1-u.smoother((p-.78)/.22)*.35;
+   const enter=u.smoother(p/.18);
+   const active=u.smoother((p-.12)/.24);
+   const exit=1-u.smoother((p-.80)/.18)*.25;
    if(enter>0){
      const x=x0+widths.slice(0,i).reduce((s,n)=>s+n,0)+gap*i;
-     const lift=(1-enter)*size*.58;
-     const scale=1+.10*active;
+     const lift=(1-enter)*size*.48;
+     const scale=1+.065*active;
      ctx.save();
      ctx.translate(x+widths[i]/2,y+lift);
      ctx.scale(scale,scale);
      ctx.globalAlpha=Math.min(1,enter)*exit;
      ctx.fillStyle=style.textColor||'#FFFFFF';
      ctx.shadowColor=style.accentColor||'transparent';
-     ctx.shadowBlur=active*size*.16;
+     ctx.shadowBlur=active*size*.08;
      u.drawTrackedText(ctx,word.text,0,0,size*(c.tracking||0),'fillText');
      ctx.restore();
    }
