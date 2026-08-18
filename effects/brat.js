@@ -1,6 +1,6 @@
 /* KEFE — Brat lyric effect
  * Reference language: Charli XCX / Brat anti-design typography.
- * Deliberately abrupt word cuts, condensed Arial-derived type, loose/awkward
+ * Deliberately abrupt word cuts, condensed Archivo Narrow typography, loose/awkward
  * composition, low-resolution softness, and no Apple-style interpolation.
  */
 (() => {
@@ -10,7 +10,7 @@
   if (!U) throw new Error('KEFE Brat effect requires effects/core.js.');
 
   function setBratFont(ctx, size) {
-    ctx.font = `400 ${Math.max(30, size)}px "Arial Narrow","Helvetica Neue Condensed","Roboto Condensed",Arial,sans-serif`;
+    ctx.font = `700 ${Math.max(30, size)}px "Archivo Narrow", sans-serif`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
   }
@@ -70,17 +70,12 @@
   function drawWord(ctx, text, x, baseline, size, style, active) {
     setBratFont(ctx, size);
     const colour = style.bratTextColor || style.textColor || '#FFFFFF';
-
-    // Brat's softness is optical, not a glowing effect. Keep the cut itself hard
-    // and apply only a restrained low-resolution-style edge softness.
     ctx.save();
     ctx.fillStyle = colour;
     ctx.globalAlpha = 1;
     ctx.filter = 'blur(0.65px)';
     ctx.fillText(text, x, baseline);
     ctx.restore();
-
-    // The active word gets a tiny print-density lift, never a fade or scale.
     if (active) {
       ctx.save();
       ctx.fillStyle = colour;
@@ -94,24 +89,18 @@
   function render(ctx, w, h, style, lines, time) {
     const words = flattenWords(lines);
     if (!words.length) return;
-
     const rows = buildRows(ctx, words, w, h, style);
     const currentIndex = words.reduce((last, word, index) => time >= Number(word.time) ? index : last, -1);
     if (currentIndex < 0) return;
-
     const page = Math.floor(currentIndex / 13);
     const pageRows = rows.filter(row => row.page === page);
     if (!pageRows.length) return;
-
     const top = h * (Number(style.bratTopMargin) || 4.5) / 100;
     const rowPitch = (h - top - h * 0.05) / 5;
-    const activeWord = words[currentIndex];
-
     ctx.save();
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
     ctx.filter = 'none';
-
     for (let i = 0; i < pageRows.length; i++) {
       const row = pageRows[i];
       const baseline = top + rowPitch * i + rowPitch * 0.70;
@@ -119,13 +108,11 @@
       for (let wi = 0; wi < row.words.length; wi++) {
         const word = row.words[wi];
         if (word.globalIndex > currentIndex) break;
-        const active = word.globalIndex === currentIndex;
-        drawWord(ctx, word.text, x, baseline, row.size, style, active);
+        drawWord(ctx, word.text, x, baseline, row.size, style, word.globalIndex === currentIndex);
         x += row.widths[wi] + row.gap;
       }
     }
     ctx.restore();
   }
-
   window.kefeEffects.brat = render;
 })();
