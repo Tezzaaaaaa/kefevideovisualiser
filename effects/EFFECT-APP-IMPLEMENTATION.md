@@ -7,7 +7,7 @@ This document defines how the public Effect.app catalog is represented inside KE
 ## Data architecture
 
 - `effect-app-public-catalog.json` is the source-of-truth catalog for the publicly listed effect/preset names.
-- `effect-database.json` remains the existing KEFE carousel/application data and must not be used as a substitute for the public catalog.
+- `(removed — see visual-fx/catalog.json)` remains the existing KEFE carousel/application data and must not be used as a substitute for the public catalog.
 - `effect-app-fx.js` contains KEFE-native Canvas implementations of selected visual treatments.
 - `registry.js` contains the lyric-effect renderer registry.
 

@@ -13,6 +13,6 @@
 - Added metadata-driven title cards and embedded artwork handling.
 - Added mobile safe-area and modal refinements.
 - Added a self-hosted FFmpeg deployment package with CDN fallback.
-- Added the public Effect.app effect catalog and preset catalog under `effects/effect-app-public-catalog.json`.
+- Added the public Effect.app effect catalog and preset catalog under `visual-fx/catalog.json`.
 - Added Effect.app integration architecture documentation under `effects/EFFECT-APP-IMPLEMENTATION.md`.
 - Kept Effect.app renderer implementations independent and native to KEFE rather than copying proprietary source code.

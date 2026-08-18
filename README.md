@@ -44,10 +44,9 @@ kefevideovisualiser/
 │   ├── typewriter.js
 │   ├── instagram-lyrics.js
 │   ├── story-fade.js
-│   ├── effect-app-fx.js
-│   ├── effect-database.json
-│   ├── effect-app-public-catalog.json
-│   ├── presets.json
+│   ├── visual-fx/effect-app-fx.js
+│   ├── visual-fx/catalog.json
+│   ├── visual-fx/visual-fx/presets.json
 │   ├── EFFECT-APP-IMPLEMENTATION.md
 │   └── README.md
 ├── app.js
