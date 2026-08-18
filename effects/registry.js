@@ -102,6 +102,11 @@
     container.appendChild(row);
   }
 
+  function removeGenericEffectSizeControl(container) {
+    const rows = [...container.querySelectorAll(':scope > .control-row')];
+    if (rows.length) rows[rows.length - 1].remove();
+  }
+
   function renderInstagramControls() {
     if (!window.state?.style || window.state.style.effect !== 'instagram') return;
     const container = document.getElementById('effectControls');
@@ -110,6 +115,11 @@
 
     const existing = document.getElementById('instagramLyricControls');
     if (existing) existing.remove();
+
+    // app.js supplies a generic Size row for all effects. Instagram Lyrics
+    // owns its sizing model, so remove that duplicate before adding its
+    // effect-specific controls. Title-card controls remain untouched.
+    removeGenericEffectSizeControl(container);
 
     const wrap = document.createElement('div');
     wrap.id = 'instagramLyricControls';
