@@ -10,7 +10,7 @@ on:
       - typography.js
       - app.js
       - effects/**
-      - HomemadeApple-Regular.woff2
+      - fonts/homemade-apple/HomemadeApple-Regular.woff2
       - kefe-logo.svg
       - favicon.svg
       - DESIGN-SYSTEM-CHECKLIST.md
@@ -58,7 +58,7 @@ jobs:
           test -f effects/instagram-lyrics.js
           test -f effects/story-fade.js
           test -f visual-fx/effect-app-fx.js
-          test -f HomemadeApple-Regular.woff2
+          test -f fonts/homemade-apple/HomemadeApple-Regular.woff2
           test -f kefe-logo.svg
           test -f favicon.svg
           grep -q 'data-effect="apple"' index.html
@@ -81,7 +81,7 @@ jobs:
           grep -q 'effects/registry.js' index.html
           grep -q 'visual-fx/effect-app-fx.js' index.html
           ! grep -q 'effects/mixed-media.js' index.html
-          grep -q 'HomemadeApple-Regular.woff2' styles.css
+          grep -q 'fonts/homemade-apple/HomemadeApple-Regular.woff2' styles.css
           grep -q 'startOfflineExport' app.js
           ! grep -q 'MediaRecorder' app.js
           ! grep -q 'fast-export.js' index.html
@@ -100,7 +100,7 @@ jobs:
       - name: Prepare site
         run: |
           mkdir _site
-          cp index.html styles.css typography.css typography.js app.js HomemadeApple-Regular.woff2 kefe-logo.svg favicon.svg DESIGN-SYSTEM-CHECKLIST.md _site/
+          cp index.html styles.css typography.css typography.js app.js fonts/homemade-apple/HomemadeApple-Regular.woff2 kefe-logo.svg favicon.svg DESIGN-SYSTEM-CHECKLIST.md _site/
           cp -R effects _site/effects
           mkdir -p _site/vendor/ffmpeg _site/vendor/util _site/vendor/core /tmp/kefe-vendor
           curl -fsSL "https://registry.npmjs.org/@ffmpeg/ffmpeg/-/ffmpeg-${FFMPEG_VERSION}.tgz" | tar -xz -C /tmp/kefe-vendor

@@ -24,17 +24,17 @@
 
 /* Canonical bundled fonts. These files live in the repository root and are the
    only production font sources used by KEFE effects; no remote font CDN is required. */
-@font-face { font-family: 'Open Sans'; font-style: normal; font-weight: 300 800; font-display: block; src: url('./OpenSans-VariableFont_wdth,wght.woff2') format('woff2'); }
-@font-face { font-family: 'Archivo Narrow'; font-style: normal; font-weight: 200 900; font-display: block; src: url('./ArchivoNarrow-VariableFont_wght.woff2') format('woff2'); }
-@font-face { font-family: 'Archivo Narrow'; font-style: italic; font-weight: 200 900; font-display: block; src: url('./ArchivoNarrow-Italic-VariableFont_wght.woff2') format('woff2'); }
-@font-face { font-family: 'Homemade Apple'; font-style: normal; font-weight: 400; font-display: block; src: url('./HomemadeApple-Regular.woff2') format('woff2'); }
-@font-face { font-family: 'Shantell Sans'; font-style: normal; font-weight: 300 800; font-display: block; src: url('./ShantellSans-VariableFont_BNCE,INFM,SPAC,wght.woff2') format('woff2'); }
-@font-face { font-family: 'Courier Prime'; font-style: normal; font-weight: 400; font-display: block; src: url('./CourierPrime-Regular.woff2') format('woff2'); }
-@font-face { font-family: 'Courier Prime'; font-style: normal; font-weight: 700; font-display: block; src: url('./CourierPrime-Bold.woff2') format('woff2'); }
-@font-face { font-family: 'Courier Prime'; font-style: italic; font-weight: 400; font-display: block; src: url('./CourierPrime-Italic.woff2') format('woff2'); }
-@font-face { font-family: 'Courier Prime'; font-style: italic; font-weight: 700; font-display: block; src: url('./CourierPrime-BoldItalic.woff2') format('woff2'); }
-@font-face { font-family: 'Inter Tight'; font-style: normal; font-weight: 100 900; font-display: block; src: url('./InterTight-VariableFont_wght.woff2') format('woff2'); }
-@font-face { font-family: 'Momo Trust Display'; font-style: normal; font-weight: 400; font-display: block; src: url('./MomoTrustDisplay-Regular.woff2') format('woff2'); }
+@font-face { font-family: 'Open Sans'; font-style: normal; font-weight: 300 800; font-display: block; src: url('./fonts/open-sans/OpenSans-VariableFont_wdth,wght.woff2') format('woff2'); }
+@font-face { font-family: 'Archivo Narrow'; font-style: normal; font-weight: 200 900; font-display: block; src: url('./fonts/archivo-narrow/ArchivoNarrow-VariableFont_wght.woff2') format('woff2'); }
+@font-face { font-family: 'Archivo Narrow'; font-style: italic; font-weight: 200 900; font-display: block; src: url('./fonts/archivo-narrow/ArchivoNarrow-Italic-VariableFont_wght.woff2') format('woff2'); }
+@font-face { font-family: 'Homemade Apple'; font-style: normal; font-weight: 400; font-display: block; src: url('./fonts/homemade-apple/HomemadeApple-Regular.woff2') format('woff2'); }
+@font-face { font-family: 'Shantell Sans'; font-style: normal; font-weight: 300 800; font-display: block; src: url('./fonts/shantell-sans/ShantellSans-VariableFont_BNCE,INFM,SPAC,wght.woff2') format('woff2'); }
+@font-face { font-family: 'Courier Prime'; font-style: normal; font-weight: 400; font-display: block; src: url('./fonts/courier-prime/CourierPrime-Regular.woff2') format('woff2'); }
+@font-face { font-family: 'Courier Prime'; font-style: normal; font-weight: 700; font-display: block; src: url('./fonts/courier-prime/CourierPrime-Bold.woff2') format('woff2'); }
+@font-face { font-family: 'Courier Prime'; font-style: italic; font-weight: 400; font-display: block; src: url('./fonts/courier-prime/CourierPrime-Italic.woff2') format('woff2'); }
+@font-face { font-family: 'Courier Prime'; font-style: italic; font-weight: 700; font-display: block; src: url('./fonts/courier-prime/CourierPrime-BoldItalic.woff2') format('woff2'); }
+@font-face { font-family: 'Inter Tight'; font-style: normal; font-weight: 100 900; font-display: block; src: url('./fonts/inter-tight/InterTight-VariableFont_wght.woff2') format('woff2'); }
+@font-face { font-family: 'Momo Trust Display'; font-style: normal; font-weight: 400; font-display: block; src: url('./fonts/momo-trust-display/MomoTrustDisplay-Regular.woff2') format('woff2'); }
 
 .type-display { font-size: var(--type-display); line-height: var(--leading-display); letter-spacing: var(--tracking-display); font-weight: 700; }
 .type-title { font-size: var(--type-title); line-height: var(--leading-heading); letter-spacing: var(--tracking-heading); font-weight: 700; }
