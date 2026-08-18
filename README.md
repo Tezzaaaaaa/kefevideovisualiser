@@ -18,7 +18,8 @@ KEFE Visualiser combines audio, synced lyrics and an optional background into an
 
 - LRC and enhanced LRC lyric timing
 - Automatic synced-lyrics lookup
-- Apple, Brat, Eternal, Aurora, Typewriter, Stroke and Fade Up effects
+- Apple, Brat, Eternal, Aurora, Typewriter, Instagram Lyrics and Fade Up effects
+- Instagram Lyrics is the canonical replacement for the removed Stroke effect
 - Song title, artist and album title cards
 - Embedded album-artwork extraction when available
 - Image, video or solid-colour backgrounds
@@ -27,7 +28,7 @@ KEFE Visualiser combines audio, synced lyrics and an optional background into an
 - Frame-accurate H.264/AAC MP4 export
 - Lyric timing validation before export
 - Portable `.kefe` project settings
-- Open Sans interface with Homemade Apple reserved for the Eternal effect
+- Open Sans interface with effect-specific typography contracts
 
 ## Project structure
 
@@ -37,12 +38,11 @@ kefevideovisualiser/
 ├── effects/
 │   ├── core.js
 │   ├── registry.js
-│   ├── apple.js
 │   ├── brat.js
 │   ├── eternal-sunshine.js
 │   ├── aurora.js
 │   ├── typewriter.js
-│   ├── stroke.js
+│   ├── instagram-lyrics.js
 │   ├── story-fade.js
 │   ├── effect-app-fx.js
 │   ├── effect-database.json
@@ -66,9 +66,19 @@ kefevideovisualiser/
 └── README.md
 ```
 
-Production effects are independent modules. The production effect registry is the single dispatch point for modular renderers, while shared helpers live in `effects/core.js`. The effect database, public catalog and presets remain data-driven rather than being duplicated inside the application UI.
+Production lyric effects are independent modules where appropriate. The production effect registry is the single dispatch point for modular renderers, while shared timing, typography and drawing helpers live in `effects/core.js` and `typography.js`. The effect database, public catalog and preset library remain data-driven rather than being duplicated inside the application UI.
 
-The repository does not currently contain the previously described `archive/deepseek/` 25-segment directory. The README therefore does not claim that those segments are present. If the 25 DeepSeek segments are to be preserved, they should be added explicitly under a separate archive directory rather than implied by documentation.
+## Effects
+
+- **Apple** — smooth focus-line lyric movement.
+- **Brat** — abrupt album-cover typography.
+- **Eternal** — handwritten lyric reveal.
+- **Aurora** — atmospheric marker typography and colour flow.
+- **Typewriter** — restrained character-by-character reveal.
+- **Instagram Lyrics** — bold stacked Story lyrics with a dominant active line and smooth handoff.
+- **Fade Up** — kinetic word-by-word rise and settle.
+
+The old Stroke effect and its production file are removed. Star Wars is also no longer part of the production effect set.
 
 ## Use
 
