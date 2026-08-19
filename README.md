@@ -29,6 +29,7 @@ KEFE Visualiser combines audio, synced lyrics and an optional background into an
 - Lyric timing validation before export
 - Portable `.kefe` project settings
 - Open Sans interface with effect-specific typography contracts
+- Optional Visual FX layer with VHS, CRT, RGB Shift, Bloom, Motion Blur, Camera Shake, Glitch, Halftone, Vignette and Mixed Media treatments
 
 ## Project structure
 
@@ -44,12 +45,11 @@ kefevideovisualiser/
 │   ├── typewriter.js
 │   ├── instagram-lyrics.js
 │   ├── story-fade.js
+│   ├── effect-app-fx.js
+│   ├── effect-app-public-catalog.json
+│   ├── presets.json
 │   ├── EFFECT-APP-IMPLEMENTATION.md
 │   └── README.md
-├── effects/
-│   ├── effect-app-fx.js
-│   ├── catalog.json
-│   └── presets.json
 ├── app.js
 ├── index.html
 ├── styles.css
@@ -58,7 +58,6 @@ kefevideovisualiser/
 ├── fonts/homemade-apple/HomemadeApple-Regular.woff2
 ├── kefe-logo.svg
 ├── favicon.svg
-├── preview/brat.html
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
 ├── DESIGN-SYSTEM-CHECKLIST.md
@@ -66,7 +65,7 @@ kefevideovisualiser/
 └── README.md
 ```
 
-Production lyric effects are independent modules where appropriate. The production effect registry is the single dispatch point for modular renderers, while shared timing, typography and drawing helpers live in `effects/core.js` and `typography.js`. The effect database, public catalog and preset library remain data-driven rather than being duplicated inside the application UI.
+Production lyric effects are independent modules where appropriate. The production effect registry is the single dispatch point for modular lyric renderers, while shared timing, typography and drawing helpers live in `effects/core.js` and `typography.js`. The Effect.app-derived Visual FX layer is kept separate from lyric-effect rendering. Public effect metadata and presets remain data-driven rather than being duplicated inside the application UI.
 
 ## Effects
 
@@ -80,14 +79,30 @@ Production lyric effects are independent modules where appropriate. The producti
 
 The old Stroke effect and its production file are removed. Star Wars is also no longer part of the production effect set.
 
+## Visual FX
+
+Visual FX are a separate post-render layer and can be combined with the production lyric effects. Available treatments are:
+
+- **VHS** — tape wobble, chromatic bleed, scanlines, grain and controlled signal breaks.
+- **CRT** — scanlines, glow, RGB separation and vignette.
+- **RGB Shift** — chromatic lens separation.
+- **Bloom** — soft highlight diffusion and light bleed.
+- **Motion Blur** — directional trails.
+- **Camera Shake** — subtle handheld movement.
+- **Glitch** — controlled signal breaks and chromatic distortion.
+- **Halftone** — graphic print-screen texture.
+- **Vignette** — restrained cinematic edge falloff.
+- **Mixed Media** — layered collage, print texture, halftone and imperfect registration.
+
 ## Use
 
 1. Add an audio file.
 2. Find synced lyrics, upload an LRC file or enter timed lyrics manually.
 3. Add an optional image or video background, or keep the default solid background.
-4. Choose an effect and output layout.
-5. Preview the result.
-6. Review the export check and export the MP4.
+4. Choose a lyric effect.
+5. Optionally choose a Visual FX treatment and adjust its intensity/speed.
+6. Preview the result.
+7. Review the export check and export the MP4.
 
 ## Run locally
 
@@ -103,7 +118,7 @@ Opening `index.html` directly is not recommended because browsers restrict some 
 
 ## Deployment
 
-The repository deploys through the GitHub Pages workflow at `.github/workflows/deploy-kefe.yml`.
+The repository deploys through the GitHub Pages workflow at `.github/workflows/deploy-kefe.yml`. The deployment workflow validates the production effect set and required runtime assets before publishing the site.
 
 ## Export
 
