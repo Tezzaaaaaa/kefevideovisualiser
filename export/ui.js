@@ -98,5 +98,6 @@ window.startOfflineExport = async () => {
     }
 };
 
+$('cancelExport')?.addEventListener('click', () => window.kefeCancelExport?.());
 window.kefeCancelExport = () => window.kefeExportAbort?.abort();
 console.info('[KEFE] Modular export loaded');
