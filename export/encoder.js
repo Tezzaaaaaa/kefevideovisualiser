@@ -1,7 +1,6 @@
 const FF_VERSION = '0.12.10';
 const CORE_VERSION = '0.12.10';
 const UTIL_VERSION = '0.12.10';
-const CDN = 'https://cdn.jsdelivr.net/npm';
 const LOAD_TIMEOUT_MS = 30000;
 
 let encoderPromise = null;
@@ -29,8 +28,8 @@ function withTimeout(promise, ms, details) {
 async function loadFFmpegModules() {
     try {
         const [{ FFmpeg }, { toBlobURL }] = await Promise.all([
-            import(`${CDN}/@ffmpeg/ffmpeg@${FF_VERSION}/dist/esm/index.js`),
-            import(`${CDN}/@ffmpeg/util@${UTIL_VERSION}/dist/esm/index.js`)
+            import('../vendor/ffmpeg/index.js'),
+            import('../vendor/util/index.js')
         ]);
         return { FFmpeg, toBlobURL };
     } catch (error) {
@@ -41,18 +40,19 @@ async function loadFFmpegModules() {
 export async function loadEncoder({ onProgress = () => {} } = {}) {
     if (encoderPromise) return encoderPromise;
     encoderPromise = (async () => {
-        const details = { ffmpeg: FF_VERSION, core: CORE_VERSION, util: UTIL_VERSION, cdn: CDN };
+        const details = { ffmpeg: FF_VERSION, core: CORE_VERSION, util: UTIL_VERSION, source: 'local-vendor' };
         let logs = [];
+        let ffmpeg = null;
         try {
             onProgress('Loading encoder modules…', 2);
             const { FFmpeg, toBlobURL } = await loadFFmpegModules();
-            const ffmpeg = new FFmpeg();
+            ffmpeg = new FFmpeg();
             ffmpeg.on('log', ({ message }) => { logs.push(message); if (logs.length > 100) logs.shift(); console.debug('[KEFE FFmpeg]', message); });
             ffmpeg.on('progress', ({ progress, time }) => console.debug('[KEFE FFmpeg progress]', progress, time));
-            const base = `${CDN}/@ffmpeg/core@${CORE_VERSION}/dist/esm`;
-            details.coreURL = `${base}/ffmpeg-core.js`;
-            details.wasmURL = `${base}/ffmpeg-core.wasm`;
-            details.workerURL = `${CDN}/@ffmpeg/ffmpeg@${FF_VERSION}/dist/esm/worker.js`;
+            const base = new URL('../vendor/core/', import.meta.url);
+            details.coreURL = new URL('ffmpeg-core.js', base).href;
+            details.wasmURL = new URL('ffmpeg-core.wasm', base).href;
+            details.workerURL = new URL('../vendor/ffmpeg/worker.js', import.meta.url).href;
             onProgress('Loading encoder core…', 5);
             const coreURL = await toBlobURL(details.coreURL, 'text/javascript');
             onProgress('Loading encoder WASM…', 15);
@@ -65,6 +65,7 @@ export async function loadEncoder({ onProgress = () => {} } = {}) {
             return ffmpeg;
         } catch (error) {
             encoderPromise = null;
+            try { ffmpeg?.terminate?.(); } catch {}
             const diagnostic = error?.name === 'ExportDiagnosticError' ? error : encoderFailure('ENCODER_LOAD', 'load', error, { ...details, lastLogs: logs.slice(-20) });
             diagnostic.details = { ...(diagnostic.details || {}), versions: ENCODER_VERSIONS };
             console.error('[KEFE] FFmpeg initialization failed', diagnostic);
