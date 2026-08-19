@@ -6,15 +6,28 @@ import { createExportProgress } from './progress.js';
 import { cleanupEncoder } from './cleanup.js';
 import { ExportError, EXPORT_STAGES } from './errors.js';
 import { runExportPreflight, diagnosticError } from './diagnostics.js';
+import { createExportReport } from './report.js';
 
-export async function exportVideo({ state, media, config, createCanvas, renderFrame, buildFilename, onProgress, signal }) {
+export async function exportVideo({ state, media, config, createCanvas, renderFrame, buildFilename, onProgress, onDiagnostic, signal }) {
     const progress = createExportProgress(onProgress);
+    const startedAt = Date.now();
     let encoder;
+    let preflight = null;
+    let failure = null;
     const files = new Set();
     let stage = EXPORT_STAGES.VALIDATING;
+
+    const report = () => createExportReport({
+        preflight,
+        diagnostic: failure,
+        versions: ENCODER_VERSIONS,
+        startedAt,
+        finishedAt: Date.now()
+    });
+
     try {
         progress.update(stage, 0, 'Running export preflight…');
-        const preflight = await runExportPreflight({ state, audio: state?.audio?.file, canvas: createCanvas?.(1, 1) }, result => {
+        preflight = await runExportPreflight({ state, audio: state?.audio?.file, canvas: createCanvas?.(1, 1) }, result => {
             if (!result.ok) progress.update(stage, 0, `Preflight failed: ${result.check}`);
         });
         if (!preflight.ok) throw new ExportError(stage, `Preflight failed at ${preflight.failed.name}${preflight.failed.error ? `: ${preflight.failed.error}` : ''}`);
@@ -81,8 +94,11 @@ export async function exportVideo({ state, media, config, createCanvas, renderFr
         progress.update(EXPORT_STAGES.COMPLETE, 100, 'Export complete');
         return { blob: new Blob([data.buffer], { type: 'video/mp4' }), filename: buildFilename('mp4'), versions: ENCODER_VERSIONS };
     } catch (error) {
-        if (error instanceof ExportError || error?.name === 'AbortError') throw error;
-        throw new ExportError(stage, error?.message || 'Export failed', error);
+        failure = error instanceof ExportError || error?.name === 'AbortError' ? error : new ExportError(stage, error?.message || 'Export failed', error);
+        const diagnosticReport = report();
+        try { onDiagnostic?.(diagnosticReport); } catch {}
+        console.error('[KEFE EXPORT DIAGNOSTIC]', diagnosticReport);
+        throw failure;
     } finally {
         await cleanupEncoder(encoder, [...files]);
     }
