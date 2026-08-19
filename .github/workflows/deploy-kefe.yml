@@ -75,18 +75,18 @@ jobs:
           npm pack "@ffmpeg/core@${FFMPEG_CORE_VERSION}" --pack-destination /tmp/kefe-vendor
           tar -xzf "/tmp/kefe-vendor/core-0.12.10.tgz" -C /tmp/kefe-vendor
           cp /tmp/kefe-vendor/package/dist/esm/ffmpeg-core.js /tmp/kefe-vendor/package/dist/esm/ffmpeg-core.wasm _site/vendor/core/
-          test -s /tmp/kefe-vendor/package/dist/esm/ffmpeg-core.worker.js
-          cp /tmp/kefe-vendor/package/dist/esm/ffmpeg-core.worker.js _site/vendor/core/
           rm -rf /tmp/kefe-vendor/package /tmp/kefe-vendor/core-0.12.10.tgz
 
           test -s _site/vendor/ffmpeg/index.js
+          test -s _site/vendor/ffmpeg/classes.js
+          test -s _site/vendor/ffmpeg/types.js
+          test -s _site/vendor/ffmpeg/utils.js
           test -s _site/vendor/ffmpeg/worker.js
           test -s _site/vendor/ffmpeg/const.js
           test -s _site/vendor/ffmpeg/errors.js
           test -s _site/vendor/util/index.js
           test -s _site/vendor/core/ffmpeg-core.js
           test -s _site/vendor/core/ffmpeg-core.wasm
-          test -s _site/vendor/core/ffmpeg-core.worker.js
           test -s _site/export/index.js
           test -s _site/export/ui.js
           touch _site/.nojekyll
