@@ -22,6 +22,22 @@ function updateUI(stage, percent, message) {
     if (pct) pct.textContent = `${Math.round(percent)}%`;
     if (progress) progress.value = percent;
 }
+function seekVideo(video, time, signal) {
+    if (!video || !Number.isFinite(video.duration) || video.duration <= 0) return Promise.resolve();
+    if (signal?.aborted) return Promise.reject(new DOMException('Export cancelled', 'AbortError'));
+    const target = Math.max(0, Math.min(video.duration, time));
+    if (Math.abs(video.currentTime - target) < 0.001) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+        const cleanup = () => { video.removeEventListener('seeked', done); video.removeEventListener('error', fail); signal?.removeEventListener('abort', cancel); };
+        const done = () => { cleanup(); resolve(); };
+        const fail = () => { cleanup(); reject(new Error('Background video seek failed')); };
+        const cancel = () => { cleanup(); reject(new DOMException('Export cancelled', 'AbortError')); };
+        video.addEventListener('seeked', done, { once: true });
+        video.addEventListener('error', fail, { once: true });
+        signal?.addEventListener('abort', cancel, { once: true });
+        try { video.currentTime = target; } catch (error) { cleanup(); reject(error); }
+    });
+}
 
 async function runExport() {
     const state = window.state;
@@ -34,8 +50,10 @@ async function runExport() {
     target.width = config.width;
     target.height = config.height;
     const media = window.kefeMedia || {};
+    const signal = window.kefeExportAbort?.signal;
 
-    const renderFrame = (ctx, width, height, time) => {
+    const renderFrame = async (ctx, width, height, time) => {
+        await seekVideo(media.video, time, signal);
         state.playback.currentTime = time;
         redraw();
         ctx.drawImage(previewCanvas, 0, 0, width, height);
@@ -48,7 +66,7 @@ async function runExport() {
         createCanvas: () => target,
         renderFrame,
         buildFilename,
-        signal: window.kefeExportAbort?.signal,
+        signal,
         onProgress: ({ stage, percent, message }) => updateUI(stage, percent, message)
     });
 
