@@ -1,5 +1,5 @@
 const FF_VERSION = '0.12.10';
-const CORE_VERSION = '0.12.10';
+const CORE_VERSION = '0.12.6';
 const UTIL_VERSION = '0.12.10';
 const LOAD_TIMEOUT_MS = 30000;
 
@@ -57,10 +57,8 @@ export async function loadEncoder({ onProgress = () => {} } = {}) {
             const coreURL = await toBlobURL(details.coreURL, 'text/javascript');
             onProgress('Loading encoder WASM…', 15);
             const wasmURL = await toBlobURL(details.wasmURL, 'application/wasm');
-            onProgress('Loading encoder worker…', 20);
-            const workerURL = await toBlobURL(details.workerURL, 'text/javascript');
             onProgress('Starting frame-accurate encoder…', 25);
-            await withTimeout(ffmpeg.load({ coreURL, wasmURL, classWorkerURL: workerURL }), LOAD_TIMEOUT_MS, { ...details, lastLogs: logs.slice(-20) });
+            await withTimeout(ffmpeg.load({ coreURL, wasmURL, classWorkerURL: details.workerURL }), LOAD_TIMEOUT_MS, { ...details, lastLogs: logs.slice(-20) });
             onProgress('Encoder ready', 100);
             return ffmpeg;
         } catch (error) {
