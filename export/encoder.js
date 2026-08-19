@@ -2,6 +2,7 @@ const FF_VERSION = '0.12.10';
 const CORE_VERSION = '0.12.10';
 const UTIL_VERSION = '0.12.10';
 const CDN = 'https://cdn.jsdelivr.net/npm';
+const LOAD_TIMEOUT_MS = 30000;
 
 let encoderPromise = null;
 
@@ -15,6 +16,14 @@ function encoderFailure(stage, operation, error, details = {}) {
     e.details = details;
     e.cause = error;
     return e;
+}
+
+function withTimeout(promise, ms, details) {
+    let timer;
+    const timeout = new Promise((_, reject) => {
+        timer = setTimeout(() => reject(encoderFailure('ENCODER_TIMEOUT', 'load', new Error(`FFmpeg did not finish loading within ${ms / 1000}s`), details)), ms);
+    });
+    return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
 async function loadFFmpegModules() {
@@ -32,6 +41,7 @@ async function loadFFmpegModules() {
 export async function loadEncoder({ onProgress = () => {} } = {}) {
     if (encoderPromise) return encoderPromise;
     encoderPromise = (async () => {
+        const details = { ffmpeg: FF_VERSION, core: CORE_VERSION, util: UTIL_VERSION, cdn: CDN };
         try {
             onProgress('Loading encoder modules…', 2);
             const { FFmpeg, toBlobURL } = await loadFFmpegModules();
@@ -46,20 +56,27 @@ export async function loadEncoder({ onProgress = () => {} } = {}) {
 
             const base = `${CDN}/@ffmpeg/core@${CORE_VERSION}/dist/esm`;
             const workerURL = `${CDN}/@ffmpeg/ffmpeg@${FF_VERSION}/dist/esm/worker.js`;
+            details.coreURL = `${base}/ffmpeg-core.js`;
+            details.wasmURL = `${base}/ffmpeg-core.wasm`;
+            details.workerURL = workerURL;
 
             onProgress('Loading encoder core…', 5);
-            const coreURL = await toBlobURL(`${base}/ffmpeg-core.js`, 'text/javascript');
+            const coreURL = await toBlobURL(details.coreURL, 'text/javascript');
             onProgress('Loading encoder WASM…', 15);
-            const wasmURL = await toBlobURL(`${base}/ffmpeg-core.wasm`, 'application/wasm');
+            const wasmURL = await toBlobURL(details.wasmURL, 'application/wasm');
             onProgress('Starting frame-accurate encoder…', 25);
-            await ffmpeg.load({ coreURL, wasmURL, classWorkerURL: workerURL });
+            await withTimeout(
+                ffmpeg.load({ coreURL, wasmURL, classWorkerURL: workerURL }),
+                LOAD_TIMEOUT_MS,
+                { ...details, lastLogs: logs.slice(-20) }
+            );
             onProgress('Encoder ready', 100);
             return ffmpeg;
         } catch (error) {
             encoderPromise = null;
             const diagnostic = error?.name === 'ExportDiagnosticError'
                 ? error
-                : encoderFailure('ENCODER_LOAD', 'load', error, { ffmpeg: FF_VERSION, core: CORE_VERSION, util: UTIL_VERSION });
+                : encoderFailure('ENCODER_LOAD', 'load', error, { ...details, lastLogs: logs?.slice(-20) || [] });
             diagnostic.details = { ...(diagnostic.details || {}), versions: ENCODER_VERSIONS };
             console.error('[KEFE] FFmpeg initialization failed', diagnostic);
             throw diagnostic;
