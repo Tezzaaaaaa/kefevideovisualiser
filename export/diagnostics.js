@@ -1,13 +1,21 @@
 import { EXPORT_STAGES } from './errors.js';
 
 const checks = [
-    ['PROJECT', async ({ state }) => Boolean(state)],
-    ['CANVAS', async ({ canvas }) => Boolean(canvas && canvas.width && canvas.height)],
-    ['AUDIO', async ({ audio }) => Boolean(audio)],
-    ['ENCODER', async ({ encoder }) => Boolean(encoder)],
-    ['ENCODER_EXEC', async ({ encoder }) => {
-        if (!encoder || typeof encoder.exec !== 'function') return false;
-        return true;
+    ['PROJECT_AUDIO', async ({ state }) => Boolean(state?.audio?.file)],
+    ['CANVAS', async ({ canvas }) => Boolean(canvas && canvas.width > 0 && canvas.height > 0 && typeof canvas.getContext === 'function')],
+    ['AUDIO_INPUT', async ({ audio }) => Boolean(audio && typeof audio.arrayBuffer === 'function')],
+    ['ENCODER_API', async ({ encoder }) => Boolean(encoder && typeof encoder.writeFile === 'function' && typeof encoder.exec === 'function' && typeof encoder.readFile === 'function')],
+    ['ENCODER_FILESYSTEM', async ({ encoder }) => {
+        const probe = '__kefe_export_probe.txt';
+        try {
+            await encoder.writeFile(probe, new TextEncoder().encode('KEFE'));
+            const data = await encoder.readFile(probe);
+            await encoder.deleteFile(probe);
+            return Boolean(data?.byteLength === 4);
+        } catch {
+            try { await encoder.deleteFile(probe); } catch {}
+            return false;
+        }
     }]
 ];
 
@@ -32,12 +40,24 @@ export async function runExportPreflight(context, report = () => {}) {
 
 export function diagnosticError(stage, module, operation, error, details = {}) {
     const message = error?.message || String(error);
-    return Object.assign(new Error(`[${stage}] ${module}.${operation}: ${message}`), {
-        code: `EXPORT-${String(stage).replace(/[^A-Z0-9]+/gi, '_')}`,
-        stage,
-        module,
-        operation,
-        details,
-        cause: error
-    });
+    const diagnostic = new Error(`[${stage}] ${module}.${operation}: ${message}`);
+    diagnostic.name = 'ExportDiagnosticError';
+    diagnostic.code = `EXPORT_${String(stage).replace(/[^A-Z0-9]+/gi, '_')}`;
+    diagnostic.stage = stage;
+    diagnostic.module = module;
+    diagnostic.operation = operation;
+    diagnostic.details = details;
+    diagnostic.cause = error;
+    return diagnostic;
+}
+
+export function formatDiagnostic(error) {
+    return {
+        code: error?.code || 'EXPORT_UNKNOWN',
+        stage: error?.stage || 'UNKNOWN',
+        module: error?.module || 'unknown',
+        operation: error?.operation || 'unknown',
+        message: error?.message || String(error),
+        details: error?.details || {}
+    };
 }
