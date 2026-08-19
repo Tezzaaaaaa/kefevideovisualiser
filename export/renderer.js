@@ -4,7 +4,7 @@ export function createFrameRenderer({ canvas, renderFrame, width, height }) {
 
     return {
         async render(time) {
-            renderFrame(ctx, width, height, time);
+            await renderFrame(ctx, width, height, time);
             const blob = await new Promise((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error('Could not encode rendered frame')), 'image/jpeg', 0.9));
             return new Uint8Array(await blob.arrayBuffer());
         },
