@@ -42,47 +42,39 @@ export async function loadEncoder({ onProgress = () => {} } = {}) {
     if (encoderPromise) return encoderPromise;
     encoderPromise = (async () => {
         const details = { ffmpeg: FF_VERSION, core: CORE_VERSION, util: UTIL_VERSION, cdn: CDN };
+        let logs = [];
         try {
             onProgress('Loading encoder modules…', 2);
             const { FFmpeg, toBlobURL } = await loadFFmpegModules();
             const ffmpeg = new FFmpeg();
-            const logs = [];
-            ffmpeg.on('log', ({ message }) => {
-                logs.push(message);
-                if (logs.length > 100) logs.shift();
-                console.debug('[KEFE FFmpeg]', message);
-            });
+            ffmpeg.on('log', ({ message }) => { logs.push(message); if (logs.length > 100) logs.shift(); console.debug('[KEFE FFmpeg]', message); });
             ffmpeg.on('progress', ({ progress, time }) => console.debug('[KEFE FFmpeg progress]', progress, time));
-
             const base = `${CDN}/@ffmpeg/core@${CORE_VERSION}/dist/esm`;
-            const workerURL = `${CDN}/@ffmpeg/ffmpeg@${FF_VERSION}/dist/esm/worker.js`;
             details.coreURL = `${base}/ffmpeg-core.js`;
             details.wasmURL = `${base}/ffmpeg-core.wasm`;
-            details.workerURL = workerURL;
-
+            details.workerURL = `${CDN}/@ffmpeg/ffmpeg@${FF_VERSION}/dist/esm/worker.js`;
             onProgress('Loading encoder core…', 5);
             const coreURL = await toBlobURL(details.coreURL, 'text/javascript');
             onProgress('Loading encoder WASM…', 15);
             const wasmURL = await toBlobURL(details.wasmURL, 'application/wasm');
             onProgress('Starting frame-accurate encoder…', 25);
-            await withTimeout(
-                ffmpeg.load({ coreURL, wasmURL, classWorkerURL: workerURL }),
-                LOAD_TIMEOUT_MS,
-                { ...details, lastLogs: logs.slice(-20) }
-            );
+            await withTimeout(ffmpeg.load({ coreURL, wasmURL, classWorkerURL: details.workerURL }), LOAD_TIMEOUT_MS, { ...details, lastLogs: logs.slice(-20) });
             onProgress('Encoder ready', 100);
             return ffmpeg;
         } catch (error) {
             encoderPromise = null;
-            const diagnostic = error?.name === 'ExportDiagnosticError'
-                ? error
-                : encoderFailure('ENCODER_LOAD', 'load', error, { ...details, lastLogs: logs?.slice(-20) || [] });
+            const diagnostic = error?.name === 'ExportDiagnosticError' ? error : encoderFailure('ENCODER_LOAD', 'load', error, { ...details, lastLogs: logs.slice(-20) });
             diagnostic.details = { ...(diagnostic.details || {}), versions: ENCODER_VERSIONS };
             console.error('[KEFE] FFmpeg initialization failed', diagnostic);
             throw diagnostic;
         }
     })();
     return encoderPromise;
+}
+
+export function releaseEncoder(encoder) {
+    if (encoderPromise) encoderPromise = null;
+    try { encoder?.terminate?.(); } catch {}
 }
 
 export const ENCODER_VERSIONS = Object.freeze({ ffmpeg: FF_VERSION, core: CORE_VERSION, util: UTIL_VERSION });
