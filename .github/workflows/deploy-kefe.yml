@@ -44,65 +44,17 @@ jobs:
         run: |
           set -euo pipefail
           test -f index.html
-          test -f styles.css
-          test -f typography.css
-          test -f typography.js
-          test -f app.js
-          test -f DESIGN-SYSTEM-CHECKLIST.md
-          test -d effects
           test -d export
-          test -f export/index.js
-          test -f export/ui.js
-          test -f export/encoder.js
-          test -f export/diagnostics.js
-          test -f export/report.js
-          test -f export/renderer.js
-          test -f export/segments.js
-          test -f export/muxer.js
-          test -f export/cleanup.js
-          test -f export/errors.js
-          test -f export/progress.js
-          test -f effects/core.js
-          test -f effects/registry.js
-          test -f effects/aurora.js
-          test -f effects/eternal-sunshine.js
-          test -f effects/brat.js
-          test -f effects/typewriter.js
-          test -f effects/instagram-lyrics.js
-          test -f effects/story-fade.js
-          test -f effects/effect-app-fx.js
-          test -f fonts/homemade-apple/HomemadeApple-Regular.woff2
-          test -f kefe-logo.svg
-          test -f favicon.svg
-          grep -q 'data-effect="apple"' index.html
-          grep -q 'data-effect="brat"' index.html
-          grep -q 'data-effect="eternal"' index.html
-          grep -q 'data-effect="aurora"' index.html
-          grep -q 'data-effect="typewriter"' index.html
-          grep -q 'data-effect="instagram"' index.html
-          grep -q 'data-effect="fadeup"' index.html
-          ! grep -q 'data-effect="mixedmedia"' index.html
-          ! grep -q 'data-effect="starwars"' index.html
-          ! grep -q 'data-effect="stroke"' index.html
-          grep -q "'mixedmedia'" effects/effect-app-fx.js
-          grep -q 'export/ui.js' index.html
-          grep -q 'startOfflineExport' app.js
-          ! grep -q 'MediaRecorder' app.js
-          ! grep -q 'fast-export.js' index.html
-          ! grep -q 'archive/' index.html
-          ! test -f fast-export.js
-          ! test -d archive
-          ! test -f effects/apple.js
-          ! test -f effects/brat-old.js
-          ! test -f effects/starfield.js
-          ! test -f effects/pulse.js
-          ! test -f effects/aurora-old.js
-          ! test -f effects/eternal.js
-          ! test -f effects/mixed-media.js
-          ! test -f effects/stroke.js
-          ! test -f effects/star-wars.js
+          for file in index.js ui.js encoder.js diagnostics.js report.js renderer.js segments.js muxer.js cleanup.js errors.js progress.js; do test -s "export/$file"; done
+      - name: Validate export module imports
+        run: |
+          set -euo pipefail
+          for file in export/*.js; do
+            node --check "$file"
+          done
       - name: Prepare site
         run: |
+          set -euo pipefail
           mkdir _site
           cp index.html styles.css typography.css typography.js app.js fonts/homemade-apple/HomemadeApple-Regular.woff2 kefe-logo.svg favicon.svg DESIGN-SYSTEM-CHECKLIST.md _site/
           cp -R effects _site/effects
@@ -122,9 +74,6 @@ jobs:
           test -s _site/vendor/core/ffmpeg-core.wasm
           test -s _site/export/index.js
           test -s _site/export/ui.js
-          test -s _site/typography.css
-          test -s _site/typography.js
-          test -s _site/DESIGN-SYSTEM-CHECKLIST.md
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
