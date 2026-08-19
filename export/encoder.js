@@ -1,5 +1,5 @@
 const FF_VERSION = '0.12.10';
-const CORE_VERSION = '0.12.10';
+const CORE_VERSION = '0.12.6';
 const UTIL_VERSION = '0.12.2';
 const CDN = 'https://cdn.jsdelivr.net/npm';
 
@@ -17,13 +17,20 @@ export async function loadEncoder({ onProgress = () => {} } = {}) {
             const ffmpeg = new FFmpeg();
             ffmpeg.on('log', ({ message }) => console.debug('[KEFE FFmpeg]', message));
             ffmpeg.on('progress', ({ progress, time }) => console.debug('[KEFE FFmpeg progress]', progress, time));
+
             const base = `${CDN}/@ffmpeg/core@${CORE_VERSION}/dist/esm`;
+            const workerURL = `${CDN}/@ffmpeg/ffmpeg@${FF_VERSION}/dist/esm/worker.js`;
+
             onProgress('Loading encoder core…', 5);
             const coreURL = await toBlobURL(`${base}/ffmpeg-core.js`, 'text/javascript');
             onProgress('Loading encoder WASM…', 15);
             const wasmURL = await toBlobURL(`${base}/ffmpeg-core.wasm`, 'application/wasm');
             onProgress('Starting frame-accurate encoder…', 25);
-            await ffmpeg.load({ coreURL, wasmURL });
+            await ffmpeg.load({
+                coreURL,
+                wasmURL,
+                classWorkerURL: workerURL
+            });
             onProgress('Encoder ready', 100);
             return ffmpeg;
         } catch (error) {
