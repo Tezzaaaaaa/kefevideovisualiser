@@ -5,7 +5,6 @@ async function fetchBlobWithProgress(url, mimeType) {
         const blob = await response.blob();
         return URL.createObjectURL(new Blob([blob], { type: mimeType }));
     }
-
     const total = Number(response.headers.get('content-length')) || 0;
     const reader = response.body.getReader();
     const chunks = [];
