@@ -17,17 +17,12 @@ export async function exportVideo({ state, media, config, createCanvas, renderFr
     const files = new Set();
     let stage = EXPORT_STAGES.VALIDATING;
 
-    const report = () => createExportReport({
-        preflight,
-        diagnostic: failure,
-        versions: ENCODER_VERSIONS,
-        startedAt,
-        finishedAt: Date.now()
-    });
+    const report = () => createExportReport({ preflight, diagnostic: failure, versions: ENCODER_VERSIONS, startedAt, finishedAt: Date.now() });
 
     try {
         progress.update(stage, 0, 'Running export preflight…');
-        preflight = await runExportPreflight({ state, audio: state?.audio?.file, canvas: createCanvas?.(1, 1) }, result => {
+        // Phase 1 validates only project inputs. The encoder cannot be checked until it exists.
+        preflight = await runExportPreflight({ state, audio: state?.audio?.file, canvas: createCanvas?.(1, 1), skipEncoder: true }, result => {
             if (!result.ok) progress.update(stage, 0, `Preflight failed: ${result.check}`);
         });
         if (!preflight.ok) throw new ExportError(stage, `Preflight failed at ${preflight.failed.name}${preflight.failed.error ? `: ${preflight.failed.error}` : ''}`);
