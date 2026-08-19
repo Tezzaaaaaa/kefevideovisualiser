@@ -29,8 +29,8 @@ concurrency:
 
 env:
   FFMPEG_VERSION: 0.12.10
-  FFMPEG_UTIL_VERSION: 0.12.10
-  FFMPEG_CORE_VERSION: 0.12.6
+  FFMPEG_UTIL_VERSION: 0.12.2
+  FFMPEG_CORE_VERSION: 0.12.10
 
 jobs:
   deploy:
@@ -43,7 +43,6 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 24
-          cache: npm
       - name: Validate release files
         run: |
           set -euo pipefail
@@ -69,14 +68,16 @@ jobs:
           rm -rf /tmp/kefe-vendor/package /tmp/kefe-vendor/ffmpeg-0.12.10.tgz
 
           npm pack "@ffmpeg/util@${FFMPEG_UTIL_VERSION}" --pack-destination /tmp/kefe-vendor
-          tar -xzf "/tmp/kefe-vendor/util-0.12.10.tgz" -C /tmp/kefe-vendor
+          tar -xzf "/tmp/kefe-vendor/util-0.12.2.tgz" -C /tmp/kefe-vendor
           cp -R /tmp/kefe-vendor/package/dist/esm/. _site/vendor/util/
-          rm -rf /tmp/kefe-vendor/package /tmp/kefe-vendor/util-0.12.10.tgz
+          rm -rf /tmp/kefe-vendor/package /tmp/kefe-vendor/util-0.12.2.tgz
 
           npm pack "@ffmpeg/core@${FFMPEG_CORE_VERSION}" --pack-destination /tmp/kefe-vendor
-          tar -xzf "/tmp/kefe-vendor/core-0.12.6.tgz" -C /tmp/kefe-vendor
+          tar -xzf "/tmp/kefe-vendor/core-0.12.10.tgz" -C /tmp/kefe-vendor
           cp /tmp/kefe-vendor/package/dist/esm/ffmpeg-core.js /tmp/kefe-vendor/package/dist/esm/ffmpeg-core.wasm _site/vendor/core/
-          cp /tmp/kefe-vendor/package/dist/esm/worker.js /tmp/kefe-vendor/package/dist/esm/const.js /tmp/kefe-vendor/package/dist/esm/errors.js _site/vendor/ffmpeg/
+          test -s /tmp/kefe-vendor/package/dist/esm/ffmpeg-core.worker.js
+          cp /tmp/kefe-vendor/package/dist/esm/ffmpeg-core.worker.js _site/vendor/core/
+          rm -rf /tmp/kefe-vendor/package /tmp/kefe-vendor/core-0.12.10.tgz
 
           test -s _site/vendor/ffmpeg/index.js
           test -s _site/vendor/ffmpeg/worker.js
@@ -85,6 +86,7 @@ jobs:
           test -s _site/vendor/util/index.js
           test -s _site/vendor/core/ffmpeg-core.js
           test -s _site/vendor/core/ffmpeg-core.wasm
+          test -s _site/vendor/core/ffmpeg-core.worker.js
           test -s _site/export/index.js
           test -s _site/export/ui.js
           touch _site/.nojekyll
