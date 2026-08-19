@@ -1,14 +1,14 @@
 const FF_VERSION = '0.12.10';
-const CORE_VERSION = '0.12.6';
-const UTIL_VERSION = '0.12.10';
+const CORE_VERSION = '0.12.10';
+const UTIL_VERSION = '0.12.2';
 const LOAD_TIMEOUT_MS = 30000;
 
-const CDN = {
-    ffmpeg: `https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@${FF_VERSION}/dist/esm/index.js`,
-    util: `https://cdn.jsdelivr.net/npm/@ffmpeg/util@${UTIL_VERSION}/dist/esm/index.js`,
-    core: `https://cdn.jsdelivr.net/npm/@ffmpeg/core@${CORE_VERSION}/dist/umd/ffmpeg-core.js`,
-    wasm: `https://cdn.jsdelivr.net/npm/@ffmpeg/core@${CORE_VERSION}/dist/umd/ffmpeg-core.wasm`,
-    worker: `https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@${FF_VERSION}/dist/esm/worker.js`
+const LOCAL = {
+    ffmpeg: new URL('../vendor/ffmpeg/index.js', import.meta.url).href,
+    util: new URL('../vendor/util/index.js', import.meta.url).href,
+    core: new URL('../vendor/core/ffmpeg-core.js', import.meta.url).href,
+    wasm: new URL('../vendor/core/ffmpeg-core.wasm', import.meta.url).href,
+    worker: new URL('../vendor/ffmpeg/worker.js', import.meta.url).href
 };
 
 let encoderPromise = null;
@@ -34,60 +34,52 @@ function withTimeout(promise, ms, details) {
 }
 
 async function loadFFmpegModules() {
-    const attempts = [];
-    const sources = [
-        { name: 'cdn', ffmpeg: CDN.ffmpeg, util: CDN.util },
-        { name: 'local', ffmpeg: '../vendor/ffmpeg/index.js', util: '../vendor/util/index.js' }
-    ];
-
-    for (const source of sources) {
-        try {
-            const [{ FFmpeg }, { toBlobURL }] = await Promise.all([
-                import(source.ffmpeg),
-                import(source.util)
-            ]);
-            return { FFmpeg, toBlobURL, source: source.name };
-        } catch (error) {
-            attempts.push({ source: source.name, error: error?.message || String(error) });
-        }
+    try {
+        const [{ FFmpeg }, { toBlobURL }] = await Promise.all([
+            import(LOCAL.ffmpeg),
+            import(LOCAL.util)
+        ]);
+        return { FFmpeg, toBlobURL, source: 'local' };
+    } catch (error) {
+        throw encoderFailure('ENCODER_MODULES', 'loadModules', error, {
+            source: 'local',
+            ffmpeg: FF_VERSION,
+            util: UTIL_VERSION,
+            ffmpegURL: LOCAL.ffmpeg,
+            utilURL: LOCAL.util
+        });
     }
-
-    throw encoderFailure('ENCODER_MODULES', 'loadModules', new Error('FFmpeg JavaScript modules could not be loaded from the CDN or local vendor bundle'), {
-        ffmpeg: FF_VERSION,
-        util: UTIL_VERSION,
-        attempts
-    });
 }
 
 export async function loadEncoder({ onProgress = () => {} } = {}) {
     if (encoderPromise) return encoderPromise;
     encoderPromise = (async () => {
-        const details = { ffmpeg: FF_VERSION, core: CORE_VERSION, util: UTIL_VERSION, source: 'cdn' };
+        const details = {
+            ffmpeg: FF_VERSION,
+            core: CORE_VERSION,
+            util: UTIL_VERSION,
+            source: 'local',
+            ffmpegURL: LOCAL.ffmpeg,
+            utilURL: LOCAL.util,
+            coreURL: LOCAL.core,
+            wasmURL: LOCAL.wasm,
+            workerURL: LOCAL.worker
+        };
         let logs = [];
         let ffmpeg = null;
         try {
             onProgress('Loading encoder modules…', 2);
-            const { FFmpeg, toBlobURL, source } = await loadFFmpegModules();
-            details.source = source;
+            const { FFmpeg, toBlobURL } = await loadFFmpegModules();
             ffmpeg = new FFmpeg();
             ffmpeg.on('log', ({ message }) => { logs.push(message); if (logs.length > 100) logs.shift(); console.debug('[KEFE FFmpeg]', message); });
             ffmpeg.on('progress', ({ progress, time }) => console.debug('[KEFE FFmpeg progress]', progress, time));
 
-            const base = source === 'cdn' ? CDN : {
-                core: new URL('../vendor/core/ffmpeg-core.js', import.meta.url).href,
-                wasm: new URL('../vendor/core/ffmpeg-core.wasm', import.meta.url).href,
-                worker: new URL('../vendor/ffmpeg/worker.js', import.meta.url).href
-            };
-            details.coreURL = base.core;
-            details.wasmURL = base.wasm;
-            details.workerURL = base.worker;
-
             onProgress('Loading encoder core…', 5);
-            const coreURL = await toBlobURL(details.coreURL, 'text/javascript');
+            const coreURL = await toBlobURL(LOCAL.core, 'text/javascript');
             onProgress('Loading encoder WASM…', 15);
-            const wasmURL = await toBlobURL(details.wasmURL, 'application/wasm');
+            const wasmURL = await toBlobURL(LOCAL.wasm, 'application/wasm');
             onProgress('Starting frame-accurate encoder…', 25);
-            await withTimeout(ffmpeg.load({ coreURL, wasmURL, classWorkerURL: details.workerURL }), LOAD_TIMEOUT_MS, { ...details, lastLogs: logs.slice(-20) });
+            await withTimeout(ffmpeg.load({ coreURL, wasmURL, classWorkerURL: LOCAL.worker }), LOAD_TIMEOUT_MS, { ...details, lastLogs: logs.slice(-20) });
             onProgress('Encoder ready', 100);
             return ffmpeg;
         } catch (error) {
