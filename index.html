@@ -32,7 +32,6 @@
 <div id="lyricsEditor" class="modal hidden"><div class="modal-content"><div class="modal-header"><h3>Edit Lyrics</h3><button class="close-btn" id="closeEditor">×</button></div><div class="modal-body"><textarea id="lyricsText" placeholder="Paste your lyrics here...&#10;&#10;Example:&#10;[00:00.00]First line&#10;[00:05.00]Second line"></textarea><div class="modal-actions"><button id="pasteLyrics">Paste</button><button id="uploadLrc">Upload .LRC</button></div><div id="editorStatus" class="status"></div></div><div class="modal-footer"><button id="saveLyrics" class="primary">Save</button><button id="cancelEditor">Cancel</button></div></div></div>
 <div id="toast" class="toast"></div>
 <script src="./app.js"></script>
-<script src="./export-clean.js"></script>
 <script src="./typography.js"></script>
 <script src="./effects/core.js"></script>
 <script src="./effects/brat.js"></script>
@@ -42,7 +41,8 @@
 <script src="./effects/instagram-lyrics.js"></script>
 <script src="./effects/story-fade.js"></script>
 <script src="./effects/registry.js"></script>
-<script>window.state = state; window.canvas = canvas; window.redrawCurrentPreviewFrame = redrawCurrentPreviewFrame; window.isExporting = false;</script>
+<script>window.state = state; window.canvas = canvas; window.kefeMedia = media; window.redrawCurrentPreviewFrame = redrawCurrentPreviewFrame; window.isExporting = false;</script>
 <script src="./effects/effect-app-fx.js"></script>
+<script type="module" src="./export/ui.js"></script>
 </body>
 </html>
