@@ -1,4 +1,5 @@
 import { exportVideo } from './index.js';
+import { downloadExportReport } from './report.js';
 
 const $ = id => document.getElementById(id);
 const PRESETS = Object.freeze({
@@ -21,6 +22,18 @@ function updateUI(stage, percent, message) {
     if (status) status.textContent = message || stage;
     if (pct) pct.textContent = `${Math.round(percent)}%`;
     if (progress) progress.value = percent;
+}
+function showDiagnostic(report) {
+    const text = report?.failure
+        ? `Export failed: ${report.failure.code}\n${report.failure.stage} → ${report.failure.module}.${report.failure.operation}\n${report.failure.message}`
+        : 'Export diagnostics completed.';
+    updateUI('DIAGNOSTIC', 0, text);
+    console.error('[KEFE EXPORT DIAGNOSTIC REPORT]', report);
+    const button = $('exportDiagnostic');
+    if (button) {
+        button.hidden = false;
+        button.onclick = () => downloadExportReport(report);
+    }
 }
 function seekVideo(video, time, signal) {
     if (!video || !Number.isFinite(video.duration) || video.duration <= 0) return Promise.resolve();
@@ -60,14 +73,9 @@ async function runExport() {
     };
 
     const result = await exportVideo({
-        state,
-        media,
-        config,
-        createCanvas: () => target,
-        renderFrame,
-        buildFilename,
-        signal,
-        onProgress: ({ stage, percent, message }) => updateUI(stage, percent, message)
+        state, media, config, createCanvas: () => target, renderFrame, buildFilename, signal,
+        onProgress: ({ stage, percent, message }) => updateUI(stage, percent, message),
+        onDiagnostic: showDiagnostic
     });
 
     const url = URL.createObjectURL(result.blob);
@@ -84,13 +92,14 @@ window.startOfflineExport = async () => {
     if (window.isExporting) return;
     window.isExporting = true;
     $('exportOverlay')?.classList.remove('hidden');
+    $('exportDiagnostic')?.setAttribute('hidden', '');
     window.kefeExportAbort = new AbortController();
     try {
         await runExport();
         updateUI('COMPLETE', 100, 'Export complete');
     } catch (error) {
         console.error('[KEFE] Export failed:', error);
-        updateUI(error.stage || 'EXPORT_ERROR', Number($('exportProgress')?.value || 0), `Export failed: ${error.message || error}`);
+        if (!error?.stage) updateUI('EXPORT_ERROR', Number($('exportProgress')?.value || 0), `Export failed: ${error.message || error}`);
     } finally {
         window.isExporting = false;
         window.kefeExportAbort = null;
