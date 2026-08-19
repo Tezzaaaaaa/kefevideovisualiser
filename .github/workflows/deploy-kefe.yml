@@ -65,13 +65,15 @@ jobs:
           ffmpeg_pkg=$(npm pack "@ffmpeg/ffmpeg@${FFMPEG_VERSION}" --pack-destination /tmp/kefe-vendor | tail -n 1)
           test -s "/tmp/kefe-vendor/${ffmpeg_pkg}"
           tar -xzf "/tmp/kefe-vendor/${ffmpeg_pkg}" -C /tmp/kefe-vendor
-          cp -R /tmp/kefe-vendor/package/dist/esm/. _site/vendor/ffmpeg/
+          npm exec --yes esbuild -- --bundle --format=esm --platform=browser /tmp/kefe-vendor/package/dist/esm/index.js --outfile=_site/vendor/ffmpeg/index.js
+          npm exec --yes esbuild -- --bundle --format=esm --platform=browser /tmp/kefe-vendor/package/dist/esm/worker.js --outfile=_site/vendor/ffmpeg/worker.js
+          cp /tmp/kefe-vendor/package/dist/esm/const.js /tmp/kefe-vendor/package/dist/esm/errors.js _site/vendor/ffmpeg/
           rm -rf /tmp/kefe-vendor/package "/tmp/kefe-vendor/${ffmpeg_pkg}"
 
           util_pkg=$(npm pack "@ffmpeg/util@${FFMPEG_UTIL_VERSION}" --pack-destination /tmp/kefe-vendor | tail -n 1)
           test -s "/tmp/kefe-vendor/${util_pkg}"
           tar -xzf "/tmp/kefe-vendor/${util_pkg}" -C /tmp/kefe-vendor
-          cp -R /tmp/kefe-vendor/package/dist/esm/. _site/vendor/util/
+          npm exec --yes esbuild -- --bundle --format=esm --platform=browser /tmp/kefe-vendor/package/dist/esm/index.js --outfile=_site/vendor/util/index.js
           rm -rf /tmp/kefe-vendor/package "/tmp/kefe-vendor/${util_pkg}"
 
           core_pkg=$(npm pack "@ffmpeg/core@${FFMPEG_CORE_VERSION}" --pack-destination /tmp/kefe-vendor | tail -n 1)
@@ -81,9 +83,6 @@ jobs:
           rm -rf /tmp/kefe-vendor/package "/tmp/kefe-vendor/${core_pkg}"
 
           test -s _site/vendor/ffmpeg/index.js
-          test -s _site/vendor/ffmpeg/classes.js
-          test -s _site/vendor/ffmpeg/types.js
-          test -s _site/vendor/ffmpeg/utils.js
           test -s _site/vendor/ffmpeg/worker.js
           test -s _site/vendor/ffmpeg/const.js
           test -s _site/vendor/ffmpeg/errors.js
