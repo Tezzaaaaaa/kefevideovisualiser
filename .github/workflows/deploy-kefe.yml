@@ -68,7 +68,9 @@ jobs:
           rm -rf /tmp/kefe-vendor/*
           curl -fsSL "https://registry.npmjs.org/@ffmpeg/core/-/core-${FFMPEG_CORE_VERSION}.tgz" | tar -xz -C /tmp/kefe-vendor
           cp /tmp/kefe-vendor/package/dist/esm/ffmpeg-core.js /tmp/kefe-vendor/package/dist/esm/ffmpeg-core.wasm _site/vendor/core/
+          cp /tmp/kefe-vendor/package/dist/esm/worker.js _site/vendor/ffmpeg/worker.js
           test -s _site/vendor/ffmpeg/index.js
+          test -s _site/vendor/ffmpeg/worker.js
           test -s _site/vendor/util/index.js
           test -s _site/vendor/core/ffmpeg-core.js
           test -s _site/vendor/core/ffmpeg-core.wasm
