@@ -1,9 +1,12 @@
 import { EXPORT_STAGES } from './errors.js';
 
-const checks = [
+const inputChecks = [
     ['PROJECT_AUDIO', async ({ state }) => Boolean(state?.audio?.file)],
     ['CANVAS', async ({ canvas }) => Boolean(canvas && canvas.width > 0 && canvas.height > 0 && typeof canvas.getContext === 'function')],
-    ['AUDIO_INPUT', async ({ audio }) => Boolean(audio && typeof audio.arrayBuffer === 'function')],
+    ['AUDIO_INPUT', async ({ audio }) => Boolean(audio && typeof audio.arrayBuffer === 'function')]
+];
+
+const encoderChecks = [
     ['ENCODER_API', async ({ encoder }) => Boolean(encoder && typeof encoder.writeFile === 'function' && typeof encoder.exec === 'function' && typeof encoder.readFile === 'function')],
     ['ENCODER_FILESYSTEM', async ({ encoder }) => {
         const probe = '__kefe_export_probe.txt';
@@ -20,19 +23,20 @@ const checks = [
 ];
 
 export async function runExportPreflight(context, report = () => {}) {
+    const checks = context?.skipEncoder ? inputChecks : [...inputChecks, ...encoderChecks];
     const results = [];
     for (const [name, check] of checks) {
         try {
             const ok = Boolean(await check(context));
-            const result = { name, ok };
-            results.push(result);
+            const item = { name, ok };
+            results.push(item);
             report({ stage: EXPORT_STAGES.VALIDATING, check: name, ok });
-            if (!ok) return { ok: false, failed: result, results };
+            if (!ok) return { ok: false, failed: item, results };
         } catch (error) {
-            const result = { name, ok: false, error: error?.message || String(error) };
-            results.push(result);
-            report({ stage: EXPORT_STAGES.VALIDATING, check: name, ok: false, error: result.error });
-            return { ok: false, failed: result, results };
+            const item = { name, ok: false, error: error?.message || String(error) };
+            results.push(item);
+            report({ stage: EXPORT_STAGES.VALIDATING, check: name, ok: false, error: item.error });
+            return { ok: false, failed: item, results };
         }
     }
     return { ok: true, results };
