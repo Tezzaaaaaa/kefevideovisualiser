@@ -62,20 +62,23 @@ jobs:
           cp -R export _site/export
           mkdir -p _site/vendor/ffmpeg _site/vendor/util _site/vendor/core /tmp/kefe-vendor
 
-          npm pack "@ffmpeg/ffmpeg@${FFMPEG_VERSION}" --pack-destination /tmp/kefe-vendor
-          tar -xzf "/tmp/kefe-vendor/ffmpeg-0.12.10.tgz" -C /tmp/kefe-vendor
+          ffmpeg_pkg=$(npm pack "@ffmpeg/ffmpeg@${FFMPEG_VERSION}" --pack-destination /tmp/kefe-vendor | tail -n 1)
+          test -s "/tmp/kefe-vendor/${ffmpeg_pkg}"
+          tar -xzf "/tmp/kefe-vendor/${ffmpeg_pkg}" -C /tmp/kefe-vendor
           cp -R /tmp/kefe-vendor/package/dist/esm/. _site/vendor/ffmpeg/
-          rm -rf /tmp/kefe-vendor/package /tmp/kefe-vendor/ffmpeg-0.12.10.tgz
+          rm -rf /tmp/kefe-vendor/package "/tmp/kefe-vendor/${ffmpeg_pkg}"
 
-          npm pack "@ffmpeg/util@${FFMPEG_UTIL_VERSION}" --pack-destination /tmp/kefe-vendor
-          tar -xzf "/tmp/kefe-vendor/util-0.12.2.tgz" -C /tmp/kefe-vendor
+          util_pkg=$(npm pack "@ffmpeg/util@${FFMPEG_UTIL_VERSION}" --pack-destination /tmp/kefe-vendor | tail -n 1)
+          test -s "/tmp/kefe-vendor/${util_pkg}"
+          tar -xzf "/tmp/kefe-vendor/${util_pkg}" -C /tmp/kefe-vendor
           cp -R /tmp/kefe-vendor/package/dist/esm/. _site/vendor/util/
-          rm -rf /tmp/kefe-vendor/package /tmp/kefe-vendor/util-0.12.2.tgz
+          rm -rf /tmp/kefe-vendor/package "/tmp/kefe-vendor/${util_pkg}"
 
-          npm pack "@ffmpeg/core@${FFMPEG_CORE_VERSION}" --pack-destination /tmp/kefe-vendor
-          tar -xzf "/tmp/kefe-vendor/core-0.12.10.tgz" -C /tmp/kefe-vendor
+          core_pkg=$(npm pack "@ffmpeg/core@${FFMPEG_CORE_VERSION}" --pack-destination /tmp/kefe-vendor | tail -n 1)
+          test -s "/tmp/kefe-vendor/${core_pkg}"
+          tar -xzf "/tmp/kefe-vendor/${core_pkg}" -C /tmp/kefe-vendor
           cp /tmp/kefe-vendor/package/dist/esm/ffmpeg-core.js /tmp/kefe-vendor/package/dist/esm/ffmpeg-core.wasm _site/vendor/core/
-          rm -rf /tmp/kefe-vendor/package /tmp/kefe-vendor/core-0.12.10.tgz
+          rm -rf /tmp/kefe-vendor/package "/tmp/kefe-vendor/${core_pkg}"
 
           test -s _site/vendor/ffmpeg/index.js
           test -s _site/vendor/ffmpeg/classes.js
