@@ -3,148 +3,24 @@ import { downloadExportReport, formatExportReport } from './report.js';
 
 const $ = id => document.getElementById(id);
 const PRESETS = Object.freeze({
-    '1080p': { size: 1080, fps: 30 },
-    '720p': { size: 720, fps: 30 },
-    '480p': { size: 480, fps: 30 },
-    instagram: { size: 1080, fps: 30, forceVertical: true },
-    tiktok: { size: 1080, fps: 30, forceVertical: true }
+    '1080p': { size: 1080, fps: 30 }, '720p': { size: 720, fps: 30 }, '480p': { size: 480, fps: 30 },
+    instagram: { size: 1080, fps: 30, forceVertical: true }, tiktok: { size: 1080, fps: 30, forceVertical: true }
 });
-
 function getConfig(preset) {
     const selected = PRESETS[preset] || PRESETS['720p'];
     const aspect = selected.forceVertical ? '9:16' : (window.state?.aspect || '9:16');
-    const [a, b] = aspect.split(':').map(Number);
-    const size = selected.size;
-    let width = size;
-    let height = Math.round(size * b / a);
-    if (aspect === '9:16') { width = size; height = Math.round(size * 16 / 9); }
-    if (aspect === '16:9') { width = Math.round(size * 16 / 9); height = size; }
-    return { width, height, fps: selected.fps };
+    const [a,b] = aspect.split(':').map(Number); const size = selected.size;
+    let width=size, height=Math.round(size*b/a);
+    if(aspect==='9:16'){width=size;height=Math.round(size*16/9);} if(aspect==='16:9'){width=Math.round(size*16/9);height=size;}
+    return {width,height,fps:selected.fps};
 }
-
-function buildFilename(ext) {
-    const clean = value => String(value || '').trim().replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, ' ');
-    return `${clean(window.state.audio.metadata.title) || 'Untitled'} - ${clean(window.state.audio.metadata.artist) || 'Unknown Artist'} - KEFE Visualiser.${ext}`;
-}
-
-function updateUI(stage, percent, message) {
-    const status = $('exportStatus'), pct = $('exportPct'), progress = $('exportProgress');
-    if (status) status.textContent = message || stage;
-    if (pct) pct.textContent = `${Math.round(percent)}%`;
-    if (progress) progress.value = percent;
-}
-
-function showDiagnostic(report) {
-    const overlay = $('exportOverlay'), status = $('exportStatus'), pct = $('exportPct'), progress = $('exportProgress'), button = $('exportDiagnostic'), cancel = $('cancelExport');
-    const text = formatExportReport(report);
-    overlay?.classList.remove('hidden');
-    if (pct) pct.textContent = 'FAILED';
-    if (progress) progress.value = 0;
-    if (status) {
-        status.textContent = `Export failed — ${report?.failure?.code || 'EXPORT_UNKNOWN'}`;
-        status.title = text;
-        status.style.whiteSpace = 'pre-wrap';
-        status.style.userSelect = 'text';
-        status.dataset.diagnostic = text;
-    }
-    let details = $('exportDiagnosticDetails');
-    if (!details && overlay) {
-        details = document.createElement('pre');
-        details.id = 'exportDiagnosticDetails';
-        details.style.cssText = 'max-height:45vh;overflow:auto;white-space:pre-wrap;text-align:left;user-select:text;margin:12px 0;font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;';
-        overlay.querySelector('div')?.appendChild(details);
-    }
-    if (details) details.textContent = text;
-    if (button) { button.hidden = false; button.disabled = false; button.textContent = 'Download Diagnostics'; button.onclick = () => downloadExportReport(report); }
-    if (cancel) { cancel.textContent = 'Close'; cancel.onclick = () => overlay?.classList.add('hidden'); }
-    window.kefeLastExportDiagnostic = report;
-    console.error('[KEFE EXPORT DIAGNOSTIC REPORT]', report);
-}
-
-function clearDiagnosticUI() {
-    $('exportDiagnosticDetails')?.remove();
-    $('exportDiagnostic')?.setAttribute('hidden', '');
-}
-
-function wrappedBackgroundTime(time, duration) {
-    if (!Number.isFinite(duration) || duration <= 0) return 0;
-    return ((time % duration) + duration) % duration;
-}
-
-function seekVideo(video, time, signal) {
-    if (!video || !Number.isFinite(video.duration) || video.duration <= 0) return Promise.resolve();
-    if (signal?.aborted) return Promise.reject(new DOMException('Export cancelled', 'AbortError'));
-    const target = wrappedBackgroundTime(time, video.duration);
-    if (Math.abs(video.currentTime - target) < 0.001) return Promise.resolve();
-    return new Promise((resolve, reject) => {
-        let timer;
-        const cleanup = () => {
-            clearTimeout(timer);
-            video.removeEventListener('seeked', done);
-            video.removeEventListener('error', fail);
-            signal?.removeEventListener('abort', cancel);
-        };
-        const done = () => { cleanup(); resolve(); };
-        const fail = () => { cleanup(); reject(new Error('Background video seek failed')); };
-        const cancel = () => { cleanup(); reject(new DOMException('Export cancelled', 'AbortError')); };
-        timer = setTimeout(() => { cleanup(); reject(new Error(`Background video seek timed out at ${target.toFixed(3)}s`)); }, 10000);
-        video.addEventListener('seeked', done, { once: true });
-        video.addEventListener('error', fail, { once: true });
-        signal?.addEventListener('abort', cancel, { once: true });
-        try { video.currentTime = target; } catch (error) { cleanup(); reject(error); }
-    });
-}
-
-async function runExport() {
-    const state = window.state, previewCanvas = window.canvas, redraw = window.redrawCurrentPreviewFrame;
-    if (!state || !previewCanvas || typeof redraw !== 'function') throw new Error('KEFE export bridge is not available');
-    const config = getConfig($('exportPreset')?.value);
-    const target = document.createElement('canvas');
-    target.width = config.width;
-    target.height = config.height;
-    const media = window.kefeMedia || {};
-    const signal = window.kefeExportAbort?.signal;
-    const renderFrame = async (ctx, width, height, time) => {
-        await seekVideo(media.video, time, signal);
-        state.playback.currentTime = time;
-        redraw();
-        ctx.clearRect(0, 0, width, height);
-        ctx.drawImage(previewCanvas, 0, 0, width, height);
-    };
-    return exportVideo({ state, media, config, createCanvas: () => target, renderFrame, buildFilename, signal, onProgress: ({ stage, percent, message }) => updateUI(stage, percent, message), onDiagnostic: showDiagnostic });
-}
-
-window.startOfflineExport = async () => {
-    if (window.isExporting) return;
-    window.isExporting = true;
-    window.kefeLastExportDiagnostic = null;
-    clearDiagnosticUI();
-    $('exportOverlay')?.classList.remove('hidden');
-    const cancel = $('cancelExport');
-    if (cancel) { cancel.textContent = 'Cancel'; cancel.onclick = () => window.kefeCancelExport?.(); }
-    window.kefeExportAbort = new AbortController();
-    try {
-        const result = await runExport();
-        const url = URL.createObjectURL(result.blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = result.filename;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 30000);
-        updateUI('COMPLETE', 100, 'Export complete');
-    } catch (error) {
-        console.error('[KEFE] Export failed:', error);
-        if (!error?.stage && !window.kefeLastExportDiagnostic) {
-            updateUI('EXPORT_ERROR', Number($('exportProgress')?.value || 0), `Export failed: ${error.message || error}`);
-        }
-    } finally {
-        window.isExporting = false;
-        window.kefeExportAbort = null;
-        if (!window.kefeLastExportDiagnostic) setTimeout(() => $('exportOverlay')?.classList.add('hidden'), 1200);
-    }
-};
-
-window.kefeCancelExport = () => window.kefeExportAbort?.abort();
+function buildFilename(ext) { const clean=v=>String(v||'').trim().replace(/[\\/:*?"<>|]+/g,'').replace(/\s+/g,' '); return `${clean(window.state.audio.metadata.title)||'Untitled'} - ${clean(window.state.audio.metadata.artist)||'Unknown Artist'} - KEFE Visualiser.${ext}`; }
+function updateUI(stage,percent,message){const status=$('exportStatus'),pct=$('exportPct'),progress=$('exportProgress');if(status)status.textContent=message||stage;if(pct)pct.textContent=`${Math.round(percent)}%`;if(progress)progress.value=percent;}
+function showDiagnostic(report){const overlay=$('exportOverlay'),status=$('exportStatus'),pct=$('exportPct'),progress=$('exportProgress'),button=$('exportDiagnostic'),cancel=$('cancelExport');const text=formatExportReport(report);overlay?.classList.remove('hidden');if(pct)pct.textContent='FAILED';if(progress)progress.value=0;if(status){status.textContent=`Export failed — ${report?.failure?.code||'EXPORT_UNKNOWN'}`;status.title=text;status.style.whiteSpace='pre-wrap';status.style.userSelect='text';status.dataset.diagnostic=text;}let details=$('exportDiagnosticDetails');if(!details&&overlay){details=document.createElement('pre');details.id='exportDiagnosticDetails';details.style.cssText='max-height:45vh;overflow:auto;white-space:pre-wrap;text-align:left;user-select:text;margin:12px 0;font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;';overlay.querySelector('div')?.appendChild(details);}if(details)details.textContent=text;if(button){button.hidden=false;button.disabled=false;button.textContent='Download Diagnostics';button.onclick=()=>downloadExportReport(report);}if(cancel){cancel.textContent='Close';cancel.onclick=()=>overlay?.classList.add('hidden');}window.kefeLastExportDiagnostic=report;console.error('[KEFE EXPORT DIAGNOSTIC REPORT]',report);}
+function clearDiagnosticUI(){$('exportDiagnosticDetails')?.remove();$('exportDiagnostic')?.setAttribute('hidden','');}
+function wrappedBackgroundTime(time,duration){if(!Number.isFinite(duration)||duration<=0)return 0;return((time%duration)+duration)%duration;}
+function seekVideo(video,time,signal){if(!video||!Number.isFinite(video.duration)||video.duration<=0)return Promise.resolve();if(signal?.aborted)return Promise.reject(new DOMException('Export cancelled','AbortError'));const target=wrappedBackgroundTime(time,video.duration);if(Math.abs(video.currentTime-target)<.001)return Promise.resolve();return new Promise((resolve,reject)=>{let timer;const cleanup=()=>{clearTimeout(timer);video.removeEventListener('seeked',done);video.removeEventListener('error',fail);signal?.removeEventListener('abort',cancel);};const done=()=>{cleanup();resolve();},fail=()=>{cleanup();reject(new Error('Background video seek failed'));},cancel=()=>{cleanup();reject(new DOMException('Export cancelled','AbortError'));};timer=setTimeout(()=>{cleanup();reject(new Error(`Background video seek timed out at ${target.toFixed(3)}s`));},10000);video.addEventListener('seeked',done,{once:true});video.addEventListener('error',fail,{once:true});signal?.addEventListener('abort',cancel,{once:true});try{video.currentTime=target;}catch(error){cleanup();reject(error);}});}
+async function runExport(){const state=window.state,previewCanvas=window.canvas,redraw=window.redrawCurrentPreviewFrame;if(!state||!previewCanvas||typeof redraw!=='function')throw new Error('KEFE export bridge is not available');const config=getConfig($('exportPreset')?.value),target=document.createElement('canvas');target.width=config.width;target.height=config.height;const media=window.kefeMedia||{},signal=window.kefeExportAbort?.signal;const renderFrame=async(ctx,width,height,time)=>{await seekVideo(media.video,time,signal);state.playback.currentTime=time;redraw();ctx.clearRect(0,0,width,height);ctx.drawImage(previewCanvas,0,0,width,height);};return exportVideo({state,media,config,createCanvas:()=>target,renderFrame,buildFilename,signal,onProgress:({stage,percent,message})=>updateUI(stage,percent,message),onDiagnostic:showDiagnostic});}
+window.startOfflineExport=async()=>{if(window.isExporting)return;window.isExporting=true;window.kefeLastExportDiagnostic=null;clearDiagnosticUI();$('exportOverlay')?.classList.remove('hidden');const cancel=$('cancelExport');if(cancel){cancel.textContent='Cancel';cancel.onclick=()=>window.kefeCancelExport?.();}window.kefeExportAbort=new AbortController();try{const result=await runExport();const url=URL.createObjectURL(result.blob),link=document.createElement('a');link.href=url;link.download=result.filename;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);updateUI('COMPLETE',100,'Export complete');}catch(error){console.error('[KEFE] Export failed:',error);if(!error?.stage&&!window.kefeLastExportDiagnostic)updateUI('EXPORT_ERROR',Number($('exportProgress')?.value||0),`Export failed: ${error.message||error}`);}finally{window.isExporting=false;window.kefeExportAbort=null;if(!window.kefeLastExportDiagnostic)setTimeout(()=>$('exportOverlay')?.classList.add('hidden'),1200);}};
+window.kefeCancelExport=()=>window.kefeExportAbort?.abort();
 console.info('[KEFE] Modular export loaded');
