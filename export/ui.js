@@ -66,10 +66,15 @@ function clearDiagnosticUI() {
     $('exportDiagnostic')?.setAttribute('hidden', '');
 }
 
+function wrappedBackgroundTime(time, duration) {
+    if (!Number.isFinite(duration) || duration <= 0) return 0;
+    return ((time % duration) + duration) % duration;
+}
+
 function seekVideo(video, time, signal) {
     if (!video || !Number.isFinite(video.duration) || video.duration <= 0) return Promise.resolve();
     if (signal?.aborted) return Promise.reject(new DOMException('Export cancelled', 'AbortError'));
-    const target = Math.max(0, Math.min(video.duration, time));
+    const target = wrappedBackgroundTime(time, video.duration);
     if (Math.abs(video.currentTime - target) < 0.001) return Promise.resolve();
     return new Promise((resolve, reject) => {
         let timer;
