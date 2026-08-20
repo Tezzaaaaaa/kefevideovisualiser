@@ -53,6 +53,12 @@ async function canvasToJpeg(canvas) {
     return new Uint8Array(await blob.arrayBuffer());
 }
 
+async function execChecked(ffmpeg, args, label) {
+    const code = await ffmpeg.exec(args);
+    if (Number(code) !== 0) throw new Error(`FFmpeg ${label} failed with exit code ${code}`);
+    return code;
+}
+
 function progress(onProgress, value, message) {
     onProgress?.({ percent: Math.max(0, Math.min(100, value)), message });
 }
@@ -113,7 +119,6 @@ export async function exportVideo({ state, media, config, renderFrame, buildFile
                 const frameIndex = firstFrame + local;
                 const time = frameIndex / config.fps;
                 await seekVideo(media?.video, time, signal);
-                checkAbort(signal);
                 await renderFrame(ctx, config.width, config.height, time);
                 const frameName = `kefe-frame-${String(local).padStart(5, '0')}.jpg`;
                 await ffmpeg.writeFile(frameName, await canvasToJpeg(target));
@@ -122,11 +127,8 @@ export async function exportVideo({ state, media, config, renderFrame, buildFile
                 progress(onProgress, (frameIndex + 1) / totalFrames * 70, `Rendering frame ${frameIndex + 1} of ${totalFrames}`);
             }
 
-            // Encode each segment as a standalone H.264 stream with a forced
-            // keyframe at its first frame. The concat demuxer can then join the
-            // segments without depending on MP4 edit-list metadata.
             const segmentName = `kefe-segment-${String(segment).padStart(4, '0')}.ts`;
-            await ffmpeg.exec([
+            await execChecked(ffmpeg, [
                 '-framerate', String(config.fps),
                 '-start_number', '0',
                 '-i', 'kefe-frame-%05d.jpg',
@@ -141,11 +143,12 @@ export async function exportVideo({ state, media, config, renderFrame, buildFile
                 '-keyint_min', String(config.fps * 2),
                 '-sc_threshold', '0',
                 '-f', 'mpegts',
+                '-y',
                 segmentName
-            ]);
+            ], `segment ${segment + 1}`);
+
             segmentNames.push(segmentName);
             temporaryFiles.add(segmentName);
-
             for (const frameName of frameNames) {
                 try { await ffmpeg.deleteFile(frameName); } catch {}
                 temporaryFiles.delete(frameName);
@@ -159,33 +162,42 @@ export async function exportVideo({ state, media, config, renderFrame, buildFile
         ));
         temporaryFiles.add(concatName);
 
+        const joinedName = 'kefe-joined.ts';
         const outputName = 'kefe-final.mp4';
+        temporaryFiles.add(joinedName);
         temporaryFiles.add(outputName);
-        progress(onProgress, 82, 'Joining video and muxing audio');
+        progress(onProgress, 82, 'Joining rendered video');
 
+        await execChecked(ffmpeg, [
+            '-f', 'concat',
+            '-safe', '0',
+            '-i', concatName,
+            '-c', 'copy',
+            '-f', 'mpegts',
+            '-y',
+            joinedName
+        ], 'video join');
+
+        progress(onProgress, 88, 'Adding audio');
         progressHandler = ({ progress: ffProgress }) => {
-            if (Number.isFinite(ffProgress)) progress(onProgress, 82 + Math.max(0, Math.min(1, ffProgress)) * 18, 'Joining video and muxing audio');
+            if (Number.isFinite(ffProgress)) progress(onProgress, 88 + Math.max(0, Math.min(1, ffProgress)) * 12, 'Muxing audio');
         };
         ffmpeg.on('progress', progressHandler);
         try {
-            // Re-encode the joined video once at the end. This deliberately avoids
-            // relying on MP4 stream-copy timing across segment boundaries and gives
-            // the final file one continuous, standards-compliant video timeline.
-            await ffmpeg.exec([
-                '-f', 'concat', '-safe', '0', '-i', concatName,
+            await execChecked(ffmpeg, [
+                '-i', joinedName,
                 '-i', audioName,
-                '-map', '0:v:0', '-map', '1:a:0',
-                '-c:v', 'libx264',
-                '-preset', 'veryfast',
-                '-crf', '20',
-                '-pix_fmt', 'yuv420p',
-                '-r', String(config.fps),
-                '-c:a', 'aac', '-b:a', '192k',
+                '-map', '0:v:0',
+                '-map', '1:a:0',
+                '-c:v', 'copy',
+                '-c:a', 'aac',
+                '-b:a', '192k',
                 '-af', 'aresample=async=1:first_pts=0',
-                '-shortest',
+                '-t', duration.toFixed(3),
                 '-movflags', '+faststart',
+                '-y',
                 outputName
-            ]);
+            ], 'audio mux');
         } finally {
             ffmpeg.off('progress', progressHandler);
             progressHandler = null;
@@ -196,7 +208,7 @@ export async function exportVideo({ state, media, config, renderFrame, buildFile
         if (!data?.byteLength || data.byteLength < 1024) throw new Error('FFmpeg produced an empty MP4');
         progress(onProgress, 100, 'Export complete');
         return {
-            blob: new Blob([data], { type: 'video/mp4' }),
+            blob: new Blob([data.buffer ?? data], { type: 'video/mp4' }),
             filename: buildFilename?.() || 'KEFE Visualiser.mp4'
         };
     } finally {
