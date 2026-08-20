@@ -3,12 +3,16 @@ const CORE_VERSION = '0.12.10';
 const UTIL_VERSION = '0.12.2';
 const LOAD_TIMEOUT_MS = 30000;
 
-const LOCAL = {
-    ffmpeg: new URL('../vendor/ffmpeg/index.js', import.meta.url).href,
-    util: new URL('../vendor/util/index.js', import.meta.url).href,
-    core: new URL('../vendor/core/ffmpeg-core.js', import.meta.url).href,
-    wasm: new URL('../vendor/core/ffmpeg-core.wasm', import.meta.url).href,
-    worker: new URL('../vendor/ffmpeg/worker.js', import.meta.url).href
+// KEFE is a static browser app, so the FFmpeg runtime must be reachable at
+// runtime. The old implementation pointed at vendor/, but vendor/ is ignored
+// by git and those files were never deployed. Use the pinned official package
+// artifacts instead and keep all version numbers locked together here.
+const REMOTE = {
+    ffmpeg: `https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@${FF_VERSION}/dist/esm/index.js`,
+    util: `https://cdn.jsdelivr.net/npm/@ffmpeg/util@${UTIL_VERSION}/dist/esm/index.js`,
+    core: `https://cdn.jsdelivr.net/npm/@ffmpeg/core@${CORE_VERSION}/dist/esm/ffmpeg-core.js`,
+    wasm: `https://cdn.jsdelivr.net/npm/@ffmpeg/core@${CORE_VERSION}/dist/esm/ffmpeg-core.wasm`,
+    worker: `https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@${FF_VERSION}/dist/esm/worker.js`
 };
 
 let encoderPromise = null;
@@ -36,17 +40,17 @@ function withTimeout(promise, ms, details) {
 async function loadFFmpegModules() {
     try {
         const [{ FFmpeg }, { toBlobURL }] = await Promise.all([
-            import(LOCAL.ffmpeg),
-            import(LOCAL.util)
+            import(REMOTE.ffmpeg),
+            import(REMOTE.util)
         ]);
-        return { FFmpeg, toBlobURL, source: 'local' };
+        return { FFmpeg, toBlobURL, source: 'jsdelivr' };
     } catch (error) {
         throw encoderFailure('ENCODER_MODULES', 'loadModules', error, {
-            source: 'local',
+            source: 'jsdelivr',
             ffmpeg: FF_VERSION,
             util: UTIL_VERSION,
-            ffmpegURL: LOCAL.ffmpeg,
-            utilURL: LOCAL.util
+            ffmpegURL: REMOTE.ffmpeg,
+            utilURL: REMOTE.util
         });
     }
 }
@@ -58,29 +62,50 @@ export async function loadEncoder() {
             ffmpeg: FF_VERSION,
             core: CORE_VERSION,
             util: UTIL_VERSION,
-            source: 'local',
-            ffmpegURL: LOCAL.ffmpeg,
-            utilURL: LOCAL.util,
-            coreURL: LOCAL.core,
-            wasmURL: LOCAL.wasm,
-            workerURL: LOCAL.worker
+            source: 'jsdelivr',
+            ffmpegURL: REMOTE.ffmpeg,
+            utilURL: REMOTE.util,
+            coreURL: REMOTE.core,
+            wasmURL: REMOTE.wasm,
+            workerURL: REMOTE.worker
         };
         let logs = [];
         let ffmpeg = null;
         try {
             const { FFmpeg, toBlobURL } = await loadFFmpegModules();
             ffmpeg = new FFmpeg();
-            ffmpeg.on('log', ({ message }) => { logs.push(message); if (logs.length > 100) logs.shift(); console.debug('[KEFE FFmpeg]', message); });
+            ffmpeg.on('log', ({ message }) => {
+                logs.push(message);
+                if (logs.length > 100) logs.shift();
+                console.debug('[KEFE FFmpeg]', message);
+            });
             ffmpeg.on('progress', ({ progress, time }) => console.debug('[KEFE FFmpeg progress]', progress, time));
 
-            const coreURL = await toBlobURL(LOCAL.core, 'text/javascript');
-            const wasmURL = await toBlobURL(LOCAL.wasm, 'application/wasm');
-            await withTimeout(ffmpeg.load({ coreURL, wasmURL, classWorkerURL: LOCAL.worker }), LOAD_TIMEOUT_MS, { ...details, lastLogs: logs.slice(-20) });
+            // Fetch the core and worker through the pinned CDN URLs and turn
+            // them into same-origin blob URLs for the FFmpeg worker.
+            const coreURL = await toBlobURL(REMOTE.core, 'text/javascript');
+            const wasmURL = await toBlobURL(REMOTE.wasm, 'application/wasm');
+            const workerURL = await toBlobURL(REMOTE.worker, 'text/javascript');
+
+            await withTimeout(
+                ffmpeg.load({ coreURL, wasmURL, classWorkerURL: workerURL }),
+                LOAD_TIMEOUT_MS,
+                { ...details, lastLogs: logs.slice(-20) }
+            );
+
+            console.info('[KEFE] FFmpeg runtime loaded', {
+                ffmpeg: FF_VERSION,
+                core: CORE_VERSION,
+                util: UTIL_VERSION,
+                source: 'jsdelivr'
+            });
             return ffmpeg;
         } catch (error) {
             encoderPromise = null;
             try { ffmpeg?.terminate?.(); } catch {}
-            const diagnostic = error?.name === 'ExportDiagnosticError' ? error : encoderFailure('ENCODER_LOAD', 'load', error, { ...details, lastLogs: logs.slice(-20) });
+            const diagnostic = error?.name === 'ExportDiagnosticError'
+                ? error
+                : encoderFailure('ENCODER_LOAD', 'load', error, { ...details, lastLogs: logs.slice(-20) });
             diagnostic.details = { ...(diagnostic.details || {}), versions: ENCODER_VERSIONS };
             console.error('[KEFE] FFmpeg initialization failed', diagnostic);
             throw diagnostic;
