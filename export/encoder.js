@@ -2,9 +2,11 @@ const FF_VERSION = '0.12.15';
 const CORE_VERSION = '0.12.10';
 const LOAD_TIMEOUT_MS = 30000;
 
-const FFMPEG_MODULE_URL = `https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@${FF_VERSION}/dist/esm/index.js`;
-const CORE_JS_URL = `https://cdn.jsdelivr.net/npm/@ffmpeg/core@${CORE_VERSION}/dist/esm/ffmpeg-core.js`;
-const CORE_WASM_URL = `https://cdn.jsdelivr.net/npm/@ffmpeg/core@${CORE_VERSION}/dist/esm/ffmpeg-core.wasm`;
+// Use the exact FFmpeg assets packaged by the GitHub Pages build. The exporter
+// must not depend on a second, external CDN copy of the runtime.
+const FFMPEG_MODULE_URL = new URL('../vendor/ffmpeg/index.js', import.meta.url).href;
+const CORE_JS_URL = new URL('../vendor/core/ffmpeg-core.js', import.meta.url).href;
+const CORE_WASM_URL = new URL('../vendor/core/ffmpeg-core.wasm', import.meta.url).href;
 
 let encoderPromise = null;
 
@@ -54,7 +56,7 @@ export async function loadEncoder(onStatus) {
         let coreURL = null;
         let wasmURL = null;
         const details = {
-            source: 'jsdelivr',
+            source: 'github-pages-bundled-assets',
             ffmpeg: FF_VERSION,
             core: CORE_VERSION,
             ffmpegURL: FFMPEG_MODULE_URL,
