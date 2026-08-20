@@ -140,23 +140,18 @@ export async function exportVideo({ state, media, config, renderFrame, buildFile
             progress(onProgress, 70 + ((segment + 1) / segmentCount) * 10, `Encoded segment ${segment + 1} of ${segmentCount}`);
         }
 
-        const concatName = 'kefe-segments.txt';
-        await ffmpeg.writeFile(concatName, new TextEncoder().encode('ffconcat version 1.0\n' + segmentNames.map(name => `file '${name}'`).join('\n') + '\n'));
-        temporaryFiles.add(concatName);
-        const joinedName = 'kefe-joined.ts';
+        // MPEG-TS is byte-concatenable. Avoid the concat demuxer here because it
+        // is not consistently present/usable in browser FFmpeg builds.
+        const concatInput = `concat:${segmentNames.join('|')}`;
         const outputName = 'kefe-final.mp4';
-        temporaryFiles.add(joinedName);
         temporaryFiles.add(outputName);
         progress(onProgress, 82, 'Joining rendered video');
-        await execChecked(ffmpeg, ['-f', 'concat', '-safe', '0', '-i', concatName, '-c', 'copy', '-f', 'mpegts', '-y', joinedName], 'video join');
-
-        progress(onProgress, 88, 'Adding audio');
         progressHandler = ({ progress: ffProgress }) => {
-            if (Number.isFinite(ffProgress)) progress(onProgress, 88 + Math.max(0, Math.min(1, ffProgress)) * 12, 'Muxing audio');
+            if (Number.isFinite(ffProgress)) progress(onProgress, 82 + Math.max(0, Math.min(1, ffProgress)) * 18, 'Finalising MP4');
         };
         ffmpeg.on('progress', progressHandler);
         try {
-            await execChecked(ffmpeg, ['-i', joinedName, '-i', audioName, '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-af', 'aresample=async=1:first_pts=0', '-t', duration.toFixed(3), '-movflags', '+faststart', '-y', outputName], 'audio mux');
+            await execChecked(ffmpeg, ['-i', concatInput, '-i', audioName, '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-af', 'aresample=async=1:first_pts=0', '-t', duration.toFixed(3), '-movflags', '+faststart', '-y', outputName], 'final MP4');
         } finally {
             ffmpeg.off('progress', progressHandler);
             progressHandler = null;
@@ -166,7 +161,7 @@ export async function exportVideo({ state, media, config, renderFrame, buildFile
         const data = await ffmpeg.readFile(outputName);
         if (!data?.byteLength || data.byteLength < 1024) throw new Error('FFmpeg produced an empty MP4');
         progress(onProgress, 100, 'Export complete');
-        return { blob: new Blob([data.buffer ?? data], { type: 'video/mp4' }), filename: buildFilename?.() || 'KEFE Visualiser.mp4' };
+        return { blob: new Blob([data], { type: 'video/mp4' }), filename: buildFilename?.() || 'KEFE Visualiser.mp4' };
     } finally {
         if (progressHandler) {
             try { ffmpeg.off('progress', progressHandler); } catch {}
