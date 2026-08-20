@@ -2,8 +2,6 @@ const FF_VERSION = '0.12.15';
 const CORE_VERSION = '0.12.10';
 const LOAD_TIMEOUT_MS = 30000;
 
-// Use the exact FFmpeg assets packaged by the GitHub Pages build. The exporter
-// must not depend on a second, external CDN copy of the runtime.
 const FFMPEG_MODULE_URL = new URL('../vendor/ffmpeg/index.js', import.meta.url).href;
 const CORE_JS_URL = new URL('../vendor/core/ffmpeg-core.js', import.meta.url).href;
 const CORE_WASM_URL = new URL('../vendor/core/ffmpeg-core.wasm', import.meta.url).href;
@@ -40,9 +38,7 @@ async function fetchBlobURL(url, mime, label) {
         if (!blob.size) throw new Error('empty response');
         return URL.createObjectURL(new Blob([blob], { type: mime }));
     } catch (error) {
-        if (error?.name === 'AbortError') {
-            throw encoderFailure('ENCODER_TIMEOUT', label, new Error(`Timed out loading ${label}`), { url });
-        }
+        if (error?.name === 'AbortError') throw encoderFailure('ENCODER_TIMEOUT', label, new Error(`Timed out loading ${label}`), { url });
         throw encoderFailure('ENCODER_ASSET', label, error, { url });
     } finally {
         clearTimeout(timer);
@@ -55,14 +51,7 @@ export async function loadEncoder(onStatus) {
         let ffmpeg = null;
         let coreURL = null;
         let wasmURL = null;
-        const details = {
-            source: 'github-pages-bundled-assets',
-            ffmpeg: FF_VERSION,
-            core: CORE_VERSION,
-            ffmpegURL: FFMPEG_MODULE_URL,
-            coreURL: CORE_JS_URL,
-            wasmURL: CORE_WASM_URL
-        };
+        const details = { source: 'github-pages-bundled-assets', ffmpeg: FF_VERSION, core: CORE_VERSION, ffmpegURL: FFMPEG_MODULE_URL, coreURL: CORE_JS_URL, wasmURL: CORE_WASM_URL };
         try {
             onStatus?.('Loading FFmpeg engine…');
             const module = await withTimeout(import(FFMPEG_MODULE_URL), LOAD_TIMEOUT_MS, details, 'module-load');
@@ -81,7 +70,6 @@ export async function loadEncoder(onStatus) {
 
             onStatus?.('Starting FFmpeg…');
             await withTimeout(ffmpeg.load({ coreURL, wasmURL }), LOAD_TIMEOUT_MS, details, 'load');
-
             console.info('[KEFE] FFmpeg runtime loaded', details);
             ffmpeg.__kefeRuntimeURLs = { coreURL, wasmURL };
             return ffmpeg;
