@@ -122,9 +122,13 @@ export async function exportVideo({ state, media, config, renderFrame, buildFile
                 progress(onProgress, (frameIndex + 1) / totalFrames * 70, `Rendering frame ${frameIndex + 1} of ${totalFrames}`);
             }
 
-            const segmentName = `kefe-segment-${String(segment).padStart(4, '0')}.mp4`;
+            // Encode each segment as a standalone H.264 stream with a forced
+            // keyframe at its first frame. The concat demuxer can then join the
+            // segments without depending on MP4 edit-list metadata.
+            const segmentName = `kefe-segment-${String(segment).padStart(4, '0')}.ts`;
             await ffmpeg.exec([
                 '-framerate', String(config.fps),
+                '-start_number', '0',
                 '-i', 'kefe-frame-%05d.jpg',
                 '-frames:v', String(frameCount),
                 '-an',
@@ -132,8 +136,11 @@ export async function exportVideo({ state, media, config, renderFrame, buildFile
                 '-preset', 'veryfast',
                 '-crf', '20',
                 '-pix_fmt', 'yuv420p',
+                '-r', String(config.fps),
                 '-g', String(config.fps * 2),
-                '-movflags', '+faststart',
+                '-keyint_min', String(config.fps * 2),
+                '-sc_threshold', '0',
+                '-f', 'mpegts',
                 segmentName
             ]);
             segmentNames.push(segmentName);
@@ -147,25 +154,36 @@ export async function exportVideo({ state, media, config, renderFrame, buildFile
         }
 
         const concatName = 'kefe-segments.txt';
-        await ffmpeg.writeFile(concatName, new TextEncoder().encode(segmentNames.map(name => `file '${name}'`).join('\n') + '\n'));
+        await ffmpeg.writeFile(concatName, new TextEncoder().encode(
+            'ffconcat version 1.0\n' + segmentNames.map(name => `file '${name}'`).join('\n') + '\n'
+        ));
         temporaryFiles.add(concatName);
 
         const outputName = 'kefe-final.mp4';
         temporaryFiles.add(outputName);
-        progress(onProgress, 82, 'Muxing audio and finishing MP4');
+        progress(onProgress, 82, 'Joining video and muxing audio');
 
         progressHandler = ({ progress: ffProgress }) => {
-            if (Number.isFinite(ffProgress)) progress(onProgress, 82 + Math.max(0, Math.min(1, ffProgress)) * 18, 'Muxing audio and finishing MP4');
+            if (Number.isFinite(ffProgress)) progress(onProgress, 82 + Math.max(0, Math.min(1, ffProgress)) * 18, 'Joining video and muxing audio');
         };
         ffmpeg.on('progress', progressHandler);
         try {
+            // Re-encode the joined video once at the end. This deliberately avoids
+            // relying on MP4 stream-copy timing across segment boundaries and gives
+            // the final file one continuous, standards-compliant video timeline.
             await ffmpeg.exec([
                 '-f', 'concat', '-safe', '0', '-i', concatName,
                 '-i', audioName,
                 '-map', '0:v:0', '-map', '1:a:0',
-                '-c:v', 'copy',
+                '-c:v', 'libx264',
+                '-preset', 'veryfast',
+                '-crf', '20',
+                '-pix_fmt', 'yuv420p',
+                '-r', String(config.fps),
                 '-c:a', 'aac', '-b:a', '192k',
-                '-shortest', '-movflags', '+faststart',
+                '-af', 'aresample=async=1:first_pts=0',
+                '-shortest',
+                '-movflags', '+faststart',
                 outputName
             ]);
         } finally {
@@ -178,7 +196,7 @@ export async function exportVideo({ state, media, config, renderFrame, buildFile
         if (!data?.byteLength || data.byteLength < 1024) throw new Error('FFmpeg produced an empty MP4');
         progress(onProgress, 100, 'Export complete');
         return {
-            blob: new Blob([data.buffer], { type: 'video/mp4' }),
+            blob: new Blob([data], { type: 'video/mp4' }),
             filename: buildFilename?.() || 'KEFE Visualiser.mp4'
         };
     } finally {
