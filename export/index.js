@@ -31,7 +31,12 @@ export async function exportVideo({ state, media, config, createCanvas, renderFr
 
         stage = EXPORT_STAGES.LOADING_ENCODER;
         progress.update(stage, 5, 'Loading frame-accurate encoder…');
-        encoder = await loadEncoder({ onProgress: (message, percent) => progress.update(stage, percent, message) });
+        encoder = await loadEncoder({
+            onProgress: (message, percent) => {
+                // Keep encoder loading inside the single overall export progress bar.
+                progress.update(stage, 5 + Math.max(0, Math.min(100, percent)) * 0.20, message);
+            }
+        });
         const encoderCheck = await runExportPreflight({ state, audio: state.audio.file, canvas: createCanvas(config.width, config.height), encoder });
         if (!encoderCheck.ok) throw preflightFailure(stage, encoderCheck);
 
@@ -39,7 +44,8 @@ export async function exportVideo({ state, media, config, createCanvas, renderFr
         const canvas = createCanvas(config.width, config.height);
         const renderer = createFrameRenderer({ canvas, renderFrame, width: config.width, height: config.height });
         const totalFrames = Math.max(1, Math.ceil(duration * config.fps));
-        const framesPerSegment = Math.max(config.fps, Math.floor(config.fps * 4));
+        // Longer segments reduce repeated FFmpeg startup/teardown overhead while keeping browser memory bounded.
+        const framesPerSegment = Math.max(config.fps, Math.floor(config.fps * 8));
         const segmentCount = Math.ceil(totalFrames / framesPerSegment);
         const segments = [];
 
@@ -62,7 +68,14 @@ export async function exportVideo({ state, media, config, createCanvas, renderFr
             }
             stage = EXPORT_STAGES.ENCODING_VIDEO;
             const segmentName = `segment_${String(segment).padStart(4, '0')}.mp4`;
-            await encodeSegment(encoder, { frames: count, outputName: segmentName, fps: config.fps, timeoutMs: Math.max(120000, count * 2500), segment: segment + 1, onProgress: message => progress.update(stage, 75, message) });
+            await encodeSegment(encoder, {
+                frames: count,
+                outputName: segmentName,
+                fps: config.fps,
+                timeoutMs: Math.max(120000, count * 2500),
+                segment: segment + 1,
+                onProgress: message => progress.update(stage, 75, message)
+            });
             files.add(segmentName); segments.push(segmentName);
             for (const file of frameNames) { try { await encoder.deleteFile(file); } catch {} files.delete(file); }
         }
