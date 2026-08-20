@@ -3,11 +3,15 @@ const CORE_VERSION = '0.12.10';
 const UTIL_VERSION = '0.12.2';
 const LOAD_TIMEOUT_MS = 30000;
 
-// Use the official ffmpeg.wasm browser controller. It owns the worker
-// lifecycle and is the supported API for @ffmpeg/core 0.12.x.
-const FFMPEG_MODULE_URL = `https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@${FF_VERSION}/dist/esm/index.js`;
-const UTIL_MODULE_URL = `https://cdn.jsdelivr.net/npm/@ffmpeg/util@${UTIL_VERSION}/dist/esm/index.js`;
-const CORE_BASE_URL = `https://cdn.jsdelivr.net/npm/@ffmpeg/core@${CORE_VERSION}/dist/esm`;
+// Prefer the self-hosted FFmpeg runtime produced by the deployment workflow.
+// Fall back to the pinned official CDN packages for local development when the
+// generated vendor files do not exist yet.
+const LOCAL_FFMPEG_MODULE_URL = new URL('../vendor/ffmpeg/index.js', import.meta.url).href;
+const LOCAL_UTIL_MODULE_URL = new URL('../vendor/util/index.js', import.meta.url).href;
+const LOCAL_CORE_BASE_URL = new URL('../vendor/core/', import.meta.url).href.replace(/\/$/, '');
+const CDN_FFMPEG_MODULE_URL = `https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@${FF_VERSION}/dist/esm/index.js`;
+const CDN_UTIL_MODULE_URL = `https://cdn.jsdelivr.net/npm/@ffmpeg/util@${UTIL_VERSION}/dist/esm/index.js`;
+const CDN_CORE_BASE_URL = `https://cdn.jsdelivr.net/npm/@ffmpeg/core@${CORE_VERSION}/dist/esm`;
 
 let encoderPromise = null;
 
@@ -36,6 +40,15 @@ function withTimeout(promise, ms, details, operation = 'load') {
     return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
+async function localRuntimeAvailable() {
+    try {
+        const response = await fetch(LOCAL_FFMPEG_MODULE_URL, { method: 'HEAD', cache: 'no-store' });
+        return response.ok;
+    } catch {
+        return false;
+    }
+}
+
 export async function loadEncoder() {
     if (encoderPromise) return encoderPromise;
 
@@ -43,32 +56,38 @@ export async function loadEncoder() {
         let ffmpeg = null;
         let coreURL = null;
         let wasmURL = null;
+        const useLocal = await localRuntimeAvailable();
+        const ffmpegModuleURL = useLocal ? LOCAL_FFMPEG_MODULE_URL : CDN_FFMPEG_MODULE_URL;
+        const utilModuleURL = useLocal ? LOCAL_UTIL_MODULE_URL : CDN_UTIL_MODULE_URL;
+        const coreBaseURL = useLocal ? LOCAL_CORE_BASE_URL : CDN_CORE_BASE_URL;
+        const source = useLocal ? 'self-hosted' : 'cdn-fallback';
         const details = {
+            source,
             ffmpeg: FF_VERSION,
             core: CORE_VERSION,
             util: UTIL_VERSION,
-            ffmpegURL: FFMPEG_MODULE_URL,
-            utilURL: UTIL_MODULE_URL,
-            coreURL: `${CORE_BASE_URL}/ffmpeg-core.js`,
-            wasmURL: `${CORE_BASE_URL}/ffmpeg-core.wasm`
+            ffmpegURL: ffmpegModuleURL,
+            utilURL: utilModuleURL,
+            coreURL: `${coreBaseURL}/ffmpeg-core.js`,
+            wasmURL: `${coreBaseURL}/ffmpeg-core.wasm`
         };
 
         try {
             const [{ FFmpeg }, { toBlobURL }] = await Promise.all([
-                import(FFMPEG_MODULE_URL),
-                import(UTIL_MODULE_URL)
+                import(ffmpegModuleURL),
+                import(utilModuleURL)
             ]);
 
             ffmpeg = new FFmpeg();
             ffmpeg.on('log', data => console.debug('[KEFE FFmpeg]', data?.message || data));
             ffmpeg.on('error', error => console.error('[KEFE FFmpeg error]', error));
 
-            // Convert the cross-origin core assets into blob URLs before passing
-            // them to ffmpeg.wasm. This is the supported way to avoid worker/CORS
-            // loading failures when the app itself is hosted on GitHub Pages.
+            // Blob URLs keep the core assets same-origin from the worker's point
+            // of view and avoid the cross-origin loading failures that caused the
+            // previous custom worker implementation to be unreliable.
             [coreURL, wasmURL] = await Promise.all([
-                toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.js`, 'text/javascript'),
-                toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.wasm`, 'application/wasm')
+                toBlobURL(`${coreBaseURL}/ffmpeg-core.js`, 'text/javascript'),
+                toBlobURL(`${coreBaseURL}/ffmpeg-core.wasm`, 'application/wasm')
             ]);
 
             await withTimeout(
@@ -78,12 +97,7 @@ export async function loadEncoder() {
                 'load'
             );
 
-            console.info('[KEFE] FFmpeg runtime loaded', {
-                ffmpeg: FF_VERSION,
-                core: CORE_VERSION,
-                util: UTIL_VERSION
-            });
-
+            console.info('[KEFE] FFmpeg runtime loaded', details);
             ffmpeg.__kefeRuntimeURLs = { coreURL, wasmURL };
             return ffmpeg;
         } catch (error) {
