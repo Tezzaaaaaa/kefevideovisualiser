@@ -51,7 +51,7 @@ async function loadFFmpegModules() {
     }
 }
 
-export async function loadEncoder({ onProgress = () => {} } = {}) {
+export async function loadEncoder() {
     if (encoderPromise) return encoderPromise;
     encoderPromise = (async () => {
         const details = {
@@ -68,19 +68,14 @@ export async function loadEncoder({ onProgress = () => {} } = {}) {
         let logs = [];
         let ffmpeg = null;
         try {
-            onProgress('Loading encoder modules…', 2);
             const { FFmpeg, toBlobURL } = await loadFFmpegModules();
             ffmpeg = new FFmpeg();
             ffmpeg.on('log', ({ message }) => { logs.push(message); if (logs.length > 100) logs.shift(); console.debug('[KEFE FFmpeg]', message); });
             ffmpeg.on('progress', ({ progress, time }) => console.debug('[KEFE FFmpeg progress]', progress, time));
 
-            onProgress('Loading encoder core…', 5);
             const coreURL = await toBlobURL(LOCAL.core, 'text/javascript');
-            onProgress('Loading encoder WASM…', 15);
             const wasmURL = await toBlobURL(LOCAL.wasm, 'application/wasm');
-            onProgress('Starting frame-accurate encoder…', 25);
             await withTimeout(ffmpeg.load({ coreURL, wasmURL, classWorkerURL: LOCAL.worker }), LOAD_TIMEOUT_MS, { ...details, lastLogs: logs.slice(-20) });
-            onProgress('Encoder ready', 100);
             return ffmpeg;
         } catch (error) {
             encoderPromise = null;
