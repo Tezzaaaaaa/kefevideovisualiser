@@ -1,11 +1,11 @@
 const FF_VERSION = '0.12.10';
-const CORE_VERSION = '0.12.10';
+// @ffmpeg/ffmpeg 0.12.10 was released with @ffmpeg/core 0.12.6.
+// There is no matching core 0.12.10 release; using it leaves ffmpeg.load()
+// waiting on an invalid runtime and makes the export UI sit at 0%.
+const CORE_VERSION = '0.12.6';
 const UTIL_VERSION = '0.12.2';
 const LOAD_TIMEOUT_MS = 30000;
 
-// Prefer the self-hosted FFmpeg runtime produced by the deployment workflow.
-// Fall back to the pinned official CDN packages for local development when the
-// generated vendor files do not exist yet.
 const LOCAL_FFMPEG_MODULE_URL = new URL('../vendor/ffmpeg/index.js', import.meta.url).href;
 const LOCAL_UTIL_MODULE_URL = new URL('../vendor/util/index.js', import.meta.url).href;
 const LOCAL_CORE_BASE_URL = new URL('../vendor/core/', import.meta.url).href.replace(/\/$/, '');
@@ -29,15 +29,13 @@ function encoderFailure(stage, operation, error, details = {}) {
 
 function withTimeout(promise, ms, details, operation = 'load') {
     let timer;
-    const timeout = new Promise((_, reject) => {
+    const timeoutPromise = new Promise((_, reject) => {
         timer = setTimeout(() => reject(encoderFailure(
-            'ENCODER_TIMEOUT',
-            operation,
-            new Error(`FFmpeg ${operation} timed out after ${ms / 1000}s`),
-            details
+            'ENCODER_TIMEOUT', operation,
+            new Error(`FFmpeg ${operation} timed out after ${ms / 1000}s`), details
         )), ms);
     });
-    return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+    return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
 }
 
 async function localRuntimeAvailable() {
@@ -82,9 +80,6 @@ export async function loadEncoder() {
             ffmpeg.on('log', data => console.debug('[KEFE FFmpeg]', data?.message || data));
             ffmpeg.on('error', error => console.error('[KEFE FFmpeg error]', error));
 
-            // Blob URLs keep the core assets same-origin from the worker's point
-            // of view and avoid the cross-origin loading failures that caused the
-            // previous custom worker implementation to be unreliable.
             [coreURL, wasmURL] = await Promise.all([
                 toBlobURL(`${coreBaseURL}/ffmpeg-core.js`, 'text/javascript'),
                 toBlobURL(`${coreBaseURL}/ffmpeg-core.wasm`, 'application/wasm')
