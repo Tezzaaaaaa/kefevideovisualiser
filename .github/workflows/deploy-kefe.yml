@@ -48,7 +48,7 @@ jobs:
           set -euo pipefail
           test -f index.html
           test -d export
-          for file in index.js ui.js encoder.js diagnostics.js report.js renderer.js segments.js muxer.js cleanup.js errors.js progress.js; do test -s "export/$file"; done
+          for file in index.js ui.js encoder.js ffmpeg-worker.js; do test -s "export/$file"; done
       - name: Validate export module syntax
         run: |
           set -euo pipefail
@@ -56,6 +56,7 @@ jobs:
       - name: Prepare site
         run: |
           set -euo pipefail
+          rm -rf _site
           mkdir _site
           cp index.html styles.css typography.css typography.js app.js fonts/homemade-apple/HomemadeApple-Regular.woff2 kefe-logo.svg favicon.svg DESIGN-SYSTEM-CHECKLIST.md _site/
           cp -R effects _site/effects
