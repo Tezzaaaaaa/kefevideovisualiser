@@ -3,10 +3,10 @@ const CORE_VERSION = '0.12.10';
 const UTIL_VERSION = '0.12.2';
 const LOAD_TIMEOUT_MS = 30000;
 
-// The FFmpeg controller is deliberately local to KEFE. The official
-// ffmpeg.wasm package cannot be safely consumed by importing @ffmpeg/ffmpeg
-// directly from a CDN because its worker is part of the package. KEFE therefore
-// owns the browser worker and only downloads the pinned FFmpeg core/wasm.
+// KEFE owns the FFmpeg controller and worker. The browser worker is served
+// from this repository; only the pinned single-thread FFmpeg core/wasm are
+// fetched at runtime. This avoids the unsupported direct CDN import of
+// @ffmpeg/ffmpeg while keeping the large wasm binary out of the repository.
 const RUNTIME = {
     worker: new URL('./ffmpeg-worker.js', import.meta.url).href,
     core: `https://cdn.jsdelivr.net/npm/@ffmpeg/core@${CORE_VERSION}/dist/esm/ffmpeg-core.js`,
@@ -35,8 +35,15 @@ function withTimeout(promise, ms, details, operation = 'load') {
     return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
+async function blobURL(url, type) {
+    const response = await fetch(url, { mode: 'cors', cache: 'force-cache' });
+    if (!response.ok) throw new Error(`FFmpeg runtime request failed: ${response.status} ${response.statusText}`);
+    return URL.createObjectURL(new Blob([await response.arrayBuffer()], { type }));
+}
+
 class BrowserFFmpeg {
-    constructor() {
+    constructor(runtime) {
+        this.runtime = runtime;
         this.worker = new Worker(RUNTIME.worker, { type: 'module' });
         this.nextId = 1;
         this.pending = new Map();
@@ -56,9 +63,7 @@ class BrowserFFmpeg {
         this.listeners.get(type).add(listener);
     }
 
-    off(type, listener) {
-        this.listeners.get(type)?.delete(listener);
-    }
+    off(type, listener) { this.listeners.get(type)?.delete(listener); }
 
     emit(type, data) {
         for (const listener of this.listeners.get(type) || []) {
@@ -67,14 +72,8 @@ class BrowserFFmpeg {
     }
 
     handleMessage(message) {
-        if (message.type === 'LOG') {
-            this.emit('log', message.data);
-            return;
-        }
-        if (message.type === 'PROGRESS') {
-            this.emit('progress', message.data);
-            return;
-        }
+        if (message.type === 'LOG') { this.emit('log', message.data); return; }
+        if (message.type === 'PROGRESS') { this.emit('progress', message.data); return; }
         const pending = this.pending.get(message.id);
         if (!pending) return;
         this.pending.delete(message.id);
@@ -91,7 +90,7 @@ class BrowserFFmpeg {
 
     async load() {
         if (this.loaded) return;
-        await this.request('LOAD', { coreURL: RUNTIME.core, wasmURL: RUNTIME.wasm }, LOAD_TIMEOUT_MS);
+        await this.request('LOAD', this.runtime, LOAD_TIMEOUT_MS);
         this.loaded = true;
     }
 
@@ -119,27 +118,28 @@ export async function loadEncoder() {
     if (encoderPromise) return encoderPromise;
     encoderPromise = (async () => {
         let encoder = null;
-        const details = {
-            ffmpeg: FF_VERSION,
-            core: CORE_VERSION,
-            util: UTIL_VERSION,
-            workerURL: RUNTIME.worker,
-            coreURL: RUNTIME.core,
-            wasmURL: RUNTIME.wasm
-        };
+        let coreURL = null;
+        let wasmURL = null;
+        const details = { ffmpeg: FF_VERSION, core: CORE_VERSION, util: UTIL_VERSION, workerURL: RUNTIME.worker, coreURL: RUNTIME.core, wasmURL: RUNTIME.wasm };
         try {
-            encoder = new BrowserFFmpeg();
+            // Make same-origin blob URLs before the worker starts. This avoids
+            // cross-origin module/wasm loading problems inside the worker.
+            [coreURL, wasmURL] = await Promise.all([
+                blobURL(RUNTIME.core, 'text/javascript'),
+                blobURL(RUNTIME.wasm, 'application/wasm')
+            ]);
+            encoder = new BrowserFFmpeg({ coreURL, wasmURL });
             await encoder.load();
             console.info('[KEFE] FFmpeg runtime loaded', details);
             return encoder;
         } catch (error) {
             encoderPromise = null;
             try { encoder?.terminate(); } catch {}
-            const diagnostic = error?.name === 'ExportDiagnosticError'
+            if (coreURL) URL.revokeObjectURL(coreURL);
+            if (wasmURL) URL.revokeObjectURL(wasmURL);
+            throw error?.name === 'ExportDiagnosticError'
                 ? error
                 : encoderFailure('ENCODER_LOAD', 'load', error, details);
-            console.error('[KEFE] FFmpeg initialization failed', diagnostic);
-            throw diagnostic;
         }
     })();
     return encoderPromise;
@@ -147,7 +147,10 @@ export async function loadEncoder() {
 
 export function releaseEncoder(encoder) {
     if (encoderPromise) encoderPromise = null;
+    const runtime = encoder?.runtime;
     try { encoder?.terminate?.(); } catch {}
+    try { if (runtime?.coreURL) URL.revokeObjectURL(runtime.coreURL); } catch {}
+    try { if (runtime?.wasmURL) URL.revokeObjectURL(runtime.wasmURL); } catch {}
 }
 
 export const ENCODER_VERSIONS = Object.freeze({ ffmpeg: FF_VERSION, core: CORE_VERSION, util: UTIL_VERSION });
