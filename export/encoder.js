@@ -2,10 +2,13 @@ const FF_VERSION = '0.12.10';
 const CORE_VERSION = '0.12.10';
 const LOAD_TIMEOUT_MS = 30000;
 
-const FFMPEG_MODULE_URL = new URL('../vendor/ffmpeg/index.js', import.meta.url).href;
-const CORE_URL = new URL('../vendor/core/ffmpeg-core.js', import.meta.url).href;
-const WASM_URL = new URL('../vendor/core/ffmpeg-core.wasm', import.meta.url).href;
-const WORKER_URL = new URL('../vendor/ffmpeg/worker.js', import.meta.url).href;
+const BUNDLED_MODULE_URL = new URL('../vendor/ffmpeg/index.js', import.meta.url).href;
+const BUNDLED_CORE_URL = new URL('../vendor/core/ffmpeg-core.js', import.meta.url).href;
+const BUNDLED_WASM_URL = new URL('../vendor/core/ffmpeg-core.wasm', import.meta.url).href;
+const BUNDLED_CLASS_WORKER_URL = new URL('../vendor/ffmpeg/worker.js', import.meta.url).href;
+
+const CDN_BASE = `https://cdn.jsdelivr.net/npm/@ffmpeg/core@${CORE_VERSION}/dist/esm`;
+const CDN_MODULE_URL = `https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@${FF_VERSION}/dist/esm/index.js`;
 
 let encoderPromise = null;
 
@@ -29,14 +32,15 @@ function withTimeout(promise, ms, details, operation) {
     return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
 }
 
-async function verifyAsset(url, label) {
+async function fetchBlobURL(url, mime, label) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), LOAD_TIMEOUT_MS);
     try {
-        const response = await fetch(url, { method: 'GET', signal: controller.signal, cache: 'no-store' });
+        const response = await fetch(url, { signal: controller.signal, cache: 'no-store' });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const blob = await response.blob();
         if (!blob.size) throw new Error('empty response');
+        return URL.createObjectURL(new Blob([blob], { type: mime }));
     } catch (error) {
         if (error?.name === 'AbortError') throw encoderFailure('ENCODER_TIMEOUT', label, new Error(`Timed out loading ${label}`), { url });
         throw encoderFailure('ENCODER_ASSET', label, error, { url });
@@ -45,46 +49,79 @@ async function verifyAsset(url, label) {
     }
 }
 
+async function assetExists(url, label) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), LOAD_TIMEOUT_MS);
+    try {
+        const response = await fetch(url, { method: 'GET', signal: controller.signal, cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const blob = await response.blob();
+        if (!blob.size) throw new Error('empty response');
+        return true;
+    } catch (error) {
+        if (error?.name === 'AbortError') throw encoderFailure('ENCODER_TIMEOUT', label, new Error(`Timed out loading ${label}`), { url });
+        throw encoderFailure('ENCODER_ASSET', label, error, { url });
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+async function loadBundled() {
+    await assetExists(BUNDLED_MODULE_URL, 'bundled-ffmpeg-module');
+    await assetExists(BUNDLED_CORE_URL, 'bundled-ffmpeg-core');
+    await assetExists(BUNDLED_WASM_URL, 'bundled-ffmpeg-wasm');
+    await assetExists(BUNDLED_CLASS_WORKER_URL, 'bundled-ffmpeg-worker');
+    const module = await withTimeout(import(BUNDLED_MODULE_URL), LOAD_TIMEOUT_MS, { source: 'bundled' }, 'bundled-module-load');
+    return { module, coreURL: BUNDLED_CORE_URL, wasmURL: BUNDLED_WASM_URL, classWorkerURL: BUNDLED_CLASS_WORKER_URL, source: 'bundled' };
+}
+
+async function loadCDN() {
+    const module = await withTimeout(import(CDN_MODULE_URL), LOAD_TIMEOUT_MS, { source: 'cdn', moduleURL: CDN_MODULE_URL }, 'cdn-module-load');
+    // Fetching these assets into same-origin blob URLs avoids CORS and worker URL problems.
+    const [coreURL, wasmURL] = await Promise.all([
+        fetchBlobURL(`${CDN_BASE}/ffmpeg-core.js`, 'text/javascript', 'cdn-ffmpeg-core'),
+        fetchBlobURL(`${CDN_BASE}/ffmpeg-core.wasm`, 'application/wasm', 'cdn-ffmpeg-wasm')
+    ]);
+    return { module, coreURL, wasmURL, classWorkerURL: undefined, source: 'cdn' };
+}
+
 export async function loadEncoder(onStatus) {
     if (encoderPromise) return encoderPromise;
     encoderPromise = (async () => {
         let ffmpeg = null;
-        const details = {
-            source: 'bundled',
-            ffmpeg: FF_VERSION,
-            core: CORE_VERSION,
-            ffmpegURL: FFMPEG_MODULE_URL,
-            coreURL: CORE_URL,
-            wasmURL: WASM_URL,
-            workerURL: WORKER_URL
-        };
+        let runtime = null;
         try {
-            onStatus?.('Loading bundled FFmpeg engine…');
-            await verifyAsset(FFMPEG_MODULE_URL, 'ffmpeg-module');
-            const module = await withTimeout(import(FFMPEG_MODULE_URL), LOAD_TIMEOUT_MS, details, 'module-load');
-            const FFmpeg = module?.FFmpeg;
+            onStatus?.('Loading FFmpeg engine…');
+            try {
+                runtime = await loadBundled();
+                onStatus?.('Using bundled FFmpeg runtime…');
+            } catch (bundledError) {
+                console.warn('[KEFE] Bundled FFmpeg runtime unavailable; falling back to CDN.', bundledError);
+                onStatus?.('Bundled runtime unavailable — loading FFmpeg fallback…');
+                runtime = await loadCDN();
+            }
+
+            const FFmpeg = runtime.module?.FFmpeg;
             if (typeof FFmpeg !== 'function') throw new Error('FFmpeg constructor was not found');
 
             ffmpeg = new FFmpeg();
             ffmpeg.on('log', data => console.debug('[KEFE FFmpeg]', data?.message || data));
             ffmpeg.on('error', error => console.error('[KEFE FFmpeg error]', error));
 
-            onStatus?.('Checking bundled FFmpeg core…');
-            await Promise.all([
-                verifyAsset(CORE_URL, 'ffmpeg-core'),
-                verifyAsset(WASM_URL, 'ffmpeg-wasm'),
-                verifyAsset(WORKER_URL, 'ffmpeg-worker')
-            ]);
-
             onStatus?.('Starting FFmpeg…');
-            await withTimeout(ffmpeg.load({ coreURL: CORE_URL, wasmURL: WASM_URL, workerURL: WORKER_URL }), LOAD_TIMEOUT_MS, details, 'load');
-            console.info('[KEFE] Bundled FFmpeg runtime loaded', details);
-            ffmpeg.__kefeRuntimeURLs = { coreURL: CORE_URL, wasmURL: WASM_URL, workerURL: WORKER_URL };
+            const config = {
+                coreURL: runtime.coreURL,
+                wasmURL: runtime.wasmURL
+            };
+            if (runtime.classWorkerURL) config.classWorkerURL = runtime.classWorkerURL;
+            await withTimeout(ffmpeg.load(config), LOAD_TIMEOUT_MS, { source: runtime.source, coreURL: runtime.coreURL, wasmURL: runtime.wasmURL }, 'load');
+            console.info('[KEFE] FFmpeg runtime loaded', { source: runtime.source, ffmpeg: FF_VERSION, core: CORE_VERSION });
+            ffmpeg.__kefeRuntimeURLs = runtime;
             return ffmpeg;
         } catch (error) {
             encoderPromise = null;
             try { ffmpeg?.terminate?.(); } catch {}
-            throw error?.name === 'ExportDiagnosticError' ? error : encoderFailure('ENCODER_LOAD', 'load', error, details);
+            throw error?.name === 'ExportDiagnosticError' ? error : encoderFailure('ENCODER_LOAD', 'load', error, { ffmpeg: FF_VERSION, core: CORE_VERSION });
         }
     })();
     return encoderPromise;
