@@ -28,7 +28,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FFMPEG_VERSION: 0.12.10
+  FFMPEG_VERSION: 0.12.15
   FFMPEG_UTIL_VERSION: 0.12.2
   FFMPEG_CORE_VERSION: 0.12.10
 
@@ -91,6 +91,7 @@ jobs:
           test -s _site/vendor/core/ffmpeg-core.wasm
           test -s _site/export/index.js
           test -s _site/export/ui.js
+          printf '%s\n' '${{ github.sha }}' > _site/vendor/BUILD_SHA
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
