@@ -10,6 +10,8 @@ function replaceButton(id) {
     return replacement;
 }
 
+// app.js historically owned the export buttons. Replace the DOM nodes before
+// attaching the new exporter so the old listeners cannot fire alongside it.
 const exportTop = replaceButton('exportBtn');
 const exportBottom = replaceButton('exportBottom');
 const cancelButton = replaceButton('cancelExport');
@@ -46,12 +48,24 @@ function setExportUI(percent, message) {
     if (progress) progress.value = percent;
 }
 
-function showOverlay() { $('exportOverlay')?.classList.remove('hidden'); }
-function hideOverlay(delay = 1200) { setTimeout(() => $('exportOverlay')?.classList.add('hidden'), delay); }
+function showOverlay() {
+    $('exportOverlay')?.classList.remove('hidden');
+}
+
+function hideOverlay(delay = 1200) {
+    setTimeout(() => $('exportOverlay')?.classList.add('hidden'), delay);
+}
 
 async function seekAndRender(ctx, width, height, time, signal) {
     if (signal?.aborted) throw new DOMException('Export cancelled', 'AbortError');
+    const state = window.state;
+    const renderExportFrame = window.kefeRenderFrame;
     const video = window.kefeMedia?.video;
+
+    if (typeof renderExportFrame !== 'function') {
+        throw new Error('KEFE export renderer is not connected');
+    }
+
     if (video && Number.isFinite(video.duration) && video.duration > 0) {
         const target = ((time % video.duration) + video.duration) % video.duration;
         if (Math.abs(video.currentTime - target) > 0.002 || video.seeking || video.readyState < 2) {
@@ -74,14 +88,15 @@ async function seekAndRender(ctx, width, height, time, signal) {
                 video.addEventListener('seeked', done, { once: true });
                 video.addEventListener('error', failed, { once: true });
                 signal?.addEventListener('abort', cancelled, { once: true });
-                try { video.currentTime = target; } catch (error) { finish(() => reject(error)); }
+                try { video.currentTime = target; }
+                catch (error) { finish(() => reject(error)); }
             });
         }
     }
+
     if (signal?.aborted) throw new DOMException('Export cancelled', 'AbortError');
-    const renderFrame = window.kefeRenderFrame;
-    if (typeof renderFrame !== 'function') throw new Error('KEFE export renderer is not connected');
-    renderFrame(ctx, width, height, time);
+    state.playback.currentTime = time;
+    renderExportFrame(ctx, width, height, time);
 }
 
 async function runExport() {
@@ -90,17 +105,22 @@ async function runExport() {
     if (!Number.isFinite(Number(state.audio.duration)) || Number(state.audio.duration) <= 0) throw new Error('Audio duration is unavailable');
     if (!Array.isArray(state.lyrics?.lines) || !state.lyrics.lines.length) throw new Error('No synced lyrics loaded');
     if (typeof window.kefeRenderFrame !== 'function') throw new Error('KEFE export renderer is not connected');
+
     const preset = $('exportPreset')?.value || '720p';
     const config = getExportConfig(preset, state.aspect || '9:16');
-    return exportVideo({
+
+    const result = await exportVideo({
         state,
         media: window.kefeMedia || {},
         config,
         signal: window.kefeExportAbort?.signal,
         buildFilename,
         onProgress: ({ percent, message }) => setExportUI(percent, message),
-        renderFrame: async (ctx, width, height, time) => seekAndRender(ctx, width, height, time, window.kefeExportAbort?.signal)
+        renderFrame: async (ctx, width, height, time) => {
+            await seekAndRender(ctx, width, height, time, window.kefeExportAbort?.signal);
+        }
     });
+    return result;
 }
 
 async function startExport() {
@@ -112,6 +132,7 @@ async function startExport() {
     showOverlay();
     setExportUI(0, 'Preparing FFmpeg export…');
     if (cancelButton) cancelButton.textContent = 'Cancel';
+
     try {
         const result = await runExport();
         const url = URL.createObjectURL(result.blob);
@@ -124,13 +145,16 @@ async function startExport() {
         setTimeout(() => URL.revokeObjectURL(url), 30000);
         setExportUI(100, 'Export complete');
     } catch (error) {
-        if (error?.name === 'AbortError') setExportUI(0, 'Export cancelled');
-        else {
+        if (error?.name === 'AbortError') {
+            setExportUI(0, 'Export cancelled');
+        } else {
             console.error('[KEFE] FFmpeg export failed:', error);
             setExportUI(0, `Export failed: ${error?.message || error}`);
         }
     } finally {
-        if (audio && Number.isFinite(audio.duration)) window.state.playback.currentTime = Math.min(previewTime, audio.duration);
+        if (audio && Number.isFinite(audio.duration)) {
+            window.state.playback.currentTime = Math.min(previewTime, audio.duration);
+        }
         if (window.kefeMedia?.video && Number.isFinite(window.kefeMedia.video.duration)) {
             try {
                 const video = window.kefeMedia.video;
@@ -146,16 +170,23 @@ async function startExport() {
     }
 }
 
-function closePreflightModal() { $('exportPreflight')?.classList.add('hidden'); }
+function closePreflightModal() {
+    $('exportPreflight')?.classList.add('hidden');
+}
+
 exportTop?.addEventListener('click', startExport);
 exportBottom?.addEventListener('click', startExport);
 cancelButton?.addEventListener('click', () => {
     if (window.isExporting) window.kefeExportAbort?.abort();
     else $('exportOverlay')?.classList.add('hidden');
 });
-confirmExport?.addEventListener('click', () => { closePreflightModal(); startExport(); });
+confirmExport?.addEventListener('click', () => {
+    closePreflightModal();
+    startExport();
+});
 closePreflight?.addEventListener('click', closePreflightModal);
 cancelPreflight?.addEventListener('click', closePreflightModal);
+
 document.addEventListener('keydown', event => {
     if ((event.key === 'e' || event.key === 'E') && !['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target?.tagName)) {
         event.preventDefault();
@@ -163,6 +194,7 @@ document.addEventListener('keydown', event => {
         startExport();
     }
 }, true);
+
 window.startOfflineExport = startExport;
 window.kefeCancelExport = () => window.kefeExportAbort?.abort();
 console.info('[KEFE] Integrated FFmpeg exporter loaded');
