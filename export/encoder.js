@@ -1,14 +1,11 @@
 const FF_VERSION = '0.12.10';
-// @ffmpeg/ffmpeg 0.12.10 was released with @ffmpeg/core 0.12.6.
-// There is no matching core 0.12.10 release; using it leaves ffmpeg.load()
-// waiting on an invalid runtime and makes the export UI sit at 0%.
-const CORE_VERSION = '0.12.6';
+const CORE_VERSION = '0.12.10';
 const UTIL_VERSION = '0.12.2';
 const LOAD_TIMEOUT_MS = 30000;
 
-const LOCAL_FFMPEG_MODULE_URL = new URL('../vendor/ffmpeg/index.js', import.meta.url).href;
-const LOCAL_UTIL_MODULE_URL = new URL('../vendor/util/index.js', import.meta.url).href;
-const LOCAL_CORE_BASE_URL = new URL('../vendor/core/', import.meta.url).href.replace(/\/$/, '');
+// Use the official pinned ESM runtime directly. Do not probe a local module with
+// HEAD: static hosts can reject HEAD while GET works, which leaves export stuck
+// before FFmpeg even starts loading.
 const CDN_FFMPEG_MODULE_URL = `https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@${FF_VERSION}/dist/esm/index.js`;
 const CDN_UTIL_MODULE_URL = `https://cdn.jsdelivr.net/npm/@ffmpeg/util@${UTIL_VERSION}/dist/esm/index.js`;
 const CDN_CORE_BASE_URL = `https://cdn.jsdelivr.net/npm/@ffmpeg/core@${CORE_VERSION}/dist/esm`;
@@ -38,15 +35,6 @@ function withTimeout(promise, ms, details, operation = 'load') {
     return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
 }
 
-async function localRuntimeAvailable() {
-    try {
-        const response = await fetch(LOCAL_FFMPEG_MODULE_URL, { method: 'HEAD', cache: 'no-store' });
-        return response.ok;
-    } catch {
-        return false;
-    }
-}
-
 export async function loadEncoder() {
     if (encoderPromise) return encoderPromise;
 
@@ -54,26 +42,21 @@ export async function loadEncoder() {
         let ffmpeg = null;
         let coreURL = null;
         let wasmURL = null;
-        const useLocal = await localRuntimeAvailable();
-        const ffmpegModuleURL = useLocal ? LOCAL_FFMPEG_MODULE_URL : CDN_FFMPEG_MODULE_URL;
-        const utilModuleURL = useLocal ? LOCAL_UTIL_MODULE_URL : CDN_UTIL_MODULE_URL;
-        const coreBaseURL = useLocal ? LOCAL_CORE_BASE_URL : CDN_CORE_BASE_URL;
-        const source = useLocal ? 'self-hosted' : 'cdn-fallback';
         const details = {
-            source,
+            source: 'official-cdn',
             ffmpeg: FF_VERSION,
             core: CORE_VERSION,
             util: UTIL_VERSION,
-            ffmpegURL: ffmpegModuleURL,
-            utilURL: utilModuleURL,
-            coreURL: `${coreBaseURL}/ffmpeg-core.js`,
-            wasmURL: `${coreBaseURL}/ffmpeg-core.wasm`
+            ffmpegURL: CDN_FFMPEG_MODULE_URL,
+            utilURL: CDN_UTIL_MODULE_URL,
+            coreURL: `${CDN_CORE_BASE_URL}/ffmpeg-core.js`,
+            wasmURL: `${CDN_CORE_BASE_URL}/ffmpeg-core.wasm`
         };
 
         try {
             const [{ FFmpeg }, { toBlobURL }] = await Promise.all([
-                import(ffmpegModuleURL),
-                import(utilModuleURL)
+                import(CDN_FFMPEG_MODULE_URL),
+                import(CDN_UTIL_MODULE_URL)
             ]);
 
             ffmpeg = new FFmpeg();
@@ -81,8 +64,8 @@ export async function loadEncoder() {
             ffmpeg.on('error', error => console.error('[KEFE FFmpeg error]', error));
 
             [coreURL, wasmURL] = await Promise.all([
-                toBlobURL(`${coreBaseURL}/ffmpeg-core.js`, 'text/javascript'),
-                toBlobURL(`${coreBaseURL}/ffmpeg-core.wasm`, 'application/wasm')
+                toBlobURL(details.coreURL, 'text/javascript'),
+                toBlobURL(details.wasmURL, 'application/wasm')
             ]);
 
             await withTimeout(
