@@ -41,7 +41,7 @@
 <script src="./effects/instagram-lyrics.js"></script>
 <script src="./effects/story-fade.js"></script>
 <script src="./effects/registry.js"></script>
-<script>window.state = state; window.canvas = canvas; window.kefeMedia = media; window.redrawCurrentPreviewFrame = redrawCurrentPreviewFrame; window.isExporting = false;</script>
+<script>window.state = state; window.canvas = canvas; window.kefeMedia = media; window.redrawCurrentPreviewFrame = redrawCurrentPreviewFrame; window.kefeRenderFrame = (targetCtx, width, height, time) => { state.playback.currentTime = time; render(targetCtx, width, height, state, media); }; window.isExporting = false;</script>
 <script src="./effects/effect-app-fx.js"></script>
 <script type="module" src="./export/ui.js"></script>
 </body>
