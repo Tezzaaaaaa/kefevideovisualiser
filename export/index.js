@@ -59,8 +59,6 @@ export async function exportVideo({ state, media, config, renderFrame, buildFile
     if (!config?.width || !config?.height || !config?.fps) throw new Error('Export configuration is invalid');
     if (typeof renderFrame !== 'function') throw new Error('Export renderer is not connected');
 
-    progress(onProgress, 1, 'Loading FFmpeg engine…');
-    const ffmpeg = await loadEncoder(message => progress(onProgress, 2, message));
     const target = document.createElement('canvas');
     target.width = config.width;
     target.height = config.height;
@@ -71,62 +69,66 @@ export async function exportVideo({ state, media, config, renderFrame, buildFile
     const framesPerSegment = Math.max(config.fps * 2, Math.round(config.fps * 4));
     const segmentChunks = [];
     let combinedSegmentBytes = 0;
-    const temporaryFiles = new Set();
+    let ffmpeg = null;
     let progressHandler = null;
 
     try {
-        progress(onProgress, 4, 'Preparing audio');
-        const audioExt = /\.([a-z0-9]+)$/i.exec(state.audio.file.name || '')?.[1]?.toLowerCase() || 'audio';
-        const audioName = `kefe-audio.${audioExt}`;
-        await ffmpeg.writeFile(audioName, new Uint8Array(await state.audio.file.arrayBuffer()));
-        temporaryFiles.add(audioName);
-
         const segmentCount = Math.ceil(totalFrames / framesPerSegment);
         for (let segment = 0; segment < segmentCount; segment++) {
             checkAbort(signal);
+            progress(onProgress, 4 + (segment / segmentCount) * 66, `Loading encoder for segment ${segment + 1} of ${segmentCount}…`);
+            ffmpeg = await loadEncoder(message => progress(onProgress, 4 + (segment / segmentCount) * 66, message));
+
             const firstFrame = segment * framesPerSegment;
             const frameCount = Math.min(framesPerSegment, totalFrames - firstFrame);
             const frameNames = [];
+            try {
+                for (let local = 0; local < frameCount; local++) {
+                    checkAbort(signal);
+                    const frameIndex = firstFrame + local;
+                    const time = frameIndex / config.fps;
+                    await seekVideo(media?.video, time, signal);
+                    await renderFrame(ctx, config.width, config.height, time);
+                    const frameName = `kefe-frame-${String(local).padStart(5, '0')}.jpg`;
+                    await ffmpeg.writeFile(frameName, await canvasToJpeg(target));
+                    frameNames.push(frameName);
+                    progress(onProgress, 5 + ((frameIndex + 1) / totalFrames) * 65, `Rendering frame ${frameIndex + 1} of ${totalFrames}`);
+                }
 
-            for (let local = 0; local < frameCount; local++) {
-                checkAbort(signal);
-                const frameIndex = firstFrame + local;
-                const time = frameIndex / config.fps;
-                await seekVideo(media?.video, time, signal);
-                await renderFrame(ctx, config.width, config.height, time);
-                const frameName = `kefe-frame-${String(local).padStart(5, '0')}.jpg`;
-                await ffmpeg.writeFile(frameName, await canvasToJpeg(target));
-                frameNames.push(frameName);
-                progress(onProgress, 5 + ((frameIndex + 1) / totalFrames) * 65, `Rendering frame ${frameIndex + 1} of ${totalFrames}`);
+                const segmentName = `kefe-segment-${String(segment).padStart(4, '0')}.ts`;
+                progress(onProgress, 5 + ((firstFrame + frameCount) / totalFrames) * 65, `Encoding segment ${segment + 1} of ${segmentCount}…`);
+                await execChecked(ffmpeg, ['-framerate', String(config.fps), '-start_number', '0', '-i', 'kefe-frame-%05d.jpg', '-frames:v', String(frameCount), '-an', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-pix_fmt', 'yuv420p', '-r', String(config.fps), '-g', String(config.fps * 2), '-keyint_min', String(config.fps * 2), '-sc_threshold', '0', '-f', 'mpegts', '-y', segmentName], `segment ${segment + 1}`);
+                const segmentData = new Uint8Array(await ffmpeg.readFile(segmentName));
+                if (!segmentData.byteLength) throw new Error(`FFmpeg produced an empty segment ${segment + 1}`);
+                segmentChunks.push(segmentData);
+                combinedSegmentBytes += segmentData.byteLength;
+                progress(onProgress, 70 + ((segment + 1) / segmentCount) * 10, `Encoded segment ${segment + 1} of ${segmentCount}`);
+            } finally {
+                for (const frameName of frameNames) { try { await ffmpeg.deleteFile(frameName); } catch {} }
+                try { await ffmpeg.deleteFile(`kefe-segment-${String(segment).padStart(4, '0')}.ts`); } catch {}
+                releaseEncoder(ffmpeg);
+                ffmpeg = null;
             }
-
-            const segmentName = `kefe-segment-${String(segment).padStart(4, '0')}.ts`;
-            progress(onProgress, 5 + ((firstFrame + frameCount) / totalFrames) * 65, `Encoding segment ${segment + 1} of ${segmentCount}…`);
-            await execChecked(ffmpeg, ['-framerate', String(config.fps), '-start_number', '0', '-i', 'kefe-frame-%05d.jpg', '-frames:v', String(frameCount), '-an', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-pix_fmt', 'yuv420p', '-r', String(config.fps), '-g', String(config.fps * 2), '-keyint_min', String(config.fps * 2), '-sc_threshold', '0', '-f', 'mpegts', '-y', segmentName], `segment ${segment + 1}`);
-
-            const segmentData = new Uint8Array(await ffmpeg.readFile(segmentName));
-            if (!segmentData.byteLength) throw new Error(`FFmpeg produced an empty segment ${segment + 1}`);
-            segmentChunks.push(segmentData);
-            combinedSegmentBytes += segmentData.byteLength;
-            try { await ffmpeg.deleteFile(segmentName); } catch {}
-            for (const frameName of frameNames) { try { await ffmpeg.deleteFile(frameName); } catch {} }
-            progress(onProgress, 70 + ((segment + 1) / segmentCount) * 10, `Encoded segment ${segment + 1} of ${segmentCount}`);
         }
 
         checkAbort(signal);
         if (!combinedSegmentBytes) throw new Error('No video segments were produced');
+
+        progress(onProgress, 81, 'Loading final muxer…');
+        ffmpeg = await loadEncoder(message => progress(onProgress, 81, message));
+        const audioExt = /\.([a-z0-9]+)$/i.exec(state.audio.file.name || '')?.[1]?.toLowerCase() || 'audio';
+        const audioName = `kefe-audio.${audioExt}`;
+        await ffmpeg.writeFile(audioName, new Uint8Array(await state.audio.file.arrayBuffer()));
+
         const combinedTs = new Uint8Array(combinedSegmentBytes);
         let offset = 0;
         for (const chunk of segmentChunks) { combinedTs.set(chunk, offset); offset += chunk.byteLength; }
         segmentChunks.length = 0;
-
         const concatInputName = 'kefe-video.ts';
         await ffmpeg.writeFile(concatInputName, combinedTs);
-        temporaryFiles.add(concatInputName);
-        progress(onProgress, 82, 'Joining rendered video');
 
+        progress(onProgress, 82, 'Joining rendered video');
         const outputName = 'kefe-final.mp4';
-        temporaryFiles.add(outputName);
         progressHandler = ({ progress: ffProgress }) => { if (Number.isFinite(ffProgress)) progress(onProgress, 82 + Math.max(0, Math.min(1, ffProgress)) * 18, 'Finalising MP4'); };
         ffmpeg.on('progress', progressHandler);
         try {
@@ -142,9 +144,8 @@ export async function exportVideo({ state, media, config, renderFrame, buildFile
         progress(onProgress, 100, 'Export complete');
         return { blob: new Blob([data], { type: 'video/mp4' }), filename: buildFilename?.() || 'KEFE Visualiser.mp4' };
     } finally {
-        if (progressHandler) { try { ffmpeg.off('progress', progressHandler); } catch {} }
-        for (const file of temporaryFiles) { try { await ffmpeg.deleteFile(file); } catch {} }
+        if (progressHandler && ffmpeg) { try { ffmpeg.off('progress', progressHandler); } catch {} }
+        if (ffmpeg) releaseEncoder(ffmpeg);
         segmentChunks.length = 0;
-        releaseEncoder(ffmpeg);
     }
 }
