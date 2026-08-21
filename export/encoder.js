@@ -3,6 +3,7 @@ const CORE_VERSION = '0.12.10';
 const LOAD_TIMEOUT_MS = 30000;
 
 const FFMPEG_MODULE_URL = `https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@${FF_VERSION}/dist/esm/index.js`;
+const FFMPEG_WORKER_URL = `https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@${FF_VERSION}/dist/esm/worker.js`;
 const CORE_JS_URL = new URL('../vendor/core/ffmpeg-core.js', import.meta.url).href;
 const CORE_WASM_URL = new URL('../vendor/core/ffmpeg-core.wasm', import.meta.url).href;
 
@@ -27,7 +28,7 @@ export async function loadEncoder(onStatus) {
     if (encoderPromise) return encoderPromise;
     encoderPromise = (async () => {
         let ffmpeg = null, coreURL = null, wasmURL = null;
-        const details = { source: 'jsdelivr-ffmpeg-module', ffmpeg: FF_VERSION, core: CORE_VERSION, ffmpegURL: FFMPEG_MODULE_URL, coreURL: CORE_JS_URL, wasmURL: CORE_WASM_URL };
+        const details = { source: 'jsdelivr-ffmpeg-module', ffmpeg: FF_VERSION, core: CORE_VERSION, ffmpegURL: FFMPEG_MODULE_URL, workerURL: FFMPEG_WORKER_URL, coreURL: CORE_JS_URL, wasmURL: CORE_WASM_URL };
         try {
             onStatus?.('Loading FFmpeg engine…');
             const module = await withTimeout(import(FFMPEG_MODULE_URL), LOAD_TIMEOUT_MS, details, 'module-load');
@@ -35,8 +36,11 @@ export async function loadEncoder(onStatus) {
             onStatus?.('Loading FFmpeg core…');
             [coreURL, wasmURL] = await Promise.all([fetchBlobURL(CORE_JS_URL, 'text/javascript', 'ffmpeg-core'), fetchBlobURL(CORE_WASM_URL, 'application/wasm', 'ffmpeg-wasm')]);
             ffmpeg = new FFmpeg(); ffmpeg.on('log', data => console.debug('[KEFE FFmpeg]', data?.message || data)); ffmpeg.on('error', error => console.error('[KEFE FFmpeg error]', error));
-            onStatus?.('Starting FFmpeg…'); await withTimeout(ffmpeg.load({ coreURL, wasmURL }), LOAD_TIMEOUT_MS, details, 'load');
-            ffmpeg.__kefeRuntimeURLs = { coreURL, wasmURL }; return ffmpeg;
+            onStatus?.('Starting FFmpeg…');
+            await withTimeout(ffmpeg.load({ classWorkerURL: FFMPEG_WORKER_URL, coreURL, wasmURL }), LOAD_TIMEOUT_MS, details, 'load');
+            console.info('[KEFE] FFmpeg runtime loaded', details);
+            ffmpeg.__kefeRuntimeURLs = { coreURL, wasmURL };
+            return ffmpeg;
         } catch (error) { encoderPromise = null; try { ffmpeg?.terminate?.(); } catch {} if (coreURL) URL.revokeObjectURL(coreURL); if (wasmURL) URL.revokeObjectURL(wasmURL); throw error?.name === 'ExportDiagnosticError' ? error : encoderFailure('ENCODER_LOAD', 'load', error, details); }
     })();
     return encoderPromise;
