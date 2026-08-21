@@ -45,6 +45,15 @@ async function fetchBlobURL(url, mime, label) {
     }
 }
 
+async function importModuleFromURL(url) {
+    const moduleURL = await fetchBlobURL(url, 'text/javascript', 'ffmpeg-module');
+    try {
+        return await import(/* webpackIgnore: true */ moduleURL);
+    } finally {
+        URL.revokeObjectURL(moduleURL);
+    }
+}
+
 export async function loadEncoder(onStatus) {
     if (encoderPromise) return encoderPromise;
     encoderPromise = (async () => {
@@ -54,7 +63,7 @@ export async function loadEncoder(onStatus) {
         const details = { source: 'github-pages-bundled-assets', ffmpeg: FF_VERSION, core: CORE_VERSION, ffmpegURL: FFMPEG_MODULE_URL, coreURL: CORE_JS_URL, wasmURL: CORE_WASM_URL };
         try {
             onStatus?.('Loading FFmpeg engine…');
-            const module = await withTimeout(import(FFMPEG_MODULE_URL), LOAD_TIMEOUT_MS, details, 'module-load');
+            const module = await withTimeout(importModuleFromURL(FFMPEG_MODULE_URL), LOAD_TIMEOUT_MS, details, 'module-load');
             const FFmpeg = module?.FFmpeg;
             if (typeof FFmpeg !== 'function') throw new Error('FFmpeg constructor was not found');
 
