@@ -98,7 +98,8 @@ export async function exportVideo({ state, media, config, renderFrame, buildFile
 
     const totalFrames = Math.max(1, Math.ceil(duration * config.fps));
     const framesPerSegment = Math.max(config.fps * 2, Math.round(config.fps * 4));
-    const segmentNames = [];
+    const segmentChunks = [];
+    let combinedSegmentBytes = 0;
     const temporaryFiles = new Set();
     let progressHandler = null;
 
@@ -125,33 +126,55 @@ export async function exportVideo({ state, media, config, renderFrame, buildFile
                 const frameName = `kefe-frame-${String(local).padStart(5, '0')}.jpg`;
                 await ffmpeg.writeFile(frameName, await canvasToJpeg(target));
                 frameNames.push(frameName);
-                temporaryFiles.add(frameName);
                 progress(onProgress, 5 + ((frameIndex + 1) / totalFrames) * 65, `Rendering frame ${frameIndex + 1} of ${totalFrames}`);
             }
 
             const segmentName = `kefe-segment-${String(segment).padStart(4, '0')}.ts`;
+            progress(onProgress, 5 + ((firstFrame + frameCount) / totalFrames) * 65, `Encoding segment ${segment + 1} of ${segmentCount}…`);
             await execChecked(ffmpeg, ['-framerate', String(config.fps), '-start_number', '0', '-i', 'kefe-frame-%05d.jpg', '-frames:v', String(frameCount), '-an', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-pix_fmt', 'yuv420p', '-r', String(config.fps), '-g', String(config.fps * 2), '-keyint_min', String(config.fps * 2), '-sc_threshold', '0', '-f', 'mpegts', '-y', segmentName], `segment ${segment + 1}`);
-            segmentNames.push(segmentName);
-            temporaryFiles.add(segmentName);
+
+            // Do not keep every TS segment resident in FFmpeg's MEMFS. That
+            // steadily grows the WASM filesystem during long exports and can
+            // kill the browser exporter before the final mux is reached.
+            const segmentData = new Uint8Array(await ffmpeg.readFile(segmentName));
+            if (!segmentData.byteLength) throw new Error(`FFmpeg produced an empty segment ${segment + 1}`);
+            segmentChunks.push(segmentData);
+            combinedSegmentBytes += segmentData.byteLength;
+            try { await ffmpeg.deleteFile(segmentName); } catch {}
+            try { await ffmpeg.deleteFile(segmentName); } catch {}
+
             for (const frameName of frameNames) {
                 try { await ffmpeg.deleteFile(frameName); } catch {}
-                temporaryFiles.delete(frameName);
             }
             progress(onProgress, 70 + ((segment + 1) / segmentCount) * 10, `Encoded segment ${segment + 1} of ${segmentCount}`);
         }
 
-        // MPEG-TS is byte-concatenable. Avoid the concat demuxer here because it
-        // is not consistently present/usable in browser FFmpeg builds.
-        const concatInput = `concat:${segmentNames.join('|')}`;
+        checkAbort(signal);
+        if (!combinedSegmentBytes) throw new Error('No video segments were produced');
+
+        // Keep the long-lived TS data outside FFmpeg MEMFS while segments are
+        // being generated, then materialise one combined input only once.
+        const combinedTs = new Uint8Array(combinedSegmentBytes);
+        let offset = 0;
+        for (const chunk of segmentChunks) {
+            combinedTs.set(chunk, offset);
+            offset += chunk.byteLength;
+        }
+        segmentChunks.length = 0;
+
+        const concatInputName = 'kefe-video.ts';
+        await ffmpeg.writeFile(concatInputName, combinedTs);
+        temporaryFiles.add(concatInputName);
+        progress(onProgress, 82, 'Joining rendered video');
+
         const outputName = 'kefe-final.mp4';
         temporaryFiles.add(outputName);
-        progress(onProgress, 82, 'Joining rendered video');
         progressHandler = ({ progress: ffProgress }) => {
             if (Number.isFinite(ffProgress)) progress(onProgress, 82 + Math.max(0, Math.min(1, ffProgress)) * 18, 'Finalising MP4');
         };
         ffmpeg.on('progress', progressHandler);
         try {
-            await execChecked(ffmpeg, ['-i', concatInput, '-i', audioName, '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-af', 'aresample=async=1:first_pts=0', '-t', duration.toFixed(3), '-movflags', '+faststart', '-y', outputName], 'final MP4');
+            await execChecked(ffmpeg, ['-i', concatInputName, '-i', audioName, '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-af', 'aresample=async=1:first_pts=0', '-t', duration.toFixed(3), '-movflags', '+faststart', '-y', outputName], 'final MP4');
         } finally {
             ffmpeg.off('progress', progressHandler);
             progressHandler = null;
@@ -169,6 +192,7 @@ export async function exportVideo({ state, media, config, renderFrame, buildFile
         for (const file of temporaryFiles) {
             try { await ffmpeg.deleteFile(file); } catch {}
         }
+        segmentChunks.length = 0;
         releaseEncoder(ffmpeg);
     }
 }
