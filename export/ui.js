@@ -10,8 +10,6 @@ function replaceButton(id) {
     return replacement;
 }
 
-// app.js historically owned the export buttons. Replace the DOM nodes before
-// attaching the new exporter so the old listeners cannot fire alongside it.
 const exportTop = replaceButton('exportBtn');
 const exportBottom = replaceButton('exportBottom');
 const cancelButton = replaceButton('cancelExport');
@@ -62,9 +60,7 @@ async function seekAndRender(ctx, width, height, time, signal) {
     const renderExportFrame = window.kefeRenderFrame;
     const video = window.kefeMedia?.video;
 
-    if (typeof renderExportFrame !== 'function') {
-        throw new Error('KEFE export renderer is not connected');
-    }
+    if (typeof renderExportFrame !== 'function') throw new Error('KEFE export renderer is not connected');
 
     if (video && Number.isFinite(video.duration) && video.duration > 0) {
         const target = ((time % video.duration) + video.duration) % video.duration;
@@ -109,7 +105,7 @@ async function runExport() {
     const preset = $('exportPreset')?.value || '720p';
     const config = getExportConfig(preset, state.aspect || '9:16');
 
-    const result = await exportVideo({
+    return await exportVideo({
         state,
         media: window.kefeMedia || {},
         config,
@@ -120,7 +116,6 @@ async function runExport() {
             await seekAndRender(ctx, width, height, time, window.kefeExportAbort?.signal);
         }
     });
-    return result;
 }
 
 async function startExport() {
@@ -143,13 +138,20 @@ async function startExport() {
         link.click();
         link.remove();
         setTimeout(() => URL.revokeObjectURL(url), 30000);
-        setExportUI(100, 'Export complete');
+        setExportUI(100, `Export complete — ${result.filename}`);
+        hideOverlay();
     } catch (error) {
         if (error?.name === 'AbortError') {
             setExportUI(0, 'Export cancelled');
+            hideOverlay();
         } else {
             console.error('[KEFE] FFmpeg export failed:', error);
-            setExportUI(0, `Export failed: ${error?.message || error}`);
+            const detail = error?.message || String(error);
+            setExportUI(0, `Export failed: ${detail}`);
+            // Keep the failure visible. The previous exporter hid the overlay
+            // unconditionally, making a real failure look like the export had
+            // simply disappeared.
+            showOverlay();
         }
     } finally {
         if (audio && Number.isFinite(audio.duration)) {
@@ -165,7 +167,6 @@ async function startExport() {
         window.kefeExportAbort = null;
         window.isExporting = false;
         if (cancelButton) cancelButton.textContent = 'Close';
-        hideOverlay();
         try { window.redrawCurrentPreviewFrame?.(); } catch {}
     }
 }
