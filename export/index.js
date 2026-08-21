@@ -133,14 +133,13 @@ export async function exportVideo({ state, media, config, renderFrame, buildFile
             progress(onProgress, 5 + ((firstFrame + frameCount) / totalFrames) * 65, `Encoding segment ${segment + 1} of ${segmentCount}…`);
             await execChecked(ffmpeg, ['-framerate', String(config.fps), '-start_number', '0', '-i', 'kefe-frame-%05d.jpg', '-frames:v', String(frameCount), '-an', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-pix_fmt', 'yuv420p', '-r', String(config.fps), '-g', String(config.fps * 2), '-keyint_min', String(config.fps * 2), '-sc_threshold', '0', '-f', 'mpegts', '-y', segmentName], `segment ${segment + 1}`);
 
-            // Do not keep every TS segment resident in FFmpeg's MEMFS. That
-            // steadily grows the WASM filesystem during long exports and can
-            // kill the browser exporter before the final mux is reached.
+            // Keep finished segments out of FFmpeg's MEMFS. Long exports can
+            // otherwise accumulate enough WASM filesystem data to terminate
+            // the browser exporter before final muxing.
             const segmentData = new Uint8Array(await ffmpeg.readFile(segmentName));
             if (!segmentData.byteLength) throw new Error(`FFmpeg produced an empty segment ${segment + 1}`);
             segmentChunks.push(segmentData);
             combinedSegmentBytes += segmentData.byteLength;
-            try { await ffmpeg.deleteFile(segmentName); } catch {}
             try { await ffmpeg.deleteFile(segmentName); } catch {}
 
             for (const frameName of frameNames) {
@@ -152,8 +151,7 @@ export async function exportVideo({ state, media, config, renderFrame, buildFile
         checkAbort(signal);
         if (!combinedSegmentBytes) throw new Error('No video segments were produced');
 
-        // Keep the long-lived TS data outside FFmpeg MEMFS while segments are
-        // being generated, then materialise one combined input only once.
+        // Materialise one TS input only after all segments have been rendered.
         const combinedTs = new Uint8Array(combinedSegmentBytes);
         let offset = 0;
         for (const chunk of segmentChunks) {
