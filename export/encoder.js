@@ -4,8 +4,8 @@ const LOAD_TIMEOUT_MS = 30000;
 
 const FFMPEG_MODULE_URL = `https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@${FF_VERSION}/dist/esm/index.js`;
 const LOCAL_WORKER_URL = new URL('../vendor/ffmpeg/worker.js', import.meta.url).href;
-const CORE_JS_URL = new URL('../vendor/core/ffmpeg-core.js', import.meta.url).href;
-const CORE_WASM_URL = new URL('../vendor/core/ffmpeg-core.wasm', import.meta.url).href;
+const CORE_JS_URL = `https://cdn.jsdelivr.net/npm/@ffmpeg/core@${CORE_VERSION}/dist/esm/ffmpeg-core.js`;
+const CORE_WASM_URL = `https://cdn.jsdelivr.net/npm/@ffmpeg/core@${CORE_VERSION}/dist/esm/ffmpeg-core.wasm`;
 
 let encoderPromise = null;
 
@@ -28,7 +28,7 @@ export async function loadEncoder(onStatus) {
     if (encoderPromise) return encoderPromise;
     encoderPromise = (async () => {
         let ffmpeg = null, coreURL = null, wasmURL = null;
-        const details = { source: 'jsdelivr-ffmpeg-module', ffmpeg: FF_VERSION, core: CORE_VERSION, workerURL: LOCAL_WORKER_URL, coreURL: CORE_JS_URL, wasmURL: CORE_WASM_URL };
+        const details = { source: 'jsdelivr-ffmpeg', ffmpeg: FF_VERSION, core: CORE_VERSION, workerURL: LOCAL_WORKER_URL, coreURL: CORE_JS_URL, wasmURL: CORE_WASM_URL };
         try {
             onStatus?.('Loading FFmpeg engine…');
             const module = await withTimeout(import(FFMPEG_MODULE_URL), LOAD_TIMEOUT_MS, details, 'module-load');
